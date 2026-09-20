@@ -13,6 +13,7 @@ REPO = "Grimblaz-and-Friends/Organizations-of-Verra"
 HEAD = "a" * 40
 BASE = "b" * 40
 BASE_TIP = "c" * 40
+AMBIGUOUS_TAG_TIP = "d" * 40
 BASE_REF = "main"
 OWNER = "proof-owner"
 REVIEWER = "review-bot[bot]"
@@ -148,7 +149,8 @@ def scenario(
             "base": {"sha": base, "ref": base_ref},
             "changed_files": len(file_records) if changed_files is None else changed_files,
         },
-        f"repos/{REPO}/commits/{base_ref}": {"sha": base_tip},
+        f"repos/{REPO}/git/ref/heads/{base_ref}": {"object": {"sha": base_tip}},
+        f"repos/{REPO}/commits/{base_ref}": {"sha": AMBIGUOUS_TAG_TIP},
         f"{pull}/files?per_page=100": file_records,
         f"repos/{REPO}/issues/17/comments?per_page=100": list(comments or []),
         f"{pull}/reviews?per_page=100": list(reviews or []),
@@ -222,7 +224,7 @@ def test_bought_use_passes_with_current_head_used_note():
     assert "current-head use marker is valid" in output
 
 
-def test_recorded_base_commit_before_policy_uses_base_branch_tip_policy():
+def test_policy_is_loaded_from_base_branch_reference_tip():
     transport = complete_scenario()
     policy_paths = (".github/change-proof.json", ".tradecraft/work.json")
     for path in policy_paths:
@@ -235,7 +237,8 @@ def test_recorded_base_commit_before_policy_uses_base_branch_tip_policy():
     assert result == 0
     assert "change-proof: PASS" in output
     assert f"verified: base branch {BASE_REF} tip resolved to commit {BASE_TIP}" in output
-    assert (f"repos/{REPO}/commits/{BASE_REF}", False) in transport.calls
+    assert (f"repos/{REPO}/git/ref/heads/{BASE_REF}", False) in transport.calls
+    assert (f"repos/{REPO}/commits/{BASE_REF}", False) not in transport.calls
     assert all(
         (f"repos/{REPO}/contents/{path}?ref={BASE_TIP}", False) in transport.calls
         for path in policy_paths
@@ -244,6 +247,20 @@ def test_recorded_base_commit_before_policy_uses_base_branch_tip_policy():
         (f"repos/{REPO}/contents/{path}?ref={BASE}", False) not in transport.calls
         for path in policy_paths
     )
+
+
+def test_missing_base_branch_reference_fails_when_old_commit_lookup_would_pass():
+    transport = complete_scenario()
+    base_ref_endpoint = f"repos/{REPO}/git/ref/heads/{BASE_REF}"
+    transport.responses[base_ref_endpoint] = check.GitHubNotFound("missing branch reference")
+
+    result, output = execute(transport)
+
+    assert result == 1
+    assert "change-proof: ERROR" in output
+    assert f"base branch reference refs/heads/{BASE_REF} does not exist" in output
+    assert (base_ref_endpoint, False) in transport.calls
+    assert (f"repos/{REPO}/commits/{BASE_REF}", False) not in transport.calls
 
 
 def test_head_that_weakens_policy_is_judged_by_base_and_fails():
