@@ -24,7 +24,7 @@ jobs:
 
 On a `pull_request` event, the called workflow derives the pull request number and evaluates its head; draft pull requests exit successfully without evaluation.
 
-After a note or disposition lands, re-run the failed check from the pull request's checks tab, run `gh run rerun <run-id> --failed`, or push another commit. A workflow's token cannot re-run workflow runs, and this design grants no write permission.
+After a note or disposition lands, re-run the failed check from the pull request's checks tab or run `gh run rerun <run-id> --failed`. A workflow's token cannot re-run workflow runs, and this design grants no write permission. A new commit moves the pull request head, so its evidence must be posted again for that head.
 
 ## Caller-owned configuration
 
@@ -101,7 +101,7 @@ A current-head `use` marker when the paths do not buy use is a false claim and f
 
 Every top-level inline comment from a connected reviewer needs a reply by a marker producer whose first line begins with one of the closed dispositions: `fixed`; `fixed — nothing else found it`; `fixed in #<N>`; `yours — in the release report`; `declined — <why it earns no end>`; `duplicate of <the earlier comment>`; `lapsed — <the rule we do not run>`.
 
-The checker ignores leading whitespace and Markdown inline markers—backticks, asterisks and underscores—before reading a disposition or the `Use: not required` line.
+The checker ignores leading whitespace and one balanced Markdown inline wrapper—backticks, asterisks or underscores—before reading a disposition or the `Use: not required` line.
 
 - **Pass:** the current-head note agrees with the path decision, every connected reviewer has a credited run, and every owed inline disposition is present.
 
