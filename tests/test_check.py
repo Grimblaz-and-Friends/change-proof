@@ -212,14 +212,27 @@ def complete_scenario(**overrides):
 
 def test_readme_use_rules_classify_documented_paths():
     readme = (Path(__file__).parents[1] / "README.md").read_text(encoding="utf-8")
-    examples = re.findall(
-        r"^## Caller-owned configuration\n.*?^```json\n(.*?)^```$",
+    sections = re.findall(
+        r"^## Caller-owned configuration\n(.*?)(?=^## |\Z)",
         readme,
         flags=re.MULTILINE | re.DOTALL,
     )
 
+    assert len(sections) == 1
+    json_blocks = re.findall(
+        r"^```json\n(.*?)^```$",
+        sections[0],
+        flags=re.MULTILINE | re.DOTALL,
+    )
+    documents = [json.loads(block) for block in json_blocks]
+    examples = [
+        document
+        for document in documents
+        if isinstance(document, dict) and "rules" in document
+    ]
+
     assert len(examples) == 1
-    rules = json.loads(examples[0])
+    rules = examples[0]
     expected = {
         "src/application.ts": True,
         "src/Suite.test.ts": False,
