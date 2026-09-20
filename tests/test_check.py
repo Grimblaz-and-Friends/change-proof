@@ -14,6 +14,45 @@ HEAD = "a" * 40
 OWNER = "proof-owner"
 REVIEWER = "review-bot[bot]"
 
+# Grimblaz-and-Friends/Organizations-of-Verra#455, issue comment 5750507875.
+CODERABBIT_RATE_LIMIT_NOTICE = """\
+<!-- This is an auto-generated comment: rate limited by coderabbit.ai -->
+
+> [!WARNING]
+> ## Review limit reached
+>
+> **Next included review available in 59 minutes.**
+"""
+
+# Grimblaz-and-Friends/change-proof#1, issue comment 5750390080.
+CODERABBIT_SUMMARY_ONLY_NOTICE = """\
+**Grimblaz-and-Friends is on CodeRabbit Free, which includes PR summaries. Ask your admin to upgrade for code reviews.**
+"""
+
+# The mutable Codex summary on both specified pull requests uses this status table.
+# The GET-visible completed form is quoted here from change-proof#1, issue comment
+# 5750586451; the use session observed the same row while its status read `Running`.
+CODEX_COMPLETED_SUMMARY = """\
+<!-- codex-pull-request-review-summary -->
+
+## Codex Review Summary
+
+| Review | Status | Commit | Review trigger |
+| --- | --- | --- | --- |
+| 📝 **Code Review** | ✅ **Completed** | `45db1e8` | Draft marked ready |
+
+Codex reacts with 👀 while any review is running.
+"""
+CODEX_RUNNING_NOTICE = """\
+<!-- codex-pull-request-review-summary -->
+
+## Codex Review Summary
+
+| Review | Status | Commit | Review trigger |
+| --- | --- | --- | --- |
+| 📝 **Code Review** | **Running** | `45db1e8` | Draft marked ready |
+"""
+
 
 def record(login, body="", **values):
     return {"user": {"login": login}, "body": body, **values}
@@ -190,7 +229,87 @@ def test_repeated_connected_reviewer_runs_pass():
     result, output = execute(transport)
 
     assert result == 0
-    assert "every configured connected reviewer has run at least once" in output
+    assert f"connected reviewer {REVIEWER} credited by review" in output
+
+
+def test_rate_limit_notice_alone_fails_naming_notice():
+    reviewer = "coderabbitai[bot]"
+    transport = scenario(
+        comments=[use_note(), record(reviewer, CODERABBIT_RATE_LIMIT_NOTICE, id=5750507875)],
+        reviewers=(reviewer,),
+    )
+    result, output = execute(transport)
+
+    assert result == 1
+    assert "'Review limit reached' do not count" in output
+    assert "a review is still owed" in output
+
+
+def test_summary_only_plan_notice_does_not_count_as_a_review():
+    reviewer = "coderabbitai[bot]"
+    transport = scenario(
+        comments=[use_note(), record(reviewer, CODERABBIT_SUMMARY_ONLY_NOTICE, id=5750390080)],
+        reviewers=(reviewer,),
+    )
+    result, output = execute(transport)
+
+    assert result == 1
+    assert "'Ask your admin to upgrade for code reviews' do not count" in output
+    assert "a review is still owed" in output
+
+
+def test_completed_summary_comment_counts_as_reviewer_run():
+    reviewer = "chatgpt-codex-connector[bot]"
+    transport = scenario(
+        comments=[use_note(), record(reviewer, CODEX_COMPLETED_SUMMARY, id=5750586451)],
+        reviewers=(reviewer,),
+    )
+    result, output = execute(transport)
+
+    assert result == 0
+    assert f"connected reviewer {reviewer} credited by pull-request comment #5750586451" in output
+
+
+def test_running_notice_alone_fails():
+    reviewer = "chatgpt-codex-connector[bot]"
+    transport = scenario(
+        comments=[use_note(), record(reviewer, CODEX_RUNNING_NOTICE, id=5750586451)],
+        reviewers=(reviewer,),
+    )
+    result, output = execute(transport)
+
+    assert result == 1
+    assert "'Running' do not count" in output
+    assert "a review is still owed" in output
+
+
+@pytest.mark.parametrize(
+    ("body", "notice"),
+    [
+        ("THE REVIEW WAS LIMITED", "review limited"),
+        ("REVIEW SKIPPED", "review skipped"),
+    ],
+)
+def test_notice_phrasings_match_case_insensitively(body, notice):
+    transport = scenario(
+        comments=[use_note(), record(REVIEWER, body)],
+    )
+    result, output = execute(transport)
+
+    assert result == 1
+    assert f"'{notice}' do not count" in output
+    assert "a review is still owed" in output
+
+
+def test_review_endpoint_record_counts_as_reviewer_run():
+    transport = scenario(
+        comments=[use_note()],
+        reviews=[record(REVIEWER, "review summary", id=5260887954)],
+    )
+    result, output = execute(transport)
+
+    assert result == 0
+    assert f"connected reviewer {REVIEWER} credited by review #5260887954" in output
 
 
 def test_undispositioned_top_level_inline_comment_fails():
@@ -232,7 +351,12 @@ def test_reply_must_be_from_producer_and_start_with_disposition(reply):
 
 
 def test_summary_only_reviewer_run_owes_no_disposition():
-    result, output = execute(complete_scenario())
+    reviewer = "chatgpt-codex-connector[bot]"
+    transport = scenario(
+        comments=[use_note(), record(reviewer, CODEX_COMPLETED_SUMMARY)],
+        reviewers=(reviewer,),
+    )
+    result, output = execute(transport)
 
     assert result == 0
     assert "every top-level inline reviewer comment" in output

@@ -109,11 +109,11 @@ A current-head `use` marker when the paths do not buy use is a false claim and f
 
 Every top-level inline comment from a connected reviewer needs a reply by a marker producer whose first line begins with one of the closed dispositions: `fixed`; `fixed — nothing else found it`; `fixed in #<N>`; `yours — in the release report`; `declined — <why it earns no end>`; `duplicate of <the earlier comment>`; `lapsed — <the rule we do not run>`.
 
-- **Pass:** the current-head note agrees with the path decision, every connected reviewer has appeared, and every owed inline disposition is present.
+- **Pass:** the current-head note agrees with the path decision, every connected reviewer has a credited run, and every owed inline disposition is present.
 
-- **Fail:** the note is missing, stale, malformed, unauthorized, or false; a configured reviewer has not appeared; or an owed inline disposition is missing or unauthorized.
+- **Fail:** the note is missing, stale, malformed, unauthorized, or false; a configured reviewer has no credited run; or an owed inline disposition is missing or unauthorized.
 
-A connected reviewer has run when at least one review, review comment, or pull-request comment by its login exists. Repeated appearances are allowed: a bought second look does not fail the gate. A reviewer that posts only a summary has run and owes no invented inline disposition.
+A connected reviewer has run when at least one review, inline review comment, or pull-request comment by its login exists; a pull-request comment saying the review was limited, rate limited, skipped, or still running is a notice of not reviewing and does not count, repeated appearances are allowed because a bought second look does not fail the gate, and a completed summary-only pull-request comment counts and owes no invented inline disposition. This notice classification reads vendor comment text rather than a vendor API and can be wrong in both directions when a vendor changes its wording.
 
 ## Boundary and tests
 

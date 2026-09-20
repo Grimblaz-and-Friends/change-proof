@@ -29,6 +29,23 @@ DISPOSITIONS = (
     "duplicate of ",
     "lapsed -",
 )
+REVIEW_NOTICE_PATTERNS = (
+    ("Review limit reached", re.compile(r"\breview limit reached\b", re.I)),
+    ("rate limited", re.compile(r"\brate limited\b", re.I)),
+    (
+        "review limited",
+        re.compile(r"\breview (?:was |is )?limited\b|\blimited review\b", re.I),
+    ),
+    (
+        "review skipped",
+        re.compile(r"\breview (?:was |is )?skipped\b|\bskipped review\b", re.I),
+    ),
+    (
+        "Ask your admin to upgrade for code reviews",
+        re.compile(r"\bask your admin to upgrade for code reviews\b", re.I),
+    ),
+    ("Running", re.compile(r"^\|[^\n]*\brunning\b[^\n]*\|\s*$", re.I | re.M)),
+)
 
 
 class ProofError(RuntimeError):
@@ -248,6 +265,18 @@ def _disposition(body: str) -> bool:
     return any(normalized.startswith(prefix) for prefix in DISPOSITIONS)
 
 
+def _review_notice(body: str) -> str | None:
+    for name, pattern in REVIEW_NOTICE_PATTERNS:
+        if pattern.search(body):
+            return name
+    return None
+
+
+def _record_label(kind: str, item: dict[str, object]) -> str:
+    identity = item.get("id")
+    return f"{kind} #{identity}" if isinstance(identity, int) else kind
+
+
 def evaluate(
     head: str,
     paths: list[str],
@@ -296,17 +325,42 @@ def evaluate(
                 "post the exact tradecraft:no-use:v1 marker followed by that line and the reason",
             ))
 
-    reviewer_records = reviews + review_comments + comments
-    authors = {_author(item) for item in reviewer_records}
-    missing_reviewers = sorted(config.connected_reviewers - authors)
+    missing_reviewers: list[str] = []
+    for reviewer in sorted(config.connected_reviewers):
+        credit: str | None = None
+        notices: list[str] = []
+        for kind, records in (("review", reviews), ("inline review comment", review_comments)):
+            credited = next((item for item in records if _author(item) == reviewer), None)
+            if credited is not None:
+                credit = _record_label(kind, credited)
+                break
+        if credit is None:
+            for item in comments:
+                if _author(item) != reviewer:
+                    continue
+                notice = _review_notice(str(item.get("body") or ""))
+                if notice is None:
+                    credit = _record_label("pull-request comment", item)
+                    break
+                notices.append(notice)
+        if credit is not None:
+            verified.append(f"connected reviewer {reviewer} credited by {credit}")
+        elif notices:
+            named = ", ".join(f"{notice!r}" for notice in dict.fromkeys(notices))
+            failures.append(Finding(
+                f"connected reviewer run for {reviewer}; pull-request comment notice(s) "
+                f"{named} do not count, so a review is still owed",
+                f"have {reviewer} post a completed review, inline review comment, or "
+                "pull-request comment that is not a notice of not reviewing",
+            ))
+        else:
+            missing_reviewers.append(reviewer)
     if missing_reviewers:
         failures.append(Finding(
             f"connected reviewer run(s): {', '.join(missing_reviewers)}",
             "have each listed reviewer post a review, inline review comment, or pull-request comment",
         ))
-    elif config.connected_reviewers:
-        verified.append("every configured connected reviewer has run at least once")
-    else:
+    if not config.connected_reviewers:
         verified.append("the caller configures no connected reviewers")
 
     replies: dict[int, list[dict[str, object]]] = {}
