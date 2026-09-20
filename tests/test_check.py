@@ -105,11 +105,14 @@ def scenario(
     base=BASE,
     draft=False,
     files=None,
+    changed_files=None,
     head_rules=None,
     head_config=None,
+    head_missing=(),
     base_rules=None,
     base_config=None,
     base_policy=True,
+    base_missing=(),
 ):
     default_rules = {
         "schema_version": 1,
@@ -131,6 +134,7 @@ def scenario(
     head_config = default_config if head_config is None else head_config
     base_rules = default_rules if base_rules is None else base_rules
     base_config = default_config if base_config is None else base_config
+    file_records = list(files) if files is not None else [{"filename": path} for path in paths]
     pull = f"repos/{REPO}/pulls/17"
     responses = {
         pull: {
@@ -138,23 +142,36 @@ def scenario(
             "draft": draft,
             "head": {"sha": head},
             "base": {"sha": base},
+            "changed_files": len(file_records) if changed_files is None else changed_files,
         },
-        f"repos/{REPO}/contents/.github/change-proof.json?ref={head}": contents(head_rules),
-        f"repos/{REPO}/contents/.tradecraft/work.json?ref={head}": contents(head_config),
-        f"{pull}/files?per_page=100": (
-            list(files) if files is not None else [{"filename": path} for path in paths]
-        ),
+        f"{pull}/files?per_page=100": file_records,
         f"repos/{REPO}/issues/17/comments?per_page=100": list(comments or []),
         f"{pull}/reviews?per_page=100": list(reviews or []),
         f"{pull}/comments?per_page=100": list(review_comments or []),
     }
+    head_missing = set(head_missing)
+    base_missing = set(base_missing)
+    if not base_policy:
+        base_missing.update((".github/change-proof.json", ".tradecraft/work.json"))
+    for path, value in (
+        (".github/change-proof.json", head_rules),
+        (".tradecraft/work.json", head_config),
+    ):
+        endpoint = f"repos/{REPO}/contents/{path}?ref={head}"
+        responses[endpoint] = (
+            check.GitHubNotFound(f"missing {path}")
+            if path in head_missing
+            else contents(value)
+        )
     for path, value in (
         (".github/change-proof.json", base_rules),
         (".tradecraft/work.json", base_config),
     ):
         endpoint = f"repos/{REPO}/contents/{path}?ref={base}"
         responses[endpoint] = (
-            contents(value) if base_policy else check.GitHubNotFound(f"missing {path}")
+            check.GitHubNotFound(f"missing {path}")
+            if path in base_missing
+            else contents(value)
         )
     return FakeTransport(responses)
 
@@ -242,6 +259,27 @@ def test_missing_base_policy_fails_closed_but_prints_other_verifications():
     assert "the owner merges it on the connected reviewers' evidence" in output
     assert "verified: changed paths buy a use" in output
     assert f"verified: connected reviewer {REVIEWER} credited by review" in output
+
+
+def test_policy_deleted_on_head_is_judged_by_complete_base():
+    transport = complete_scenario(head_missing=(".tradecraft/work.json",))
+    result, output = execute(transport)
+
+    assert result == 0
+    assert "change-proof: PASS" in output
+    assert "verified: pull request changes policy and was judged by the base branch policy" in output
+
+
+def test_policy_absent_on_base_and_head_is_bootstrap_failure():
+    missing = ".tradecraft/work.json"
+    transport = complete_scenario(head_missing=(missing,), base_missing=(missing,))
+    result, output = execute(transport)
+
+    assert result == 1
+    assert "change-proof: FAIL" in output
+    assert "change-proof: ERROR" not in output
+    assert f"trusted policy on the pull request base; absent: {missing}" in output
+    assert "this pull request cannot prove itself" in output
 
 
 def test_docs_only_fails_on_false_used_claim():
@@ -345,6 +383,30 @@ def test_rename_out_of_included_path_buys_a_use():
 
     assert result == 0
     assert "changed paths buy a use" in output
+
+
+def test_changed_file_count_matching_pull_response_passes():
+    transport = complete_scenario(paths=("src/main.ts", "docs/guide.md"))
+    result, output = execute(transport)
+
+    assert result == 0
+    assert "change-proof: PASS" in output
+
+
+def test_truncated_changed_file_list_fails_without_classification():
+    files = [{"filename": f"docs/generated-{index}.md"} for index in range(3000)]
+    transport = scenario(
+        files=files,
+        changed_files=3001,
+        comments=[no_use_note()],
+        reviews=[record(REVIEWER, "summary")],
+    )
+    result, output = execute(transport)
+
+    assert result == 1
+    assert "pull reports 3001, retrieved 3000" in output
+    assert "the change cannot be classified" in output
+    assert "changed paths do not buy a use" not in output
 
 
 def test_missing_connected_reviewer_run_fails():

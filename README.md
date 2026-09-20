@@ -36,7 +36,7 @@ On a `pull_request` event, the called workflow derives the pull request number a
 
 ## Caller-owned configuration
 
-The checker reads both files through the GitHub contents API at the pull request's base head and judges the change by that trusted policy; it also reads the head copies so a policy change is reported. When the base does not contain both files, the introducing pull request is evaluated with its head copies so all other findings remain visible, but it fails because it cannot prove itself and the owner must merge it on the connected reviewers' evidence. `.github/change-proof.json` is the same schema-version-1 use-rules object consumed by the tradecraft entrance. This Organizations of Verra example buys a use for its running product surfaces and excludes tests nested under those surfaces:
+The checker reads both files through the GitHub contents API at the pull request's base head and judges the change by that trusted policy; it also reads the head copies so a policy change, including deletion of either file, is reported. When the base does not contain both files, the introducing pull request is evaluated with its head copies so all other findings remain visible, but it fails because it cannot prove itself and the owner must merge it on the connected reviewers' evidence. `.github/change-proof.json` is the same schema-version-1 use-rules object consumed by the tradecraft entrance. This Organizations of Verra example buys a use for its running product surfaces and excludes tests nested under those surfaces:
 
 ```json
 {
@@ -65,7 +65,7 @@ The checker reads both files through the GitHub contents API at the pull request
 }
 ```
 
-Matching slash-normalizes each changed path, then applies Python's case-sensitive `fnmatch.fnmatchcase`: a path buys use when it matches an `include` and no `exclude` in at least one rule.
+Matching slash-normalizes each changed path, then applies Python's case-sensitive `fnmatch.fnmatchcase`: a path buys use when it matches an `include` and no `exclude` in at least one rule. Before classification, the checker compares the retrieved file-record count with the pull request's `changed_files` count and fails when they differ.
 
 `.tradecraft/work.json` supplies the identities that may produce evidence and the connected reviewers that must run. Replace `your-github-login` with each login authorized to post use notes and dispositions.
 

@@ -462,51 +462,72 @@ def run(
             raise ProofError("the pull request base head SHA is missing from the GET response")
 
         policy_paths = (".github/change-proof.json", ".tradecraft/work.json")
-        head_policy = {path: _json_file(github, repo, path, head) for path in policy_paths}
+        head_policy = {
+            path: _optional_json_file(github, repo, path, head) for path in policy_paths
+        }
         base_policy = {
             path: _optional_json_file(github, repo, path, base) for path in policy_paths
         }
+        absent_on_head = [path for path in policy_paths if head_policy[path] is None]
         absent_on_base = [path for path in policy_paths if base_policy[path] is None]
-        policy_failure: Finding | None = None
-        policy_changed = False
+        preflight_failures: list[Finding] = []
+        preflight_verified: list[str] = []
+        selected_policy: dict[str, dict[str, object] | None] | None
         if absent_on_base:
-            selected_policy = head_policy
-            policy_failure = Finding(
+            preflight_failures.append(Finding(
                 f"trusted policy on the pull request base; absent: {', '.join(absent_on_base)}",
                 "this pull request cannot prove itself; the owner merges it on the connected "
                 "reviewers' evidence",
-            )
+            ))
+            selected_policy = None if absent_on_head else head_policy
         else:
             selected_policy = base_policy
-            policy_changed = any(head_policy[path] != base_policy[path] for path in policy_paths)
-        rules = load_use_rules(selected_policy[".github/change-proof.json"])
-        config = load_work_config(selected_policy[".tradecraft/work.json"])
-        files_endpoint = f"{pull_endpoint}/files?per_page=100"
-        files = _records(github.get(files_endpoint, paginate=True), files_endpoint)
-        paths = [
-            str(item[field])
-            for item in files
-            for field in ("filename", "previous_filename")
-            if isinstance(item.get(field), str)
-        ]
-        comments_endpoint = f"repos/{repo}/issues/{number}/comments?per_page=100"
-        reviews_endpoint = f"{pull_endpoint}/reviews?per_page=100"
-        review_comments_endpoint = f"{pull_endpoint}/comments?per_page=100"
-        comments = _records(github.get(comments_endpoint, paginate=True), comments_endpoint)
-        reviews = _records(github.get(reviews_endpoint, paginate=True), reviews_endpoint)
-        review_comments = _records(
-            github.get(review_comments_endpoint, paginate=True), review_comments_endpoint
-        )
-        failures, verified = evaluate(
-            head, paths, rules, config, comments, reviews, review_comments
-        )
-        if policy_failure is not None:
-            failures.insert(0, policy_failure)
-        elif policy_changed:
-            verified.insert(
-                0,
-                "pull request changes policy and was judged by the base branch policy",
-            )
+            if any(head_policy[path] != base_policy[path] for path in policy_paths):
+                preflight_verified.append(
+                    "pull request changes policy and was judged by the base branch policy",
+                )
+
+        failures = preflight_failures
+        verified = preflight_verified
+        if selected_policy is not None:
+            rules = load_use_rules(selected_policy[".github/change-proof.json"])
+            config = load_work_config(selected_policy[".tradecraft/work.json"])
+            files_endpoint = f"{pull_endpoint}/files?per_page=100"
+            files = _records(github.get(files_endpoint, paginate=True), files_endpoint)
+            changed_files = pull.get("changed_files")
+            if (
+                not isinstance(changed_files, int)
+                or isinstance(changed_files, bool)
+                or changed_files < 0
+            ):
+                raise ProofError("the pull request changed_files count is missing or invalid")
+            if len(files) != changed_files:
+                failures.append(Finding(
+                    f"complete changed-file list: pull reports {changed_files}, retrieved "
+                    f"{len(files)}; the change cannot be classified",
+                    "make the GitHub pull-request files response contain every changed file "
+                    "before evaluating use evidence",
+                ))
+            else:
+                paths = [
+                    str(item[field])
+                    for item in files
+                    for field in ("filename", "previous_filename")
+                    if isinstance(item.get(field), str)
+                ]
+                comments_endpoint = f"repos/{repo}/issues/{number}/comments?per_page=100"
+                reviews_endpoint = f"{pull_endpoint}/reviews?per_page=100"
+                review_comments_endpoint = f"{pull_endpoint}/comments?per_page=100"
+                comments = _records(github.get(comments_endpoint, paginate=True), comments_endpoint)
+                reviews = _records(github.get(reviews_endpoint, paginate=True), reviews_endpoint)
+                review_comments = _records(
+                    github.get(review_comments_endpoint, paginate=True), review_comments_endpoint
+                )
+                evidence_failures, evidence_verified = evaluate(
+                    head, paths, rules, config, comments, reviews, review_comments
+                )
+                failures.extend(evidence_failures)
+                verified.extend(evidence_verified)
         if failures:
             print("change-proof: FAIL", file=destination)
             for statement in verified:
