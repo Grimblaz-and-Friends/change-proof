@@ -509,11 +509,21 @@ jobs:
                   if not isinstance(base_ref, str) or not base_ref:
                       raise ProofError("the pull request base branch ref is missing from the GET response")
                   quoted_base_ref = urllib.parse.quote(base_ref, safe="")
-                  base_tip_endpoint = f"repos/{repo}/commits/{quoted_base_ref}"
-                  base_tip_object = _object(github.get(base_tip_endpoint), base_tip_endpoint)
+                  base_ref_endpoint = f"repos/{repo}/git/ref/heads/{quoted_base_ref}"
+                  try:
+                      base_reference = _object(github.get(base_ref_endpoint), base_ref_endpoint)
+                  except GitHubNotFound as exc:
+                      raise ProofError(
+                          f"the pull request base branch reference refs/heads/{base_ref} does not exist"
+                      ) from exc
+                  base_tip_object = _object(
+                      base_reference.get("object"), f"{base_ref_endpoint} object"
+                  )
                   base_tip = base_tip_object.get("sha")
                   if not isinstance(base_tip, str) or not base_tip:
-                      raise ProofError("the base branch tip commit SHA is missing from the GET response")
+                      raise ProofError(
+                          "the base branch reference object SHA is missing from the GET response"
+                      )
 
                   policy_paths = (".github/change-proof.json", ".tradecraft/work.json")
                   head_policy = {
