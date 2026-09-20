@@ -12,6 +12,8 @@ from proof import check
 REPO = "Grimblaz-and-Friends/Organizations-of-Verra"
 HEAD = "a" * 40
 BASE = "b" * 40
+BASE_TIP = "c" * 40
+BASE_REF = "main"
 OWNER = "proof-owner"
 REVIEWER = "review-bot[bot]"
 
@@ -103,6 +105,8 @@ def scenario(
     reviewers=(REVIEWER,),
     head=HEAD,
     base=BASE,
+    base_tip=BASE_TIP,
+    base_ref=BASE_REF,
     draft=False,
     files=None,
     changed_files=None,
@@ -141,9 +145,10 @@ def scenario(
             "number": 17,
             "draft": draft,
             "head": {"sha": head},
-            "base": {"sha": base},
+            "base": {"sha": base, "ref": base_ref},
             "changed_files": len(file_records) if changed_files is None else changed_files,
         },
+        f"repos/{REPO}/commits/{base_ref}": {"sha": base_tip},
         f"{pull}/files?per_page=100": file_records,
         f"repos/{REPO}/issues/17/comments?per_page=100": list(comments or []),
         f"{pull}/reviews?per_page=100": list(reviews or []),
@@ -167,7 +172,7 @@ def scenario(
         (".github/change-proof.json", base_rules),
         (".tradecraft/work.json", base_config),
     ):
-        endpoint = f"repos/{REPO}/contents/{path}?ref={base}"
+        endpoint = f"repos/{REPO}/contents/{path}?ref={base_tip}"
         responses[endpoint] = (
             check.GitHubNotFound(f"missing {path}")
             if path in base_missing
@@ -217,6 +222,30 @@ def test_bought_use_passes_with_current_head_used_note():
     assert "current-head use marker is valid" in output
 
 
+def test_recorded_base_commit_before_policy_uses_base_branch_tip_policy():
+    transport = complete_scenario()
+    policy_paths = (".github/change-proof.json", ".tradecraft/work.json")
+    for path in policy_paths:
+        transport.responses[f"repos/{REPO}/contents/{path}?ref={BASE}"] = (
+            check.GitHubNotFound(f"missing {path}")
+        )
+
+    result, output = execute(transport)
+
+    assert result == 0
+    assert "change-proof: PASS" in output
+    assert f"verified: base branch {BASE_REF} tip resolved to commit {BASE_TIP}" in output
+    assert (f"repos/{REPO}/commits/{BASE_REF}", False) in transport.calls
+    assert all(
+        (f"repos/{REPO}/contents/{path}?ref={BASE_TIP}", False) in transport.calls
+        for path in policy_paths
+    )
+    assert all(
+        (f"repos/{REPO}/contents/{path}?ref={BASE}", False) not in transport.calls
+        for path in policy_paths
+    )
+
+
 def test_head_that_weakens_policy_is_judged_by_base_and_fails():
     weakened_rules = {
         "schema_version": 1,
@@ -236,7 +265,7 @@ def test_head_that_weakens_policy_is_judged_by_base_and_fails():
     result, output = execute(transport)
 
     assert result == 1
-    assert "verified: pull request changes policy and was judged by the base branch policy" in output
+    assert "verified: pull request changes policy and was judged by the base branch tip policy" in output
     assert "authorized, valid use marker for the current head" in output
     assert f"connected reviewer run(s): {REVIEWER}" in output
 
@@ -249,14 +278,15 @@ def test_head_policy_identical_to_base_passes():
     assert "pull request changes policy" not in output
 
 
-def test_missing_base_policy_fails_closed_but_prints_other_verifications():
+def test_base_branch_tip_without_policy_is_bootstrap_failure_with_other_verifications():
     result, output = execute(complete_scenario(base_policy=False))
 
     assert result == 1
-    assert "trusted policy on the pull request base" in output
+    assert "trusted policy on the pull request base branch tip" in output
     assert ".github/change-proof.json, .tradecraft/work.json" in output
     assert "this pull request cannot prove itself" in output
     assert "the owner merges it on the connected reviewers' evidence" in output
+    assert f"verified: base branch {BASE_REF} tip resolved to commit {BASE_TIP}" in output
     assert "verified: changed paths buy a use" in output
     assert f"verified: connected reviewer {REVIEWER} credited by review" in output
 
@@ -267,7 +297,7 @@ def test_policy_deleted_on_head_is_judged_by_complete_base():
 
     assert result == 0
     assert "change-proof: PASS" in output
-    assert "verified: pull request changes policy and was judged by the base branch policy" in output
+    assert "verified: pull request changes policy and was judged by the base branch tip policy" in output
 
 
 def test_policy_absent_on_base_and_head_is_bootstrap_failure():
@@ -278,7 +308,7 @@ def test_policy_absent_on_base_and_head_is_bootstrap_failure():
     assert result == 1
     assert "change-proof: FAIL" in output
     assert "change-proof: ERROR" not in output
-    assert f"trusted policy on the pull request base; absent: {missing}" in output
+    assert f"trusted policy on the pull request base branch tip; absent: {missing}" in output
     assert "this pull request cannot prove itself" in output
 
 
@@ -639,7 +669,7 @@ def test_complete_evidence_passes():
     result, output = execute(transport)
 
     assert result == 0
-    assert output.count("verified:") == 3
+    assert output.count("verified:") == 4
 
 
 def test_missing_event_head_is_resolved_by_get():

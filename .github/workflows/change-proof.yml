@@ -502,28 +502,37 @@ jobs:
                   head_object = pull.get("head")
                   base_object = pull.get("base")
                   resolved_head = head_object.get("sha") if isinstance(head_object, dict) else None
-                  base = base_object.get("sha") if isinstance(base_object, dict) else None
+                  base_ref = base_object.get("ref") if isinstance(base_object, dict) else None
                   head = event_head or (resolved_head if isinstance(resolved_head, str) else None)
                   if not head:
                       raise ProofError("the pull request head SHA is missing from both the event and GET response")
-                  if not isinstance(base, str) or not base:
-                      raise ProofError("the pull request base head SHA is missing from the GET response")
+                  if not isinstance(base_ref, str) or not base_ref:
+                      raise ProofError("the pull request base branch ref is missing from the GET response")
+                  quoted_base_ref = urllib.parse.quote(base_ref, safe="")
+                  base_tip_endpoint = f"repos/{repo}/commits/{quoted_base_ref}"
+                  base_tip_object = _object(github.get(base_tip_endpoint), base_tip_endpoint)
+                  base_tip = base_tip_object.get("sha")
+                  if not isinstance(base_tip, str) or not base_tip:
+                      raise ProofError("the base branch tip commit SHA is missing from the GET response")
 
                   policy_paths = (".github/change-proof.json", ".tradecraft/work.json")
                   head_policy = {
                       path: _optional_json_file(github, repo, path, head) for path in policy_paths
                   }
                   base_policy = {
-                      path: _optional_json_file(github, repo, path, base) for path in policy_paths
+                      path: _optional_json_file(github, repo, path, base_tip) for path in policy_paths
                   }
                   absent_on_head = [path for path in policy_paths if head_policy[path] is None]
                   absent_on_base = [path for path in policy_paths if base_policy[path] is None]
                   preflight_failures: list[Finding] = []
-                  preflight_verified: list[str] = []
+                  preflight_verified = [
+                      f"base branch {base_ref} tip resolved to commit {base_tip}",
+                  ]
                   selected_policy: dict[str, dict[str, object] | None] | None
                   if absent_on_base:
                       preflight_failures.append(Finding(
-                          f"trusted policy on the pull request base; absent: {', '.join(absent_on_base)}",
+                          f"trusted policy on the pull request base branch tip; "
+                          f"absent: {', '.join(absent_on_base)}",
                           "this pull request cannot prove itself; the owner merges it on the connected "
                           "reviewers' evidence",
                       ))
@@ -532,7 +541,7 @@ jobs:
                       selected_policy = base_policy
                       if any(head_policy[path] != base_policy[path] for path in policy_paths):
                           preflight_verified.append(
-                              "pull request changes policy and was judged by the base branch policy",
+                              "pull request changes policy and was judged by the base branch tip policy",
                           )
 
                   failures = preflight_failures
