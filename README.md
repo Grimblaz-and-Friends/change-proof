@@ -4,7 +4,7 @@ Change proof is a reusable GitHub workflow for pull requests: it decides from ca
 
 ## Call the workflow
 
-The caller grants only the three read permissions and invokes the workflow for the four event families that can change its evidence. Replace `<release-commit-sha>` with a full commit SHA from this repository.
+The caller grants only the three read permissions and invokes the workflow for the four event families that can change its evidence. A caller that wants changes here to reach it only by its own pull request pins a full commit SHA instead.
 
 ```yaml
 name: Change proof
@@ -29,7 +29,7 @@ jobs:
     if: >-
       github.event_name != 'issue_comment' ||
       github.event.issue.pull_request
-    uses: Grimblaz-and-Friends/change-proof/.github/workflows/change-proof.yml@<release-commit-sha>
+    uses: Grimblaz-and-Friends/change-proof/.github/workflows/change-proof.yml@main
 ```
 
 The called workflow derives the pull request number from `pull_request.number` or `issue.number`. It uses the event's pull-request head SHA when present and resolves the head through a GET otherwise. Draft pull requests exit successfully without evaluation.
@@ -72,9 +72,7 @@ Matching slash-normalizes each changed path, then applies Python's case-sensitiv
 ```json
 {
   "schema_version": 1,
-  "product_repositories": [
-    "Grimblaz-and-Friends/Organizations-of-Verra"
-  ],
+  "product_repositories": [],
   "connected_reviewers": [
     "greptile-apps[bot]",
     "coderabbitai[bot]",
@@ -85,6 +83,8 @@ Matching slash-normalizes each changed path, then applies Python's case-sensitiv
   ]
 }
 ```
+
+A nonempty `product_repositories` list marks a repository that hosts practice work; that repository fills the list with the products it serves.
 
 All three lists are required by the shared work-configuration schema, including an empty list where a caller has no entries.
 
