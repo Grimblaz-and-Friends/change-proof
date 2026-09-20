@@ -28,7 +28,7 @@ After a note or disposition lands, re-run the failed check from the pull request
 
 ## Caller-owned configuration
 
-The checker resolves the pull request's base ref to the base branch's current tip commit, reports that SHA in a `verified:` line, reads both files there through the GitHub contents API, and judges the change by those trusted copies; it also reads the head copies so a policy change, including deletion of either file, is reported. When the base branch tip does not contain both files, the introducing pull request is evaluated with its head copies so all other findings remain visible, but it fails because it cannot prove itself and the owner must merge it on the connected reviewers' evidence. `.github/change-proof.json` is the same schema-version-1 use-rules object consumed by the tradecraft entrance. This Organizations of Verra example buys a use for its running product surfaces and excludes tests nested under those surfaces:
+The checker resolves the pull request's base ref to the base branch's current tip commit, reports that SHA in a `verified:` line, reads both files there through the GitHub contents API, and judges the change by those trusted copies; it also reads the head copies so a policy change, including deletion of either file, is reported. When the base branch tip does not contain both files, the introducing pull request is evaluated with its head copies so all other findings remain visible, but it fails because it cannot prove itself and the owner must merge it on the connected reviewers' evidence. `.github/change-proof.json` is the same schema-version-1 use-rules object consumed by the tradecraft entrance. The following generic example is for a web product whose source is kept under `src/`. It buys a use for production source and web build surfaces while excluding the product's tests and test-support modules:
 
 ```json
 {
@@ -47,15 +47,16 @@ The checker resolves the pull request's base ref to the base branch's current ti
         "postcss.config.js"
       ],
       "exclude": [
-        "src/tests/**",
-        "src/**/tests/**",
-        "src/*.test.*",
-        "src/**/*.test.*"
+        "src/test/**",
+        "**/*.test.*",
+        "**/*.test-*.*"
       ]
     }
   ]
 }
 ```
+
+A caller's exclude list must cover test-support modules kept beside production code, not only test files, because a module named like `Suite.test-helpers.ts` matches no test-file pattern and would buy a use.
 
 Matching slash-normalizes each changed path, then applies Python's case-sensitive `fnmatch.fnmatchcase`: a path buys use when it matches an `include` and no `exclude` in at least one rule. Before classification, the checker compares the retrieved file-record count with the pull request's `changed_files` count and fails when they differ.
 
