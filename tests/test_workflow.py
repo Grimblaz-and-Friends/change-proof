@@ -21,7 +21,9 @@ def embedded_script():
     marker = b"      run: |\n"
     prefix, separator, remainder = workflow.partition(marker)
     assert separator and prefix
-    lines = remainder.splitlines(keepends=True)
+    script, job_separator, _ = remainder.partition(b"\n  rerun-proof:\n")
+    assert job_separator
+    lines = script.splitlines(keepends=True)
     assert all(line == b"\n" or line.startswith(b"          ") for line in lines)
     return b"".join(b"\n" if line == b"\n" else line[10:] for line in lines)
 
@@ -71,14 +73,41 @@ def test_use_rule_matching_agrees_with_practice_on_fixture_paths():
 def test_workflow_parses_as_yaml_when_pyyaml_is_available():
     yaml = pytest.importorskip("yaml", reason="PyYAML is not installed")
 
-    value = yaml.safe_load((ROOT / ".github" / "workflows" / "change-proof.yml").read_text())
+    value = yaml.safe_load(
+        (ROOT / ".github" / "workflows" / "change-proof.yml").read_text(encoding="utf-8")
+    )
 
     assert value["on"] == {"workflow_call": None}
-    assert list(value["jobs"]) == ["proof"]
-    steps = value["jobs"]["proof"]["steps"]
-    assert sum("run" in step for step in steps) == 1
-    assert not any("actions/checkout@" in step.get("uses", "") for step in steps)
-    assert steps[0]["uses"] == (
+    assert "permissions" not in value
+    assert list(value["jobs"]) == ["proof", "rerun-proof"]
+    proof = value["jobs"]["proof"]
+    rerun = value["jobs"]["rerun-proof"]
+    assert proof["if"] == "github.event_name == 'pull_request'"
+    assert proof["permissions"] == {
+        "contents": "read",
+        "issues": "read",
+        "pull-requests": "read",
+    }
+    assert rerun["if"] == (
+        "github.event_name == 'issue_comment' || "
+        "github.event_name == 'pull_request_review' || "
+        "github.event_name == 'pull_request_review_comment'"
+    )
+    assert rerun["permissions"] == {"actions": "write"}
+
+    proof_steps = proof["steps"]
+    rerun_steps = rerun["steps"]
+    assert sum("run" in step for step in proof_steps) == 1
+    assert sum("run" in step for step in rerun_steps) == 1
+    assert not any(
+        "actions/checkout@" in step.get("uses", "")
+        for step in proof_steps + rerun_steps
+    )
+    assert proof_steps[0]["uses"] == (
         "actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1"
     )
-    assert steps[-1]["run"].encode() == embedded_script()
+    assert proof_steps[-1]["run"].encode() == embedded_script()
+    rerun_script = rerun_steps[0]["run"]
+    assert rerun_script.count('"POST"') == 1
+    assert "?event=pull_request&per_page=100" in rerun_script
+    assert "/rerun" in rerun_script

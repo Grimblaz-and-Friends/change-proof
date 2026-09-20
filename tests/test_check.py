@@ -11,6 +11,7 @@ from proof import check
 
 REPO = "Grimblaz-and-Friends/Organizations-of-Verra"
 HEAD = "a" * 40
+BASE = "b" * 40
 OWNER = "proof-owner"
 REVIEWER = "review-bot[bot]"
 
@@ -67,7 +68,9 @@ def use_note(head=HEAD, author=OWNER):
 
 
 def no_use_note(head=HEAD, author=OWNER, *, line=True):
-    suffix = "\nUse: not required - documentation-only change" if line else ""
+    if line is True:
+        line = "Use: not required - documentation-only change"
+    suffix = f"\n{line}" if isinstance(line, str) else ""
     return record(author, f"<!-- tradecraft:no-use:v1 head={head} -->{suffix}")
 
 
@@ -85,7 +88,10 @@ class FakeTransport:
         self.calls.append((endpoint, paginate))
         if endpoint not in self.responses:
             raise AssertionError(f"unexpected GET {endpoint}")
-        return self.responses[endpoint]
+        value = self.responses[endpoint]
+        if isinstance(value, Exception):
+            raise value
+        return value
 
 
 def scenario(
@@ -96,9 +102,16 @@ def scenario(
     review_comments=None,
     reviewers=(REVIEWER,),
     head=HEAD,
+    base=BASE,
     draft=False,
+    files=None,
+    head_rules=None,
+    head_config=None,
+    base_rules=None,
+    base_config=None,
+    base_policy=True,
 ):
-    use_rules = {
+    default_rules = {
         "schema_version": 1,
         "rules": [
             {
@@ -108,22 +121,41 @@ def scenario(
             }
         ],
     }
-    work_config = {
+    default_config = {
         "schema_version": 1,
         "product_repositories": [REPO],
         "connected_reviewers": list(reviewers),
         "marker_producers": [OWNER],
     }
+    head_rules = default_rules if head_rules is None else head_rules
+    head_config = default_config if head_config is None else head_config
+    base_rules = default_rules if base_rules is None else base_rules
+    base_config = default_config if base_config is None else base_config
     pull = f"repos/{REPO}/pulls/17"
     responses = {
-        pull: {"number": 17, "draft": draft, "head": {"sha": head}},
-        f"repos/{REPO}/contents/.github/change-proof.json?ref={head}": contents(use_rules),
-        f"repos/{REPO}/contents/.tradecraft/work.json?ref={head}": contents(work_config),
-        f"{pull}/files?per_page=100": [{"filename": path} for path in paths],
+        pull: {
+            "number": 17,
+            "draft": draft,
+            "head": {"sha": head},
+            "base": {"sha": base},
+        },
+        f"repos/{REPO}/contents/.github/change-proof.json?ref={head}": contents(head_rules),
+        f"repos/{REPO}/contents/.tradecraft/work.json?ref={head}": contents(head_config),
+        f"{pull}/files?per_page=100": (
+            list(files) if files is not None else [{"filename": path} for path in paths]
+        ),
         f"repos/{REPO}/issues/17/comments?per_page=100": list(comments or []),
         f"{pull}/reviews?per_page=100": list(reviews or []),
         f"{pull}/comments?per_page=100": list(review_comments or []),
     }
+    for path, value in (
+        (".github/change-proof.json", base_rules),
+        (".tradecraft/work.json", base_config),
+    ):
+        endpoint = f"repos/{REPO}/contents/{path}?ref={base}"
+        responses[endpoint] = (
+            contents(value) if base_policy else check.GitHubNotFound(f"missing {path}")
+        )
     return FakeTransport(responses)
 
 
@@ -168,6 +200,50 @@ def test_bought_use_passes_with_current_head_used_note():
     assert "current-head use marker is valid" in output
 
 
+def test_head_that_weakens_policy_is_judged_by_base_and_fails():
+    weakened_rules = {
+        "schema_version": 1,
+        "rules": [{"name": "weakened", "include": ["docs/**"], "exclude": []}],
+    }
+    weakened_config = {
+        "schema_version": 1,
+        "product_repositories": [],
+        "connected_reviewers": [],
+        "marker_producers": ["attacker"],
+    }
+    transport = scenario(
+        comments=[no_use_note(author="attacker")],
+        head_rules=weakened_rules,
+        head_config=weakened_config,
+    )
+    result, output = execute(transport)
+
+    assert result == 1
+    assert "verified: pull request changes policy and was judged by the base branch policy" in output
+    assert "authorized, valid use marker for the current head" in output
+    assert f"connected reviewer run(s): {REVIEWER}" in output
+
+
+def test_head_policy_identical_to_base_passes():
+    result, output = execute(complete_scenario())
+
+    assert result == 0
+    assert "change-proof: PASS" in output
+    assert "pull request changes policy" not in output
+
+
+def test_missing_base_policy_fails_closed_but_prints_other_verifications():
+    result, output = execute(complete_scenario(base_policy=False))
+
+    assert result == 1
+    assert "trusted policy on the pull request base" in output
+    assert ".github/change-proof.json, .tradecraft/work.json" in output
+    assert "this pull request cannot prove itself" in output
+    assert "the owner merges it on the connected reviewers' evidence" in output
+    assert "verified: changed paths buy a use" in output
+    assert f"verified: connected reviewer {REVIEWER} credited by review" in output
+
+
 def test_docs_only_fails_on_false_used_claim():
     result, output = execute(complete_scenario(paths=("docs/guide.md",)))
 
@@ -199,6 +275,46 @@ def test_no_use_marker_without_required_line_fails():
     assert "'Use: not required' line" in output
 
 
+@pytest.mark.parametrize(
+    "line",
+    [
+        "Use: not required - documentation-only change",
+        "Use: not required — documentation-only change",
+    ],
+)
+def test_no_use_line_accepts_hyphen_or_em_dash_with_reason(line):
+    transport = scenario(
+        paths=("docs/guide.md",),
+        comments=[no_use_note(line=line)],
+        reviews=[record(REVIEWER, "summary")],
+    )
+    result, output = execute(transport)
+
+    assert result == 0
+    assert "current-head no-use note has its line" in output
+
+
+@pytest.mark.parametrize(
+    "line",
+    [
+        "Use: not required",
+        "Use: not requiredness - documentation-only change",
+        "Use: not required -",
+        "Use: not required —   ",
+    ],
+)
+def test_no_use_line_requires_separator_and_nonempty_reason(line):
+    transport = scenario(
+        paths=("docs/guide.md",),
+        comments=[no_use_note(line=line)],
+        reviews=[record(REVIEWER, "summary")],
+    )
+    result, output = execute(transport)
+
+    assert result == 1
+    assert "'Use: not required' line" in output
+
+
 def test_stale_use_note_fails_current_head_check():
     transport = complete_scenario(comments=[use_note("b" * 40)])
     result, output = execute(transport)
@@ -213,6 +329,22 @@ def test_unauthorized_use_note_does_not_supply_evidence():
 
     assert result == 1
     assert "authorized, valid use marker" in output
+
+
+def test_rename_out_of_included_path_buys_a_use():
+    transport = complete_scenario(
+        files=[
+            {
+                "filename": "docs/main.ts",
+                "previous_filename": "src/main.ts",
+                "status": "renamed",
+            }
+        ]
+    )
+    result, output = execute(transport)
+
+    assert result == 0
+    assert "changed paths buy a use" in output
 
 
 def test_missing_connected_reviewer_run_fails():
@@ -322,9 +454,13 @@ def test_undispositioned_top_level_inline_comment_fails():
     assert "top-level inline comment(s): 41" in output
 
 
-def test_authorized_first_line_disposition_passes():
+@pytest.mark.parametrize(
+    "disposition",
+    ["fixed", "fixed - addressed", "fixed — addressed"],
+)
+def test_authorized_first_line_disposition_passes(disposition):
     inline = record(REVIEWER, "finding", id=41, in_reply_to_id=None)
-    reply = record(OWNER, "fixed - nothing else found it\nDetails.", id=42, in_reply_to_id=41)
+    reply = record(OWNER, f"{disposition}\nDetails.", id=42, in_reply_to_id=41)
     result, output = execute(
         scenario(comments=[use_note()], review_comments=[inline, reply])
     )
@@ -338,6 +474,7 @@ def test_authorized_first_line_disposition_passes():
     [
         record("stranger", "fixed", id=42, in_reply_to_id=41),
         record(OWNER, "Thanks\nfixed", id=42, in_reply_to_id=41),
+        record(OWNER, "fixedness", id=42, in_reply_to_id=41),
     ],
 )
 def test_reply_must_be_from_producer_and_start_with_disposition(reply):

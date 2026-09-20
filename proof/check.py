@@ -20,6 +20,7 @@ ATTRIBUTE = re.compile(r"([a-z_]+)=([^\s]+)", re.I)
 REPOSITORY_NAME = re.compile(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+\Z")
 GITHUB_LOGIN = re.compile(r"[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?(?:\[bot\])?\Z")
 SLUG = re.compile(r"[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*\Z")
+NO_USE_LINE = re.compile(r"^\s*Use: not required\s+(?:-|—)\s+\S.*$")
 DISPOSITIONS = (
     "fixed",
     "fixed - nothing else found it",
@@ -50,6 +51,10 @@ REVIEW_NOTICE_PATTERNS = (
 
 class ProofError(RuntimeError):
     """The checker cannot evaluate the pull request safely."""
+
+
+class GitHubNotFound(ProofError):
+    """A requested GitHub resource does not exist at the selected revision."""
 
 
 @dataclass(frozen=True)
@@ -102,6 +107,8 @@ class GitHubTransport:
                 headers = response.headers
         except urllib.error.HTTPError as exc:
             detail = exc.read().decode("utf-8", errors="backslashreplace").strip()
+            if exc.code == 404:
+                raise GitHubNotFound(f"GitHub GET found no resource at {url}") from exc
             raise ProofError(f"GitHub GET failed for {url}: HTTP {exc.code}: {detail}") from exc
         except urllib.error.URLError as exc:
             raise ProofError(f"GitHub GET failed for {url}: {exc.reason}") from exc
@@ -165,6 +172,13 @@ def _json_file(transport, repo: str, path: str, head: str) -> dict[str, object]:
     except (ValueError, UnicodeError) as exc:
         raise ProofError(f"{path} must contain UTF-8 JSON") from exc
     return _object(value, path)
+
+
+def _optional_json_file(transport, repo: str, path: str, revision: str) -> dict[str, object] | None:
+    try:
+        return _json_file(transport, repo, path, revision)
+    except GitHubNotFound:
+        return None
 
 
 def load_use_rules(value: object) -> dict[str, object]:
@@ -255,14 +269,22 @@ def _valid_use(marker: MarkerRecord, head: str) -> bool:
 
 
 def _valid_no_use(marker: MarkerRecord, head: str) -> bool:
-    has_line = any(line.strip().startswith("Use: not required") for line in marker.body.splitlines())
+    has_line = any(NO_USE_LINE.fullmatch(line) for line in marker.body.splitlines())
     return marker.attributes == {"head": head} and has_line
 
 
 def _disposition(body: str) -> bool:
     first_line = body.splitlines()[0] if body.splitlines() else ""
     normalized = first_line.lower().replace(chr(0x2014), "-").strip()
-    return any(normalized.startswith(prefix) for prefix in DISPOSITIONS)
+    for prefix in DISPOSITIONS:
+        if not normalized.startswith(prefix):
+            continue
+        if not prefix[-1].isalnum() or len(normalized) == len(prefix):
+            return True
+        following = normalized[len(prefix)]
+        if not (following.isalnum() or following == "_"):
+            return True
+    return False
 
 
 def _review_notice(body: str) -> str | None:
@@ -430,16 +452,43 @@ def run(
             )
             return 0
         head_object = pull.get("head")
+        base_object = pull.get("base")
         resolved_head = head_object.get("sha") if isinstance(head_object, dict) else None
+        base = base_object.get("sha") if isinstance(base_object, dict) else None
         head = event_head or (resolved_head if isinstance(resolved_head, str) else None)
         if not head:
             raise ProofError("the pull request head SHA is missing from both the event and GET response")
+        if not isinstance(base, str) or not base:
+            raise ProofError("the pull request base head SHA is missing from the GET response")
 
-        rules = load_use_rules(_json_file(github, repo, ".github/change-proof.json", head))
-        config = load_work_config(_json_file(github, repo, ".tradecraft/work.json", head))
+        policy_paths = (".github/change-proof.json", ".tradecraft/work.json")
+        head_policy = {path: _json_file(github, repo, path, head) for path in policy_paths}
+        base_policy = {
+            path: _optional_json_file(github, repo, path, base) for path in policy_paths
+        }
+        absent_on_base = [path for path in policy_paths if base_policy[path] is None]
+        policy_failure: Finding | None = None
+        policy_changed = False
+        if absent_on_base:
+            selected_policy = head_policy
+            policy_failure = Finding(
+                f"trusted policy on the pull request base; absent: {', '.join(absent_on_base)}",
+                "this pull request cannot prove itself; the owner merges it on the connected "
+                "reviewers' evidence",
+            )
+        else:
+            selected_policy = base_policy
+            policy_changed = any(head_policy[path] != base_policy[path] for path in policy_paths)
+        rules = load_use_rules(selected_policy[".github/change-proof.json"])
+        config = load_work_config(selected_policy[".tradecraft/work.json"])
         files_endpoint = f"{pull_endpoint}/files?per_page=100"
         files = _records(github.get(files_endpoint, paginate=True), files_endpoint)
-        paths = [str(item["filename"]) for item in files if isinstance(item.get("filename"), str)]
+        paths = [
+            str(item[field])
+            for item in files
+            for field in ("filename", "previous_filename")
+            if isinstance(item.get(field), str)
+        ]
         comments_endpoint = f"repos/{repo}/issues/{number}/comments?per_page=100"
         reviews_endpoint = f"{pull_endpoint}/reviews?per_page=100"
         review_comments_endpoint = f"{pull_endpoint}/comments?per_page=100"
@@ -451,8 +500,17 @@ def run(
         failures, verified = evaluate(
             head, paths, rules, config, comments, reviews, review_comments
         )
+        if policy_failure is not None:
+            failures.insert(0, policy_failure)
+        elif policy_changed:
+            verified.insert(
+                0,
+                "pull request changes policy and was judged by the base branch policy",
+            )
         if failures:
             print("change-proof: FAIL", file=destination)
+            for statement in verified:
+                print(f"verified: {statement}", file=destination)
             for finding in failures:
                 print(f"missing: {finding.missing}", file=destination)
                 print(f"satisfy: {finding.satisfy}", file=destination)

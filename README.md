@@ -4,7 +4,7 @@ Change proof is a reusable GitHub workflow for pull requests: it decides from ca
 
 ## Call the workflow
 
-The caller grants only the three read permissions and invokes the workflow for the four event families that can change its evidence. A caller that wants changes here to reach it only by its own pull request pins a full commit SHA instead.
+The caller grants the three read permissions plus one Actions write permission and invokes the workflow for the four event families that can change its evidence. A caller that wants changes here to reach it only by its own pull request pins a full commit SHA instead.
 
 ```yaml
 name: Change proof
@@ -19,24 +19,24 @@ on:
   pull_request_review_comment:
     types: [created, edited, deleted]
 
-permissions:
-  contents: read
-  issues: read
-  pull-requests: read
-
 jobs:
   change-proof:
     if: >-
       github.event_name != 'issue_comment' ||
       github.event.issue.pull_request
+    permissions:
+      actions: write
+      contents: read
+      issues: read
+      pull-requests: read
     uses: Grimblaz-and-Friends/change-proof/.github/workflows/change-proof.yml@main
 ```
 
-The called workflow derives the pull request number from `pull_request.number` or `issue.number`. It uses the event's pull-request head SHA when present and resolves the head through a GET otherwise. Draft pull requests exit successfully without evaluation.
+On a `pull_request` event, the called workflow derives the pull request number and evaluates its head; draft pull requests exit successfully without evaluation. On the three comment and review event families, it does not run the checker: it finds the latest `pull_request`-family run of the same workflow for that pull request and sends one POST to the Actions re-run endpoint. `actions: write` is the one write the caller grants, and it is needed because a check attached to the pull request head can only be re-evaluated by re-running the run that produced it.
 
 ## Caller-owned configuration
 
-The workflow reads both files through the GitHub contents API at the head SHA. `.github/change-proof.json` is the same schema-version-1 use-rules object consumed by the tradecraft entrance. This Organizations of Verra example buys a use for its running product surfaces and excludes tests nested under those surfaces:
+The checker reads both files through the GitHub contents API at the pull request's base head and judges the change by that trusted policy; it also reads the head copies so a policy change is reported. When the base does not contain both files, the introducing pull request is evaluated with its head copies so all other findings remain visible, but it fails because it cannot prove itself and the owner must merge it on the connected reviewers' evidence. `.github/change-proof.json` is the same schema-version-1 use-rules object consumed by the tradecraft entrance. This Organizations of Verra example buys a use for its running product surfaces and excludes tests nested under those surfaces:
 
 ```json
 {
@@ -117,6 +117,6 @@ A connected reviewer has run when at least one review, inline review comment, or
 
 ## Boundary and tests
 
-The reusable workflow never checks out caller content, executes caller code, writes to the caller, or sends a method other than GET. The only caller files it reads are the two configuration files above at the selected head; changed paths, comments, reviews, and review comments are GitHub API records.
+The checker job never checks out caller content, executes caller code, writes to the caller, or sends a method other than GET; it has only `contents: read`, `issues: read` and `pull-requests: read`. The separate rerun job has only `actions: write`, reads Actions run records, and sends its single POST to re-run the selected pull-request-head run. The only caller files the checker reads are the two configuration files above at the base and head revisions; changed paths, comments, reviews, and review comments are GitHub API records.
 
-`proof/check.py` is standard-library-only and has recorded-shape unit tests for both acceptance polarities, authorization, pagination, and the GET-only transport. The workflow runs that module as its sole `run` step without a checkout. A test compares the embedded script with `proof/check.py` byte for byte after line-ending normalization, so the tested module and the shipped workflow cannot drift; CI runs the suite on Ubuntu and Windows.
+`proof/check.py` is standard-library-only and has recorded-shape unit tests for both acceptance polarities, trusted policy, renamed paths, authorization, pagination, exact evidence boundaries and the GET-only transport. The proof job runs that module as its sole `run` step without a checkout. A test compares the embedded script with `proof/check.py` byte for byte after line-ending normalization, and workflow tests assert both jobs' exact permissions and event routing, so the tested module and the shipped workflow cannot drift; CI runs the suite on Ubuntu and Windows.
