@@ -268,14 +268,35 @@ def _valid_use(marker: MarkerRecord, head: str) -> bool:
     return reason is None
 
 
+def _strip_balanced_markdown_wrapper(value: str) -> str:
+    stripped = value.strip()
+    if not stripped or stripped[0] not in "`*_":
+        return stripped
+    marker = stripped[0]
+    opening = len(stripped) - len(stripped.lstrip(marker))
+    closing = len(stripped) - len(stripped.rstrip(marker))
+    wrapper = marker * opening
+    if wrapper not in {"`", "*", "**", "_", "__"} or closing != opening:
+        return stripped
+    return stripped[opening:-closing].strip()
+
+
 def _valid_no_use(marker: MarkerRecord, head: str) -> bool:
-    has_line = any(NO_USE_LINE.fullmatch(line) for line in marker.body.splitlines())
+    has_line = any(
+        NO_USE_LINE.fullmatch(_strip_balanced_markdown_wrapper(line))
+        for line in marker.body.splitlines()
+    )
     return marker.attributes == {"head": head} and has_line
 
 
 def _disposition(body: str) -> bool:
     first_line = body.splitlines()[0] if body.splitlines() else ""
-    normalized = first_line.lower().replace(chr(0x2014), "-").strip()
+    normalized = (
+        _strip_balanced_markdown_wrapper(first_line)
+        .lower()
+        .replace(chr(0x2014), "-")
+        .strip()
+    )
     for prefix in DISPOSITIONS:
         if not normalized.startswith(prefix):
             continue

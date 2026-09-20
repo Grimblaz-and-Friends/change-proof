@@ -22,8 +22,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
           GITHUB_REPOSITORY: ${{ github.repository }}
-          PULL_REQUEST_NUMBER: ${{ github.event.pull_request.number || github.event.issue.number }}
-          PULL_REQUEST_HEAD_SHA: ${{ github.event.pull_request.head.sha || '' }}
+          PULL_REQUEST_NUMBER: ${{ github.event.pull_request.number }}
+          PULL_REQUEST_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
           #!/usr/bin/env python3
           """Verify change-proof evidence for one GitHub pull request."""
@@ -295,14 +295,35 @@ jobs:
               return reason is None
 
 
+          def _strip_balanced_markdown_wrapper(value: str) -> str:
+              stripped = value.strip()
+              if not stripped or stripped[0] not in "`*_":
+                  return stripped
+              marker = stripped[0]
+              opening = len(stripped) - len(stripped.lstrip(marker))
+              closing = len(stripped) - len(stripped.rstrip(marker))
+              wrapper = marker * opening
+              if wrapper not in {"`", "*", "**", "_", "__"} or closing != opening:
+                  return stripped
+              return stripped[opening:-closing].strip()
+
+
           def _valid_no_use(marker: MarkerRecord, head: str) -> bool:
-              has_line = any(NO_USE_LINE.fullmatch(line) for line in marker.body.splitlines())
+              has_line = any(
+                  NO_USE_LINE.fullmatch(_strip_balanced_markdown_wrapper(line))
+                  for line in marker.body.splitlines()
+              )
               return marker.attributes == {"head": head} and has_line
 
 
           def _disposition(body: str) -> bool:
               first_line = body.splitlines()[0] if body.splitlines() else ""
-              normalized = first_line.lower().replace(chr(0x2014), "-").strip()
+              normalized = (
+                  _strip_balanced_markdown_wrapper(first_line)
+                  .lower()
+                  .replace(chr(0x2014), "-")
+                  .strip()
+              )
               for prefix in DISPOSITIONS:
                   if not normalized.startswith(prefix):
                       continue
@@ -588,99 +609,3 @@ jobs:
 
           if __name__ == "__main__":
               raise SystemExit(main())
-
-  rerun-proof:
-    name: Re-run change proof
-    if: >-
-      github.event_name == 'issue_comment' ||
-      github.event_name == 'pull_request_review' ||
-      github.event_name == 'pull_request_review_comment'
-    runs-on: ubuntu-latest
-    permissions:
-      actions: write
-    steps:
-      - name: Re-run pull-request proof
-        shell: python {0}
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-          GITHUB_REPOSITORY: ${{ github.repository }}
-          GITHUB_RUN_ID: ${{ github.run_id }}
-          GITHUB_API_URL: ${{ github.api_url }}
-          PULL_REQUEST_NUMBER: ${{ github.event.pull_request.number || github.event.issue.number }}
-        run: |
-          import json
-          import os
-          import re
-          import urllib.request
-
-
-          token = os.environ["GITHUB_TOKEN"]
-          repository = os.environ["GITHUB_REPOSITORY"]
-          current_run_id = os.environ["GITHUB_RUN_ID"]
-          pull_request_number = int(os.environ["PULL_REQUEST_NUMBER"])
-          api_url = os.environ["GITHUB_API_URL"].rstrip("/")
-
-
-          def request(method, url, data=None):
-              api_request = urllib.request.Request(
-                  url,
-                  data=data,
-                  method=method,
-                  headers={
-                      "Accept": "application/vnd.github+json",
-                      "Authorization": f"Bearer {token}",
-                      "Content-Type": "application/json",
-                      "X-GitHub-Api-Version": "2022-11-28",
-                      "User-Agent": "change-proof-rerun",
-                  },
-              )
-              with urllib.request.urlopen(api_request, timeout=30) as response:
-                  body = response.read()
-                  value = json.loads(body.decode("utf-8")) if body else None
-                  return value, response.headers
-
-
-          def next_link(header):
-              if not header:
-                  return None
-              for item in header.split(","):
-                  match = re.fullmatch(r'\s*<([^>]+)>\s*;\s*rel="([^"]+)"\s*', item)
-                  if match and "next" in match.group(2).split():
-                      return match.group(1)
-              return None
-
-
-          current, _ = request(
-              "GET", f"{api_url}/repos/{repository}/actions/runs/{current_run_id}"
-          )
-          workflow_id = current["workflow_id"]
-          runs_url = (
-              f"{api_url}/repos/{repository}/actions/workflows/{workflow_id}/runs"
-              "?event=pull_request&per_page=100"
-          )
-          target = None
-          while runs_url and target is None:
-              page, headers = request("GET", runs_url)
-              for run in page["workflow_runs"]:
-                  if any(
-                      pull.get("number") == pull_request_number
-                      for pull in run.get("pull_requests", [])
-                  ):
-                      target = run
-                      break
-              runs_url = next_link(headers.get("Link"))
-
-          if target is None:
-              raise RuntimeError(
-                  "no pull_request-family run of this workflow exists for "
-                  f"pull request #{pull_request_number}"
-              )
-
-          request(
-              "POST",
-              f"{api_url}/repos/{repository}/actions/runs/{target['id']}/rerun",
-              data=b"{}",
-          )
-          print(
-              f"re-run requested for pull_request run {target['id']} at {target['head_sha']}"
-          )

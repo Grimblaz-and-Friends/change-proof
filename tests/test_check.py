@@ -333,12 +333,45 @@ def test_no_use_line_accepts_hyphen_or_em_dash_with_reason(line):
 
 
 @pytest.mark.parametrize(
+    ("line", "passes"),
+    [
+        ("  `Use: not required — documentation-only change`", True),
+        ("*Use: not required — documentation-only change*", True),
+        ("**Use: not required — documentation-only change**", True),
+        ("_Use: not required — documentation-only change_", True),
+        ("__Use: not required — documentation-only change__", True),
+        ("`Use: not required — documentation-only change", False),
+        ("*Use: not required — documentation-only change", False),
+        ("_Use: not required — documentation-only change", False),
+        ("*Use: not required — documentation-only change_", False),
+        ("**Use: not required — documentation-only change*", False),
+    ],
+)
+def test_no_use_line_requires_balanced_markdown_wrapper(line, passes):
+    transport = scenario(
+        paths=("docs/guide.md",),
+        comments=[no_use_note(line=line)],
+        reviews=[record(REVIEWER, "summary")],
+    )
+    result, output = execute(transport)
+
+    assert result == (0 if passes else 1)
+    expected = (
+        "current-head no-use note has its line"
+        if passes
+        else "'Use: not required' line"
+    )
+    assert expected in output
+
+
+@pytest.mark.parametrize(
     "line",
     [
         "Use: not required",
         "Use: not requiredness - documentation-only change",
         "Use: not required -",
         "Use: not required —   ",
+        "Note: `Use: not required — documentation-only change`",
     ],
 )
 def test_no_use_line_requires_separator_and_nonempty_reason(line):
@@ -518,7 +551,11 @@ def test_undispositioned_top_level_inline_comment_fails():
 
 @pytest.mark.parametrize(
     "disposition",
-    ["fixed", "fixed - addressed", "fixed — addressed"],
+    [
+        "fixed",
+        "fixed - addressed",
+        "fixed — addressed",
+    ],
 )
 def test_authorized_first_line_disposition_passes(disposition):
     inline = record(REVIEWER, "finding", id=41, in_reply_to_id=None)
@@ -532,10 +569,44 @@ def test_authorized_first_line_disposition_passes(disposition):
 
 
 @pytest.mark.parametrize(
+    ("disposition", "passes"),
+    [
+        ("`fixed`", True),
+        ("`fixed — nothing else found it`", True),
+        ("  `yours — in the release report`", True),
+        ("*fixed*", True),
+        ("**fixed**", True),
+        ("_fixed_", True),
+        ("__fixed__", True),
+        ("`fixed", False),
+        ("**fixed", False),
+        ("_fixed", False),
+        ("*fixed_", False),
+        ("**fixed*", False),
+    ],
+)
+def test_disposition_requires_balanced_markdown_wrapper(disposition, passes):
+    inline = record(REVIEWER, "finding", id=41, in_reply_to_id=None)
+    reply = record(OWNER, f"{disposition}\nDetails.", id=42, in_reply_to_id=41)
+    result, output = execute(
+        scenario(comments=[use_note()], review_comments=[inline, reply])
+    )
+
+    assert result == (0 if passes else 1)
+    expected = (
+        "marker-producer disposition"
+        if passes
+        else "top-level inline comment(s): 41"
+    )
+    assert expected in output
+
+
+@pytest.mark.parametrize(
     "reply",
     [
         record("stranger", "fixed", id=42, in_reply_to_id=41),
         record(OWNER, "Thanks\nfixed", id=42, in_reply_to_id=41),
+        record(OWNER, "Thanks, fixed", id=42, in_reply_to_id=41),
         record(OWNER, "fixedness", id=42, in_reply_to_id=41),
     ],
 )
