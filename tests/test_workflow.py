@@ -21,8 +21,7 @@ def embedded_script():
     marker = b"      run: |\n"
     prefix, separator, remainder = workflow.partition(marker)
     assert separator and prefix
-    script, job_separator, _ = remainder.partition(b"\n  rerun-proof:\n")
-    assert job_separator
+    script = remainder
     lines = script.splitlines(keepends=True)
     assert all(line == b"\n" or line.startswith(b"          ") for line in lines)
     return b"".join(b"\n" if line == b"\n" else line[10:] for line in lines)
@@ -79,35 +78,22 @@ def test_workflow_parses_as_yaml_when_pyyaml_is_available():
 
     assert value["on"] == {"workflow_call": None}
     assert "permissions" not in value
-    assert list(value["jobs"]) == ["proof", "rerun-proof"]
+    assert list(value["jobs"]) == ["proof"]
     proof = value["jobs"]["proof"]
-    rerun = value["jobs"]["rerun-proof"]
     assert proof["if"] == "github.event_name == 'pull_request'"
     assert proof["permissions"] == {
         "contents": "read",
         "issues": "read",
         "pull-requests": "read",
     }
-    assert rerun["if"] == (
-        "github.event_name == 'issue_comment' || "
-        "github.event_name == 'pull_request_review' || "
-        "github.event_name == 'pull_request_review_comment'"
-    )
-    assert rerun["permissions"] == {"actions": "write"}
 
     proof_steps = proof["steps"]
-    rerun_steps = rerun["steps"]
     assert sum("run" in step for step in proof_steps) == 1
-    assert sum("run" in step for step in rerun_steps) == 1
     assert not any(
         "actions/checkout@" in step.get("uses", "")
-        for step in proof_steps + rerun_steps
+        for step in proof_steps
     )
     assert proof_steps[0]["uses"] == (
         "actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1"
     )
     assert proof_steps[-1]["run"].encode() == embedded_script()
-    rerun_script = rerun_steps[0]["run"]
-    assert rerun_script.count('"POST"') == 1
-    assert "?event=pull_request&per_page=100" in rerun_script
-    assert "/rerun" in rerun_script

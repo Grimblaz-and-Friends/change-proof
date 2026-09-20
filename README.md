@@ -4,35 +4,27 @@ Change proof is a reusable GitHub workflow for pull requests: it decides from ca
 
 ## Call the workflow
 
-The caller grants the three read permissions plus one Actions write permission and invokes the workflow for the four event families that can change its evidence. A caller that wants changes here to reach it only by its own pull request pins a full commit SHA instead.
+The caller grants the three read permissions and invokes the workflow for the four pull request activity types that evaluate a pull request head. A caller that wants changes here to reach it only by its own pull request pins a full commit SHA instead.
 
 ```yaml
 name: Change proof
 
 on:
   pull_request:
-    types: [opened, reopened, synchronize, ready_for_review, converted_to_draft]
-  issue_comment:
-    types: [created, edited, deleted]
-  pull_request_review:
-    types: [submitted, edited, dismissed]
-  pull_request_review_comment:
-    types: [created, edited, deleted]
+    types: [opened, reopened, synchronize, ready_for_review]
 
 jobs:
   change-proof:
-    if: >-
-      github.event_name != 'issue_comment' ||
-      github.event.issue.pull_request
     permissions:
-      actions: write
       contents: read
       issues: read
       pull-requests: read
     uses: Grimblaz-and-Friends/change-proof/.github/workflows/change-proof.yml@main
 ```
 
-On a `pull_request` event, the called workflow derives the pull request number and evaluates its head; draft pull requests exit successfully without evaluation. On the three comment and review event families, it does not run the checker: it finds the latest `pull_request`-family run of the same workflow for that pull request and sends one POST to the Actions re-run endpoint. `actions: write` is the one write the caller grants, and it is needed because a check attached to the pull request head can only be re-evaluated by re-running the run that produced it.
+On a `pull_request` event, the called workflow derives the pull request number and evaluates its head; draft pull requests exit successfully without evaluation.
+
+After a note or disposition lands, re-run the failed check from the pull request's checks tab, run `gh run rerun <run-id> --failed`, or push another commit. A workflow's token cannot re-run workflow runs, and this design grants no write permission.
 
 ## Caller-owned configuration
 
@@ -109,6 +101,8 @@ A current-head `use` marker when the paths do not buy use is a false claim and f
 
 Every top-level inline comment from a connected reviewer needs a reply by a marker producer whose first line begins with one of the closed dispositions: `fixed`; `fixed — nothing else found it`; `fixed in #<N>`; `yours — in the release report`; `declined — <why it earns no end>`; `duplicate of <the earlier comment>`; `lapsed — <the rule we do not run>`.
 
+The checker ignores leading whitespace and Markdown inline markers—backticks, asterisks and underscores—before reading a disposition or the `Use: not required` line.
+
 - **Pass:** the current-head note agrees with the path decision, every connected reviewer has a credited run, and every owed inline disposition is present.
 
 - **Fail:** the note is missing, stale, malformed, unauthorized, or false; a configured reviewer has no credited run; or an owed inline disposition is missing or unauthorized.
@@ -117,6 +111,6 @@ A connected reviewer has run when at least one review, inline review comment, or
 
 ## Boundary and tests
 
-The checker job never checks out caller content, executes caller code, writes to the caller, or sends a method other than GET; it has only `contents: read`, `issues: read` and `pull-requests: read`. The separate rerun job has only `actions: write`, reads Actions run records, and sends its single POST to re-run the selected pull-request-head run. The only caller files the checker reads are the two configuration files above at the base and head revisions; changed paths, comments, reviews, and review comments are GitHub API records.
+The checker job never checks out caller content, executes caller code, writes to the caller, or sends a method other than GET; it has only `contents: read`, `issues: read` and `pull-requests: read`. The only caller files the checker reads are the two configuration files above at the base and head revisions; changed paths, comments, reviews, and review comments are GitHub API records.
 
-`proof/check.py` is standard-library-only and has recorded-shape unit tests for both acceptance polarities, trusted policy, renamed paths, authorization, pagination, exact evidence boundaries and the GET-only transport. The proof job runs that module as its sole `run` step without a checkout. A test compares the embedded script with `proof/check.py` byte for byte after line-ending normalization, and workflow tests assert both jobs' exact permissions and event routing, so the tested module and the shipped workflow cannot drift; CI runs the suite on Ubuntu and Windows.
+`proof/check.py` is standard-library-only and has recorded-shape unit tests for both acceptance polarities, trusted policy, renamed paths, authorization, pagination, exact evidence boundaries and the GET-only transport. The proof job runs that module as its sole `run` step without a checkout. A test compares the embedded script with `proof/check.py` byte for byte after line-ending normalization, and workflow tests assert the job's exact permissions and pull-request-only routing, so the tested module and the shipped workflow cannot drift; CI runs the suite on Ubuntu and Windows.

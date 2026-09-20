@@ -318,6 +318,9 @@ def test_no_use_marker_without_required_line_fails():
     [
         "Use: not required - documentation-only change",
         "Use: not required — documentation-only change",
+        "`Use: not required — documentation-only change`",
+        "**Use: not required — documentation-only change**",
+        "_Use: not required — documentation-only change_",
     ],
 )
 def test_no_use_line_accepts_hyphen_or_em_dash_with_reason(line):
@@ -339,6 +342,7 @@ def test_no_use_line_accepts_hyphen_or_em_dash_with_reason(line):
         "Use: not requiredness - documentation-only change",
         "Use: not required -",
         "Use: not required —   ",
+        "Note: `Use: not required — documentation-only change`",
     ],
 )
 def test_no_use_line_requires_separator_and_nonempty_reason(line):
@@ -518,7 +522,14 @@ def test_undispositioned_top_level_inline_comment_fails():
 
 @pytest.mark.parametrize(
     "disposition",
-    ["fixed", "fixed - addressed", "fixed — addressed"],
+    [
+        "fixed",
+        "fixed - addressed",
+        "fixed — addressed",
+        "`fixed`",
+        "`yours — in the release report`",
+        "**fixed**",
+    ],
 )
 def test_authorized_first_line_disposition_passes(disposition):
     inline = record(REVIEWER, "finding", id=41, in_reply_to_id=None)
@@ -536,6 +547,7 @@ def test_authorized_first_line_disposition_passes(disposition):
     [
         record("stranger", "fixed", id=42, in_reply_to_id=41),
         record(OWNER, "Thanks\nfixed", id=42, in_reply_to_id=41),
+        record(OWNER, "Thanks, fixed", id=42, in_reply_to_id=41),
         record(OWNER, "fixedness", id=42, in_reply_to_id=41),
     ],
 )

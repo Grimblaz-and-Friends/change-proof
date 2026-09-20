@@ -268,14 +268,23 @@ def _valid_use(marker: MarkerRecord, head: str) -> bool:
     return reason is None
 
 
+def _strip_leading_markdown(value: str) -> str:
+    return re.sub(r"^[\s`*_]+", "", value)
+
+
 def _valid_no_use(marker: MarkerRecord, head: str) -> bool:
-    has_line = any(NO_USE_LINE.fullmatch(line) for line in marker.body.splitlines())
+    has_line = any(
+        NO_USE_LINE.fullmatch(_strip_leading_markdown(line))
+        for line in marker.body.splitlines()
+    )
     return marker.attributes == {"head": head} and has_line
 
 
 def _disposition(body: str) -> bool:
     first_line = body.splitlines()[0] if body.splitlines() else ""
-    normalized = first_line.lower().replace(chr(0x2014), "-").strip()
+    normalized = (
+        _strip_leading_markdown(first_line).lower().replace(chr(0x2014), "-").strip()
+    )
     for prefix in DISPOSITIONS:
         if not normalized.startswith(prefix):
             continue
