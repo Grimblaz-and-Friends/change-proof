@@ -44,6 +44,43 @@ def practice_use_required(paths, rules):
     return False
 
 
+def test_self_policy_files_load_and_classify_repository_paths():
+    work_value = json.loads(
+        (ROOT / ".tradecraft" / "work.json").read_text(encoding="utf-8")
+    )
+    rules_value = json.loads(
+        (ROOT / ".github" / "change-proof.json").read_text(encoding="utf-8")
+    )
+
+    work = check.load_work_config(work_value)
+    rules = check.load_use_rules(rules_value)
+
+    assert work_value["product_repositories"] == []
+    assert work.connected_reviewers == frozenset(
+        {
+            "greptile-apps[bot]",
+            "coderabbitai[bot]",
+            "chatgpt-codex-connector[bot]",
+        }
+    )
+    assert work.marker_producers == frozenset({"grimblaz"})
+
+    expected = {
+        "proof/check.py": True,
+        ".github/workflows/change-proof.yml": True,
+        ".github/workflows/self-change-proof.yml": True,
+        "README.md": False,
+        "tests/test_check.py": False,
+        "tests/test_workflow.py": False,
+        ".github/change-proof.json": False,
+        ".tradecraft/work.json": False,
+        ".github/workflows/ci.yml": False,
+    }
+
+    for path, required in expected.items():
+        assert check.use_required([path], rules) is required
+
+
 def test_use_rule_matching_agrees_with_practice_on_fixture_paths():
     fixture = {
         "schema_version": 1,
@@ -97,3 +134,32 @@ def test_workflow_parses_as_yaml_when_pyyaml_is_available():
         "actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1"
     )
     assert proof_steps[-1]["run"].encode() == embedded_script()
+
+
+def test_self_caller_parses_and_targets_main():
+    yaml = pytest.importorskip("yaml", reason="PyYAML is not installed")
+
+    value = yaml.safe_load(
+        (ROOT / ".github" / "workflows" / "self-change-proof.yml").read_text(
+            encoding="utf-8"
+        )
+    )
+
+    assert value["name"] == "Change proof"
+    assert value["on"] == {
+        "pull_request": {
+            "types": ["opened", "reopened", "synchronize", "ready_for_review"]
+        }
+    }
+    assert list(value["jobs"]) == ["change-proof"]
+    job = value["jobs"]["change-proof"]
+    assert job["name"] == "Change proof"
+    assert job["permissions"] == {
+        "contents": "read",
+        "issues": "read",
+        "pull-requests": "read",
+    }
+    assert job["uses"] == (
+        "Grimblaz-and-Friends/change-proof/.github/workflows/change-proof.yml@main"
+    )
+    assert "steps" not in job

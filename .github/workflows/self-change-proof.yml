@@ -1,0 +1,14 @@
+name: Change proof
+
+'on':
+  pull_request:
+    types: [opened, reopened, synchronize, ready_for_review]
+
+jobs:
+  change-proof:
+    name: Change proof
+    permissions:
+      contents: read
+      issues: read
+      pull-requests: read
+    uses: Grimblaz-and-Friends/change-proof/.github/workflows/change-proof.yml@main

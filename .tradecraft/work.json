@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "product_repositories": [],
+  "connected_reviewers": [
+    "greptile-apps[bot]",
+    "coderabbitai[bot]",
+    "chatgpt-codex-connector[bot]"
+  ],
+  "marker_producers": [
+    "Grimblaz"
+  ]
+}
