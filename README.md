@@ -83,6 +83,8 @@ All three lists are required by the shared work-configuration schema, including 
 
 ## Evidence contract
 
+Pull requests to this repository take the same release proof as its callers. A change here is reported ready for merge only after the change-proof check has run, every configured connected reviewer has run, and every top-level inline reviewer thread has a marker-producer disposition.
+
 When the paths buy use, a `marker_producers` login posts the practice's exact `use` marker for the current head in a pull-request comment, review, or review comment:
 
 ```text

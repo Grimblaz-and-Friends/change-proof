@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "rules": [
+    {
+      "name": "gate-surface",
+      "include": [
+        "proof/check.py",
+        ".github/workflows/change-proof.yml",
+        ".github/workflows/self-change-proof.yml"
+      ],
+      "exclude": []
+    }
+  ]
+}
