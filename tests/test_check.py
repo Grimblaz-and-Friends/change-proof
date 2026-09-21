@@ -3,6 +3,8 @@ from __future__ import annotations
 import base64
 import io
 import json
+import re
+from pathlib import Path
 
 import pytest
 
@@ -206,6 +208,43 @@ def complete_scenario(**overrides):
     }
     values.update(overrides)
     return scenario(**values)
+
+
+def test_readme_use_rules_classify_documented_paths():
+    readme = (Path(__file__).parents[1] / "README.md").read_text(encoding="utf-8")
+    sections = re.findall(
+        r"^## Caller-owned configuration\n(.*?)(?=^## |\Z)",
+        readme,
+        flags=re.MULTILINE | re.DOTALL,
+    )
+
+    assert len(sections) == 1
+    json_blocks = re.findall(
+        r"^```json\n(.*?)^```$",
+        sections[0],
+        flags=re.MULTILINE | re.DOTALL,
+    )
+    documents = [json.loads(block) for block in json_blocks]
+    examples = [
+        document
+        for document in documents
+        if isinstance(document, dict) and "rules" in document
+    ]
+
+    assert len(examples) == 1
+    rules = examples[0]
+    expected = {
+        "src/application.ts": True,
+        "src/Suite.test.ts": False,
+        "src/Suite.test-helpers.ts": False,
+        "src/Suite.test-fixtures.ts": False,
+        "src/Suite.test-utils.ts": False,
+        "src/test/factories.ts": False,
+        "docs/guide.md": False,
+    }
+
+    for path, required in expected.items():
+        assert check.use_required([path], rules) is required
 
 
 def test_bought_use_fails_without_current_head_used_note():
