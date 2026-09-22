@@ -15,6 +15,7 @@ on:
 
 jobs:
   change-proof:
+    name: Change proof
     permissions:
       contents: read
       issues: read
@@ -22,9 +23,21 @@ jobs:
     uses: Grimblaz-and-Friends/change-proof/.github/workflows/change-proof.yml@main
 ```
 
+The check context GitHub reports for a reusable-workflow call is the caller's job name — or the job id, where the job has no `name:` — followed by the called job's name. The called job is named `Change proof`, so the example above reports `Change proof / Change proof`, and the same caller without its `name:` line reports `change-proof / Change proof` instead. A ruleset that requires one will never see the other.
+
+A caller workflow is checked out from the pull request it judges, so a pull request can edit it. Requiring a caller's context therefore proves nothing a pull request could not arrange for itself. The gate that cannot be arranged is the organization ruleset's workflow rule, which names this repository's `.github/workflows/self-change-proof.yml` at `refs/heads/main` and runs a definition no caller's pull request can rewrite. Keep a caller for what it adds — it is the only one of the two that starts when a pull request is marked ready — and do not make its context a required status check.
+
 On a `pull_request` event, the called workflow derives the pull request number and evaluates its head; draft pull requests are not evaluated and exit non-zero. Mark the pull request ready and re-run the failed check.
 
-After a note or disposition lands, re-run the failed check from the pull request's checks tab or run `gh run rerun <run-id> --failed`. A workflow's token cannot re-run workflow runs, and this design grants no write permission. A new commit moves the pull request head, so its evidence must be posted again for that head.
+A workflow required by a ruleset ignores the filters its own file declares — `branches`, `paths`, `types` and the rest — and starts only on the default activity types of the events that rule supports, which for `pull_request` are `opened`, `reopened` and `synchronize`. Marking a pull request ready therefore starts a caller's run and never the required one. Both consequences are expected rather than faults: a repository with no caller sees no run at all when a pull request is marked ready, and a repository with a caller sees a run that begins at the same moment as the connected reviewers it requires and fails because they have not posted yet. In both cases the required check is re-run once the reviewers have landed.
+
+After a note or disposition lands, re-run the failed check from the pull request's checks tab or from the command line. For a run whose workflow lives in the caller's own repository, `gh run rerun <run-id> --failed` works. For the organization-required run it does not: `gh run rerun` resolves the workflow definition before re-running the run, that definition lives in this repository rather than the caller's, and the command fails with `HTTP 404`. The URL in that error names the **workflow** id rather than the run id, so the message reads as though the run is gone; it is not. Re-run it through the run-level endpoint:
+
+```text
+gh api -X POST repos/OWNER/REPO/actions/runs/<run-id>/rerun
+```
+
+A workflow's token cannot re-run workflow runs, and this design grants no write permission. A new commit moves the pull request head, so its evidence must be posted again for that head — which is why forcing a fresh run with an empty commit costs every note already pinned to the old head.
 
 ## Caller-owned configuration
 
