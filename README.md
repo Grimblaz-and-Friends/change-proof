@@ -22,7 +22,7 @@ jobs:
     uses: Grimblaz-and-Friends/change-proof/.github/workflows/change-proof.yml@main
 ```
 
-On a `pull_request` event, the called workflow derives the pull request number and evaluates its head; draft pull requests exit successfully without evaluation.
+On a `pull_request` event, the called workflow derives the pull request number and evaluates its head; draft pull requests are not evaluated and exit non-zero. Mark the pull request ready and re-run the failed check.
 
 After a note or disposition lands, re-run the failed check from the pull request's checks tab or run `gh run rerun <run-id> --failed`. A workflow's token cannot re-run workflow runs, and this design grants no write permission. A new commit moves the pull request head, so its evidence must be posted again for that head.
 
@@ -105,6 +105,8 @@ A current-head `use` marker when the paths do not buy use is a false claim and f
 Every top-level inline comment from a connected reviewer needs a reply by a marker producer whose first line begins with one of the closed dispositions: `fixed`; `fixed — nothing else found it`; `fixed in #<N>`; `yours — in the release report`; `declined — <why it earns no end>`; `duplicate of <the earlier comment>`; `lapsed — <the rule we do not run>`.
 
 The checker ignores leading whitespace and one balanced Markdown inline wrapper—backticks, asterisks or underscores—before reading a disposition or the `Use: not required` line.
+
+The checker returns exit `0` only when it has evaluated the pull request head's evidence and that evidence satisfies this contract; a result that does not evaluate the evidence is not a pass.
 
 - **Pass:** the current-head note agrees with the path decision, every connected reviewer has a credited run, and every owed inline disposition is present.
 
