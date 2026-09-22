@@ -718,14 +718,23 @@ def test_summary_only_reviewer_run_owes_no_disposition():
     assert "every top-level inline reviewer comment" in output
 
 
-def test_complete_evidence_passes():
+def test_ready_pull_request_with_complete_evidence_passes():
     inline = record(REVIEWER, "finding", id=91, in_reply_to_id=None)
     reply = record(OWNER, "declined - not a product defect", id=92, in_reply_to_id=91)
-    transport = complete_scenario(review_comments=[inline, reply])
+    transport = complete_scenario(draft=False, review_comments=[inline, reply])
     result, output = execute(transport)
 
     assert result == 0
+    assert "change-proof: PASS" in output
     assert output.count("verified:") == 4
+    pull = f"repos/{REPO}/pulls/17"
+    evidence_calls = {
+        (f"{pull}/files?per_page=100", True),
+        (f"repos/{REPO}/issues/17/comments?per_page=100", True),
+        (f"{pull}/reviews?per_page=100", True),
+        (f"{pull}/comments?per_page=100", True),
+    }
+    assert evidence_calls <= set(transport.calls)
 
 
 def test_missing_event_head_is_resolved_by_get():
@@ -735,14 +744,17 @@ def test_missing_event_head_is_resolved_by_get():
     assert "change-proof: PASS" in output
 
 
-def test_draft_pull_request_exits_zero_without_evaluating():
+def test_draft_pull_request_exits_nonzero_without_evaluating():
     transport = scenario(draft=True)
     pull = f"repos/{REPO}/pulls/17"
     transport.responses = {pull: transport.responses[pull]}
     result, output = execute(transport)
 
-    assert result == 0
-    assert "SKIP" in output
+    assert result == 1
+    assert output == (
+        "change-proof: SKIP: pull request #17 is draft; evidence is not evaluated\n"
+        "satisfy: mark pull request #17 ready and re-run change-proof\n"
+    )
     assert transport.calls == [(pull, False)]
 
 

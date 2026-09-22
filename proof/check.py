@@ -471,7 +471,11 @@ def run(
                 f"change-proof: SKIP: pull request #{number} is draft; evidence is not evaluated",
                 file=destination,
             )
-            return 0
+            print(
+                f"satisfy: mark pull request #{number} ready and re-run change-proof",
+                file=destination,
+            )
+            return 1
         head_object = pull.get("head")
         base_object = pull.get("base")
         resolved_head = head_object.get("sha") if isinstance(head_object, dict) else None
