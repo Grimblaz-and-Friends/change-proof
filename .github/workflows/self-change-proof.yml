@@ -1,4 +1,4 @@
-name: Change proof
+name: Change proof (required)
 
 'on':
   pull_request:
@@ -6,7 +6,7 @@ name: Change proof
 
 jobs:
   change-proof:
-    name: Change proof
+    name: Change proof (required)
     permissions:
       contents: read
       issues: read

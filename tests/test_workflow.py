@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import fnmatch
 import json
+import re
 from pathlib import Path
 
 import pytest
@@ -145,7 +146,7 @@ def test_self_caller_parses_and_targets_main():
         )
     )
 
-    assert value["name"] == "Change proof"
+    assert value["name"] == "Change proof (required)"
     assert value["on"] == {
         "pull_request": {
             "types": ["opened", "reopened", "synchronize", "ready_for_review"]
@@ -153,7 +154,7 @@ def test_self_caller_parses_and_targets_main():
     }
     assert list(value["jobs"]) == ["change-proof"]
     job = value["jobs"]["change-proof"]
-    assert job["name"] == "Change proof"
+    assert job["name"] == "Change proof (required)"
     assert job["permissions"] == {
         "contents": "read",
         "issues": "read",
@@ -163,3 +164,50 @@ def test_self_caller_parses_and_targets_main():
         "Grimblaz-and-Friends/change-proof/.github/workflows/change-proof.yml@main"
     )
     assert "steps" not in job
+
+
+def test_readme_caller_example_names_its_job_and_reports_the_documented_context():
+    yaml = pytest.importorskip("yaml", reason="PyYAML is not installed")
+
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    sections = re.findall(
+        r"^## Call the workflow\n(.*?)(?=^## |\Z)",
+        readme,
+        flags=re.MULTILINE | re.DOTALL,
+    )
+
+    assert len(sections) == 1
+    blocks = re.findall(
+        r"^```yaml\n(.*?)^```$",
+        sections[0],
+        flags=re.MULTILINE | re.DOTALL,
+    )
+
+    assert len(blocks) == 1
+    example = yaml.safe_load(blocks[0])
+
+    jobs = example["jobs"]
+    assert list(jobs) == ["change-proof"]
+
+    job = jobs["change-proof"]
+    assert "name" in job, (
+        "the README caller example's job needs a name:, or a caller copied from "
+        "it reports the context change-proof / Change proof"
+    )
+    caller_job_name = job["name"]
+    assert caller_job_name == "Change proof"
+
+    called = yaml.safe_load(
+        (ROOT / ".github" / "workflows" / "change-proof.yml").read_text(
+            encoding="utf-8"
+        )
+    )
+    context = f"{caller_job_name} / {called['jobs']['proof']['name']}"
+    assert context == "Change proof / Change proof"
+
+    required = yaml.safe_load(
+        (ROOT / ".github" / "workflows" / "self-change-proof.yml").read_text(
+            encoding="utf-8"
+        )
+    )
+    assert required["jobs"]["change-proof"]["name"] != caller_job_name
