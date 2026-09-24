@@ -1,6 +1,6 @@
 # change-proof
 
-Change proof is a reusable GitHub workflow for pull requests: it decides from caller-owned path rules whether use was required, verifies the current-head use evidence and every configured connected reviewer, and requires authorized dispositions on those reviewers' top-level inline comments before the proof passes.
+Change proof is a reusable GitHub workflow for pull requests: it decides from caller-owned path rules whether use was required, verifies the applicable use or no-use evidence and every configured connected reviewer, and requires authorized dispositions on those reviewers' top-level inline comments before the proof passes.
 
 ## Call the workflow
 
@@ -37,7 +37,7 @@ After a note or disposition lands, re-run the failed check from the pull request
 gh api -X POST repos/OWNER/REPO/actions/runs/<run-id>/rerun
 ```
 
-A workflow's token cannot re-run workflow runs, and this design grants no write permission. A new commit moves the pull request head, so its evidence must be posted again for that head — which is why forcing a fresh run with an empty commit costs every note already pinned to the old head.
+A workflow's token cannot re-run workflow runs, and this design grants no write permission. A `no-use` note stays pinned to the current head. A `use` note for an earlier head counts only when it says `changed=false`, GitHub's single compare response proves that head is an ancestor of the current head and contains every intervening commit, and every such commit changes no path that the base branch's current-tip policy says buys a use; otherwise the use note must be posted again for the current head. Each intervening commit is classified separately, including both names of a rename, so a bought change still stales the note if a later commit reverts it.
 
 ## Caller-owned configuration
 
@@ -98,13 +98,15 @@ All three lists are required by the shared work-configuration schema, including 
 
 Pull requests to this repository take the same release proof as its callers. A change here is reported ready for merge only after the change-proof check has run, every configured connected reviewer has run, and every top-level inline reviewer thread has a marker-producer disposition.
 
-When the paths buy use, a `marker_producers` login posts the practice's exact `use` marker for the current head in a pull-request comment, review, or review comment:
+When the paths buy use, a `marker_producers` login posts the practice's exact `use` marker for the head the experience session used in a pull-request comment, review, or review comment:
 
 ```text
 <!-- tradecraft:use:v1 head=SHA status=pass changed=CHANGED staffing_status=STAFFING_STATUS [same_vendor_reason=REASON] -->
 ```
 
-`CHANGED` is `true` or `false`; `STAFFING_STATUS` is `qualified` or `degraded`; and a degraded run carries the nonempty hyphenated `same_vendor_reason` while a qualified run does not.
+`CHANGED` is `true` or `false`; `STAFFING_STATUS` is `qualified` or `degraded`; and a degraded run carries the nonempty hyphenated `same_vendor_reason` while a qualified run does not. A note naming the current pull-request head may carry either `CHANGED` value. A note naming an earlier head applies only with `changed=false`. The single, unpaginated GitHub comparison must report `ahead` or `identical`, name the note head as its merge base, and return as many intervening commits as its `ahead_by` value. That candidate is not applicable when the status or merge base does not prove ancestry, when `ahead_by` is missing or differs from the returned commit count, when a returned commit lacks a full revision, or when any returned commit changes a use-bought path. Each returned commit is read through the paginated `repos/{repo}/commits/{sha}?per_page=100` endpoint, and both `filename` and `previous_filename` are classified under the policy read from the base branch's current tip. If reading a candidate's comparison or commit pages fails—including a GET failure, invalid JSON, or a page that omits `files`—that candidate is not applicable and the checker continues to the next older eligible note. If no candidate applies, the check fails with the latest candidate's reason and the remedy to post at the current head. A `no-use` note never carries forward.
+
+For a carried use note, the `verified:` line names its head and every intervening commit read. When an intervening commit buys a use, the stale finding names the note head and the first such commit.
 
 When the paths do not buy use, a marker producer posts the practice's exact `no-use` marker followed in the same comment by its line and reason:
 
@@ -121,7 +123,7 @@ The checker ignores leading whitespace and one balanced Markdown inline wrapper�
 
 The checker returns exit `0` only when it has evaluated the pull request head's evidence and that evidence satisfies this contract; a result that does not evaluate the evidence is not a pass.
 
-- **Pass:** the current-head note agrees with the path decision, every connected reviewer has a credited run, and every owed inline disposition is present.
+- **Pass:** a current-head no-use note agrees with a no-use decision, or a valid current-head or qualifying ancestor use note agrees with a use decision; every connected reviewer has a credited run; and every owed inline disposition is present.
 
 - **Fail:** the note is missing, stale, malformed, unauthorized, or false; a configured reviewer has no credited run; or an owed inline disposition is missing or unauthorized.
 

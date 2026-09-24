@@ -16,6 +16,10 @@ HEAD = "a" * 40
 BASE = "b" * 40
 BASE_TIP = "c" * 40
 AMBIGUOUS_TAG_TIP = "d" * 40
+ANCESTOR = "1" * 40
+OLDER_ANCESTOR = "2" * 40
+COMMIT_ONE = "3" * 40
+COMMIT_TWO = "4" * 40
 BASE_REF = "main"
 OWNER = "proof-owner"
 REVIEWER = "review-bot[bot]"
@@ -64,12 +68,12 @@ def record(login, body="", **values):
     return {"user": {"login": login}, "body": body, **values}
 
 
-def use_note(head=HEAD, author=OWNER):
+def use_note(head=HEAD, author=OWNER, *, changed=False, **values):
     body = (
-        f"<!-- tradecraft:use:v1 head={head} status=pass changed=false "
+        f"<!-- tradecraft:use:v1 head={head} status=pass changed={str(changed).lower()} "
         "staffing_status=qualified -->\n\nUse session completed."
     )
-    return record(author, body)
+    return record(author, body, **values)
 
 
 def no_use_note(head=HEAD, author=OWNER, *, line=True):
@@ -82,6 +86,23 @@ def no_use_note(head=HEAD, author=OWNER, *, line=True):
 def contents(value):
     encoded = base64.b64encode((json.dumps(value) + "\n").encode()).decode()
     return {"encoding": "base64", "content": encoded}
+
+
+def comparison(ancestor, commits, *, status="ahead", merge_base=None, ahead_by=None):
+    return {
+        "status": status,
+        "merge_base_commit": {"sha": ancestor if merge_base is None else merge_base},
+        "ahead_by": len(commits) if ahead_by is None else ahead_by,
+        "commits": [{"sha": revision} for revision in commits],
+    }
+
+
+def compare_endpoint(ancestor, head=HEAD):
+    return f"repos/{REPO}/compare/{ancestor}...{head}"
+
+
+def commit_endpoint(revision):
+    return f"repos/{REPO}/commits/{revision}?per_page=100"
 
 
 class FakeTransport:
@@ -472,11 +493,225 @@ def test_no_use_line_requires_separator_and_nonempty_reason(line):
     assert "'Use: not required' line" in output
 
 
-def test_stale_use_note_fails_current_head_check():
-    transport = complete_scenario(comments=[use_note("b" * 40)])
+def test_non_ancestor_use_note_fails_current_head_check():
+    transport = complete_scenario(comments=[use_note(ANCESTOR)])
+    transport.responses[compare_endpoint(ANCESTOR)] = comparison(
+        ANCESTOR, [], status="diverged", merge_base=BASE
+    )
     result, output = execute(transport)
 
     assert result == 1
+    assert "change-proof: FAIL" in output
+    assert "change-proof: ERROR" not in output
+    assert f"use evidence head {ANCESTOR} is not an ancestor of current head {HEAD}" in output
+    assert "for the current head" in output
+    assert transport.calls.count((compare_endpoint(ANCESTOR), False)) == 1
+
+
+def test_changed_false_ancestor_note_carries_across_use_free_commits():
+    transport = complete_scenario(comments=[use_note(ANCESTOR)])
+    transport.responses[compare_endpoint(ANCESTOR)] = comparison(
+        ANCESTOR, [COMMIT_ONE, COMMIT_TWO]
+    )
+    transport.responses[commit_endpoint(COMMIT_ONE)] = {"files": [{"filename": "docs/one.md"}]}
+    transport.responses[commit_endpoint(COMMIT_TWO)] = [
+        {"files": [{"filename": "docs/two.md"}]},
+        {"files": [{"filename": "tests/test_check.py"}]},
+    ]
+
+    result, output = execute(transport)
+
+    assert result == 0
+    assert "change-proof: PASS" in output
+    assert (
+        "verified: changed paths buy a use and authorized use marker at "
+        f"{ANCESTOR} remains valid after intervening commits: {COMMIT_ONE}, {COMMIT_TWO}"
+    ) in output
+    assert transport.calls.count((compare_endpoint(ANCESTOR), False)) == 1
+    assert (commit_endpoint(COMMIT_ONE), True) in transport.calls
+    assert (commit_endpoint(COMMIT_TWO), True) in transport.calls
+
+
+def test_current_head_changed_true_use_note_still_passes():
+    result, output = execute(complete_scenario(comments=[use_note(changed=True)]))
+
+    assert result == 0
+    assert "current-head use marker is valid" in output
+
+
+def test_earlier_changed_true_use_note_does_not_carry():
+    transport = complete_scenario(comments=[use_note(ANCESTOR, changed=True)])
+
+    result, output = execute(transport)
+
+    assert result == 1
+    assert "authorized, valid use marker for the current head" in output
+    assert not any(endpoint == compare_endpoint(ANCESTOR) for endpoint, _paginate in transport.calls)
+
+
+def test_incomplete_single_compare_response_is_stale_without_pagination():
+    transport = complete_scenario(comments=[use_note(ANCESTOR)])
+    transport.responses[compare_endpoint(ANCESTOR)] = comparison(
+        ANCESTOR, [COMMIT_ONE], ahead_by=2
+    )
+
+    result, output = execute(transport)
+
+    assert result == 1
+    assert "change-proof: FAIL" in output
+    assert "change-proof: ERROR" not in output
+    assert f"complete intervening history from {ANCESTOR} is unavailable" in output
+    assert transport.calls.count((compare_endpoint(ANCESTOR), False)) == 1
+
+
+def test_intervening_commit_without_full_revision_is_stale():
+    transport = complete_scenario(comments=[use_note(ANCESTOR)])
+    transport.responses[compare_endpoint(ANCESTOR)] = comparison(ANCESTOR, ["short"])
+
+    result, output = execute(transport)
+
+    assert result == 1
+    assert "change-proof: FAIL" in output
+    assert f"intervening commit from {ANCESTOR} has no full revision" in output
+    assert not any(endpoint.startswith(f"repos/{REPO}/commits/short") for endpoint, _ in transport.calls)
+
+
+def test_paginated_commit_pages_and_previous_filename_can_stale_ancestor_note():
+    transport = complete_scenario(comments=[use_note(ANCESTOR)])
+    transport.responses[compare_endpoint(ANCESTOR)] = comparison(ANCESTOR, [COMMIT_ONE])
+    transport.responses[commit_endpoint(COMMIT_ONE)] = [
+        {"files": [{"filename": "docs/moved.ts"}]},
+        {
+            "files": [
+                {
+                    "filename": "docs/renamed.ts",
+                    "previous_filename": "src/renamed.ts",
+                }
+            ]
+        },
+    ]
+
+    result, output = execute(transport)
+
+    assert result == 1
+    assert (
+        f"use evidence at {ANCESTOR} is stale because intervening commit {COMMIT_ONE} "
+        "changes a use-bought path"
+    ) in output
+    assert (commit_endpoint(COMMIT_ONE), True) in transport.calls
+
+
+def test_use_bought_commit_stales_note_even_when_later_commit_reverts_it():
+    transport = complete_scenario(comments=[use_note(ANCESTOR)])
+    transport.responses[compare_endpoint(ANCESTOR)] = comparison(
+        ANCESTOR, [COMMIT_ONE, COMMIT_TWO]
+    )
+    transport.responses[commit_endpoint(COMMIT_ONE)] = {"files": [{"filename": "src/main.ts"}]}
+    transport.responses[commit_endpoint(COMMIT_TWO)] = {"files": [{"filename": "docs/revert.md"}]}
+
+    result, output = execute(transport)
+
+    assert result == 1
+    assert ANCESTOR in output
+    assert COMMIT_ONE in output
+    assert (commit_endpoint(COMMIT_TWO), True) not in transport.calls
+
+
+@pytest.mark.parametrize(
+    ("failure", "newest_compare", "newest_commit"),
+    [
+        ("compare GET failed", check.ProofError("compare GET failed"), None),
+        (
+            "commit GET failed",
+            comparison(ANCESTOR, [COMMIT_ONE]),
+            check.ProofError("commit GET failed"),
+        ),
+        ("invalid candidate JSON", ValueError("invalid candidate JSON"), None),
+        (
+            "omitted files",
+            comparison(ANCESTOR, [COMMIT_ONE]),
+            [{"sha": COMMIT_ONE}],
+        ),
+    ],
+)
+def test_candidate_history_failure_continues_to_older_clean_note(
+    failure, newest_compare, newest_commit
+):
+    newer = use_note(ANCESTOR, created_at="2026-09-24T12:00:00Z", id=20)
+    older = use_note(OLDER_ANCESTOR, created_at="2026-09-23T12:00:00Z", id=10)
+    transport = complete_scenario(comments=[older, newer])
+    transport.responses[compare_endpoint(ANCESTOR)] = newest_compare
+    if newest_commit is not None:
+        transport.responses[commit_endpoint(COMMIT_ONE)] = newest_commit
+    transport.responses[compare_endpoint(OLDER_ANCESTOR)] = comparison(
+        OLDER_ANCESTOR, [COMMIT_TWO]
+    )
+    transport.responses[commit_endpoint(COMMIT_TWO)] = {
+        "files": [{"filename": "docs/older.md"}]
+    }
+
+    result, output = execute(transport)
+
+    assert result == 0
+    assert "change-proof: PASS" in output
+    assert OLDER_ANCESTOR in output
+    assert COMMIT_TWO in output
+    assert ANCESTOR not in output
+    assert transport.calls.index((compare_endpoint(ANCESTOR), False)) < transport.calls.index(
+        (compare_endpoint(OLDER_ANCESTOR), False)
+    )
+
+
+def test_all_rejected_candidates_fail_with_newest_reason_and_current_head_remedy():
+    newer = use_note(ANCESTOR, created_at="2026-09-24T12:00:00Z", id=20)
+    older = use_note(OLDER_ANCESTOR, created_at="2026-09-23T12:00:00Z", id=10)
+    transport = complete_scenario(comments=[older, newer])
+    transport.responses[compare_endpoint(ANCESTOR)] = comparison(ANCESTOR, [COMMIT_ONE])
+    transport.responses[commit_endpoint(COMMIT_ONE)] = [{"sha": COMMIT_ONE}]
+    transport.responses[compare_endpoint(OLDER_ANCESTOR)] = comparison(
+        OLDER_ANCESTOR, [COMMIT_TWO]
+    )
+    transport.responses[commit_endpoint(COMMIT_TWO)] = {"files": [{"filename": "src/main.ts"}]}
+
+    result, output = execute(transport)
+
+    assert result == 1
+    assert "change-proof: FAIL" in output
+    assert "change-proof: ERROR" not in output
+    assert f"history unavailable from {ANCESTOR}" in output
+    assert f"intervening commit {COMMIT_TWO} changes a use-bought path" not in output
+    assert "post the completed use note with the exact tradecraft:use:v1 form at this head" in output
+
+
+def test_intervening_paths_are_classified_by_base_tip_policy():
+    weakened_head_rules = {
+        "schema_version": 1,
+        "rules": [{"name": "weakened", "include": ["docs/**"], "exclude": []}],
+    }
+    transport = complete_scenario(
+        comments=[use_note(ANCESTOR)], head_rules=weakened_head_rules
+    )
+    transport.responses[compare_endpoint(ANCESTOR)] = comparison(ANCESTOR, [COMMIT_ONE])
+    transport.responses[commit_endpoint(COMMIT_ONE)] = {"files": [{"filename": "src/new.ts"}]}
+
+    result, output = execute(transport)
+
+    assert result == 1
+    assert f"intervening commit {COMMIT_ONE} changes a use-bought path" in output
+    assert "pull request changes policy and was judged by the base branch tip policy" in output
+
+
+def test_older_no_use_note_remains_insufficient():
+    transport = scenario(
+        paths=("docs/guide.md",),
+        comments=[no_use_note(ANCESTOR)],
+        reviews=[record(REVIEWER, "summary")],
+    )
+
+    result, output = execute(transport)
+
+    assert result == 1
+    assert "no-use marker" in output
     assert "for the current head" in output
 
 
@@ -758,6 +993,30 @@ def test_draft_pull_request_exits_nonzero_without_evaluating():
     assert transport.calls == [(pull, False)]
 
 
+@pytest.mark.parametrize(
+    "endpoint",
+    [
+        f"repos/{REPO}/pulls/17",
+        f"repos/{REPO}/git/ref/heads/{BASE_REF}",
+        f"repos/{REPO}/contents/.github/change-proof.json?ref={HEAD}",
+        f"repos/{REPO}/contents/.tradecraft/work.json?ref={BASE_TIP}",
+        f"repos/{REPO}/pulls/17/files?per_page=100",
+        f"repos/{REPO}/issues/17/comments?per_page=100",
+        f"repos/{REPO}/pulls/17/reviews?per_page=100",
+        f"repos/{REPO}/pulls/17/comments?per_page=100",
+    ],
+)
+def test_primary_input_failures_remain_whole_check_errors(endpoint):
+    transport = complete_scenario()
+    transport.responses[endpoint] = check.ProofError("primary input unavailable")
+
+    result, output = execute(transport)
+
+    assert result == 1
+    assert "change-proof: ERROR" in output
+    assert "primary input unavailable" in output
+
+
 class Response:
     def __init__(self, value, headers=None):
         self.value = value
@@ -804,5 +1063,25 @@ def test_transport_follows_link_header_pagination():
     value = transport.get("repos/example/project/items?per_page=1", paginate=True)
 
     assert value == [{"id": 1}, {"id": 2}]
+    assert [call[0].get_method() for call in opener.calls] == ["GET", "GET"]
+    assert opener.calls[1][0].full_url == next_url
+
+
+def test_transport_preserves_paginated_object_pages_in_order():
+    next_url = "https://api.github.com/repos/example/project/commits/abc?page=2"
+    opener = OpenerSpy([
+        Response({"sha": "abc", "files": [{"filename": "docs/one.md"}]}, {
+            "Link": f'<{next_url}>; rel="next"'
+        }),
+        Response({"sha": "abc", "files": [{"filename": "docs/two.md"}]}),
+    ])
+    transport = check.GitHubTransport("token", opener=opener)
+
+    value = transport.get("repos/example/project/commits/abc?per_page=1", paginate=True)
+
+    assert value == [
+        {"sha": "abc", "files": [{"filename": "docs/one.md"}]},
+        {"sha": "abc", "files": [{"filename": "docs/two.md"}]},
+    ]
     assert [call[0].get_method() for call in opener.calls] == ["GET", "GET"]
     assert opener.calls[1][0].full_url == next_url
