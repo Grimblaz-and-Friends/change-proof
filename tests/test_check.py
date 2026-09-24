@@ -19,6 +19,8 @@ AMBIGUOUS_TAG_TIP = "d" * 40
 BASE_REF = "main"
 OWNER = "proof-owner"
 REVIEWER = "review-bot[bot]"
+VALID_BODY = "**Path departures:** Expected path ran without a departure."
+ABSENT_BODY = object()
 
 # Grimblaz-and-Friends/Organizations-of-Verra#455, issue comment 5750507875.
 CODERABBIT_RATE_LIMIT_NOTICE = """\
@@ -120,6 +122,7 @@ def scenario(
     base_config=None,
     base_policy=True,
     base_missing=(),
+    body=VALID_BODY,
 ):
     default_rules = {
         "schema_version": 1,
@@ -143,14 +146,17 @@ def scenario(
     base_config = default_config if base_config is None else base_config
     file_records = list(files) if files is not None else [{"filename": path} for path in paths]
     pull = f"repos/{REPO}/pulls/17"
+    pull_response = {
+        "number": 17,
+        "draft": draft,
+        "head": {"sha": head},
+        "base": {"sha": base, "ref": base_ref},
+        "changed_files": len(file_records) if changed_files is None else changed_files,
+    }
+    if body is not ABSENT_BODY:
+        pull_response["body"] = body
     responses = {
-        pull: {
-            "number": 17,
-            "draft": draft,
-            "head": {"sha": head},
-            "base": {"sha": base, "ref": base_ref},
-            "changed_files": len(file_records) if changed_files is None else changed_files,
-        },
+        pull: pull_response,
         f"repos/{REPO}/git/ref/heads/{base_ref}": {"object": {"sha": base_tip}},
         f"repos/{REPO}/commits/{base_ref}": {"sha": AMBIGUOUS_TAG_TIP},
         f"{pull}/files?per_page=100": file_records,
@@ -208,6 +214,98 @@ def complete_scenario(**overrides):
     }
     values.update(overrides)
     return scenario(**values)
+
+
+def line_ending(body, separator):
+    return separator.join(body.splitlines())
+
+
+POSITIVE_PATH_DEPARTURES_BODIES = (
+    "**Path departures:** Expected path ran without a departure.",
+    "Context for the change.\n\n**Path departures:**",
+    "## Release record\n**Path departures:** Expected path ran without a departure.",
+    "> ## Release record\n**Path departures:** Expected path ran without a departure.",
+    "**Path departures:** Expected path ran\nwithout a departure.",
+    "**Path departures:** Expected path ran\n- release detail",
+    "---\n**Path departures:** Expected path ran without a departure.",
+    "Release record\n---\n**Path departures:** Expected path ran without a departure.",
+    "~~~markdown\nquoted convention\n~~~\n"
+    "**Path departures:** Expected path ran without a departure.",
+    "<!-- quoted convention -->\n**Path departures:** Expected path ran without a departure.",
+)
+
+
+NEGATIVE_PATH_DEPARTURES_BODIES = (
+    "## **Path departures:**",
+    "**Path departure:** None.",
+    "This comment mentions **Path departures:** but records no paragraph.",
+    "This comment mentions the convention on its next source line:\n"
+    "**Path departures:** but records no separate paragraph.",
+    "> **Path departures:** None.",
+    "- Earlier prose in a list item\n**Path departures:** is a lazy continuation.",
+    "    **Path departures:** None.",
+    "```markdown\n**Path departures:** None.\n```",
+    "````markdown\n**Path departures:** None.\n```\n**Path departures:** Still fenced.\n````",
+    "~~~markdown\n**Path departures:** None.\n~~~",
+    "<!--\n**Path departures:** None.\n-->",
+    "Context <!--\n\n**Path departures:** None.\n-->",
+    "**Path departures:** None.\n---",
+    "**Path departures:** None stated\nfor this change.\n===",
+)
+
+
+@pytest.mark.parametrize("separator", ("\n", "\r\n", "\r"), ids=("lf", "crlf", "cr"))
+@pytest.mark.parametrize("body", POSITIVE_PATH_DEPARTURES_BODIES)
+def test_path_departures_paragraph_shapes_pass_for_all_line_endings(body, separator):
+    result, output = execute(complete_scenario(body=line_ending(body, separator)))
+
+    assert result == 0
+    assert output.count(
+        "verified: pull request body has a **Path departures:** paragraph\n"
+    ) == 1
+    assert "missing: a pull request body paragraph" not in output
+
+
+@pytest.mark.parametrize("separator", ("\n", "\r\n", "\r"), ids=("lf", "crlf", "cr"))
+@pytest.mark.parametrize("body", NEGATIVE_PATH_DEPARTURES_BODIES)
+def test_nonparagraph_path_departures_shapes_fail_for_all_line_endings(body, separator):
+    result, output = execute(complete_scenario(body=line_ending(body, separator)))
+
+    assert result == 1
+    assert "verified: pull request body has a **Path departures:** paragraph" not in output
+    assert output.count(
+        "missing: a pull request body paragraph beginning with **Path departures:**\n"
+    ) == 1
+    assert output.count(
+        "satisfy: add the **Path departures:** paragraph to the pull request body and re-run "
+        "change-proof\n"
+    ) == 1
+
+
+@pytest.mark.parametrize(
+    "body",
+    (ABSENT_BODY, None, "", 17),
+    ids=("absent", "null", "empty", "non-string"),
+)
+def test_missing_path_departures_body_fails_with_exact_repair(body):
+    result, output = execute(complete_scenario(body=body))
+
+    assert result == 1
+    assert output.count(
+        "missing: a pull request body paragraph beginning with **Path departures:**\n"
+    ) == 1
+    assert output.count(
+        "satisfy: add the **Path departures:** paragraph to the pull request body and re-run "
+        "change-proof\n"
+    ) == 1
+
+
+def test_missing_body_remains_visible_when_policy_preflight_also_fails():
+    result, output = execute(complete_scenario(body=None, base_policy=False))
+
+    assert result == 1
+    assert "missing: a pull request body paragraph beginning with **Path departures:**\n" in output
+    assert "missing: trusted policy on the pull request base branch tip" in output
 
 
 def test_readme_use_rules_classify_documented_paths():
@@ -726,7 +824,10 @@ def test_ready_pull_request_with_complete_evidence_passes():
 
     assert result == 0
     assert "change-proof: PASS" in output
-    assert output.count("verified:") == 4
+    assert output.count("verified:") == 5
+    assert output.count(
+        "verified: pull request body has a **Path departures:** paragraph\n"
+    ) == 1
     pull = f"repos/{REPO}/pulls/17"
     evidence_calls = {
         (f"{pull}/files?per_page=100", True),

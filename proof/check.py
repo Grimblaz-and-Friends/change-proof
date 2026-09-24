@@ -47,6 +47,16 @@ REVIEW_NOTICE_PATTERNS = (
     ),
     ("Running", re.compile(r"^\|[^\n]*\brunning\b[^\n]*\|\s*$", re.I | re.M)),
 )
+PATH_DEPARTURES_LEAD_IN = "**Path departures:**"
+SETEXT_UNDERLINE = re.compile(r"^ {0,3}(?:=+|-+)[ \t]*$")
+ATX_HEADING = re.compile(r"^ {0,3}#{1,6}(?:[ \t]+|$)")
+THEMATIC_BREAK = re.compile(
+    r"^ {0,3}(?:(?:\*[ \t]*){3,}|(?:_[ \t]*){3,}|(?:-[ \t]*){3,})$"
+)
+FENCE_OPEN = re.compile(r"^ {0,3}(`{3,}|~{3,})(.*)$")
+CONTAINER_PROSE = re.compile(
+    r"^ {0,3}(?:>[ \t]?|(?:[-+*]|\d{1,9}[.)])(?:[ \t]+|$))(.*)$"
+)
 
 
 class ProofError(RuntimeError):
@@ -139,6 +149,111 @@ def _next_link(header: str | None) -> str | None:
         if match and "next" in match.group(2).split():
             return match.group(1)
     return None
+
+
+def _has_path_departures_paragraph(body: object) -> bool:
+    if not isinstance(body, str) or not body:
+        return False
+
+    paragraph_open = False
+    candidate = False
+    fence: tuple[str, int] | None = None
+    html_comment = False
+
+    for line in body.splitlines():
+        if fence is not None:
+            character, minimum = fence
+            if re.fullmatch(
+                rf" {{0,3}}{re.escape(character)}{{{minimum},}}[ \t]*", line
+            ):
+                fence = None
+            continue
+
+        if html_comment:
+            if "-->" in line:
+                html_comment = False
+            continue
+
+        comment_start = line.find("<!--")
+        if comment_start >= 0:
+            prefix = line[:comment_start]
+            comment_closes = "-->" in line[comment_start + 4:]
+            if not prefix.strip():
+                if candidate:
+                    return True
+                paragraph_open = False
+                candidate = False
+                html_comment = not comment_closes
+                continue
+            line = prefix
+            html_comment = not comment_closes
+
+        if not line.strip():
+            if candidate:
+                return True
+            paragraph_open = False
+            candidate = False
+            continue
+
+        fence_match = FENCE_OPEN.match(line)
+        if fence_match is not None:
+            marker, info = fence_match.groups()
+            if marker[0] == "~" or "`" not in info:
+                if candidate:
+                    return True
+                paragraph_open = False
+                candidate = False
+                fence = (marker[0], len(marker))
+                continue
+
+        if paragraph_open and SETEXT_UNDERLINE.fullmatch(line):
+            paragraph_open = False
+            candidate = False
+            continue
+
+        if ATX_HEADING.match(line) or THEMATIC_BREAK.fullmatch(line):
+            if candidate:
+                return True
+            paragraph_open = False
+            candidate = False
+            continue
+
+        if line.startswith(("    ", "\t")):
+            if paragraph_open:
+                continue
+            paragraph_open = False
+            candidate = False
+            continue
+
+        container = CONTAINER_PROSE.match(line)
+        if container is not None:
+            if candidate:
+                return True
+            content = container.group(1)
+            nested_fence = FENCE_OPEN.match(content)
+            paragraph_open = bool(content.strip()) and not (
+                ATX_HEADING.match(content)
+                or THEMATIC_BREAK.fullmatch(content)
+                or content.lstrip().startswith("<!--")
+                or (
+                    nested_fence is not None
+                    and (
+                        nested_fence.group(1)[0] == "~"
+                        or "`" not in nested_fence.group(2)
+                    )
+                )
+            )
+            candidate = False
+            continue
+
+        if line.startswith(PATH_DEPARTURES_LEAD_IN) and not paragraph_open:
+            paragraph_open = True
+            candidate = True
+            continue
+
+        paragraph_open = True
+
+    return candidate
 
 
 def _object(value: object, source: str) -> dict[str, object]:
@@ -476,6 +591,16 @@ def run(
                 file=destination,
             )
             return 1
+        body_failures: list[Finding] = []
+        body_verified: list[str] = []
+        if _has_path_departures_paragraph(pull.get("body")):
+            body_verified.append("pull request body has a **Path departures:** paragraph")
+        else:
+            body_failures.append(Finding(
+                "a pull request body paragraph beginning with **Path departures:**",
+                "add the **Path departures:** paragraph to the pull request body and re-run "
+                "change-proof",
+            ))
         head_object = pull.get("head")
         base_object = pull.get("base")
         resolved_head = head_object.get("sha") if isinstance(head_object, dict) else None
@@ -511,9 +636,10 @@ def run(
         }
         absent_on_head = [path for path in policy_paths if head_policy[path] is None]
         absent_on_base = [path for path in policy_paths if base_policy[path] is None]
-        preflight_failures: list[Finding] = []
+        preflight_failures = body_failures
         preflight_verified = [
             f"base branch {base_ref} tip resolved to commit {base_tip}",
+            *body_verified,
         ]
         selected_policy: dict[str, dict[str, object] | None] | None
         if absent_on_base:
