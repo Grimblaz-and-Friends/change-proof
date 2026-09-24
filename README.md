@@ -1,6 +1,6 @@
 # change-proof
 
-Change proof is a reusable GitHub workflow for pull requests: it decides from caller-owned path rules whether use was required, verifies the current-head use evidence and every configured connected reviewer, and requires authorized dispositions on those reviewers' top-level inline comments before the proof passes.
+Change proof is a reusable GitHub workflow for pull requests: it requires the pull-request body's `**Path departures:**` paragraph, decides from caller-owned path rules whether use was required, verifies the current-head use evidence and every configured connected reviewer, and requires authorized dispositions on those reviewers' top-level inline comments before the proof passes.
 
 ## Call the workflow
 
@@ -31,7 +31,7 @@ On a `pull_request` event, the called workflow derives the pull request number a
 
 A workflow required by a ruleset ignores the filters its own file declares — `branches`, `paths`, `types` and the rest — and starts only on the default activity types of the events that rule supports, which for `pull_request` are `opened`, `reopened` and `synchronize`. Marking a pull request ready therefore starts a caller's run and never the required one. Both consequences are expected rather than faults: a repository with no caller sees no run at all when a pull request is marked ready, and a repository with a caller sees a run that begins at the same moment as the connected reviewers it requires and fails because they have not posted yet. In both cases the required check is re-run once the reviewers have landed.
 
-After a note or disposition lands, re-run the failed check from the pull request's checks tab or from the command line. `gh run rerun <run-id> --failed` works for an ordinary workflow run. It does not work for a run produced by a ruleset-required workflow: that run carries a `workflow_id` that is not an addressable workflow in the repository the run belongs to, and `gh run rerun` resolves the workflow before re-running the run, so the command fails with `HTTP 404`. This holds even in the repository where the required workflow's file lives — there the file's own workflow id and the id its required runs carry are different, and only the first can be fetched. The URL in that error names the **workflow** id rather than the run id, so the message reads as though the run is gone; it is not. Re-run it through the run-level endpoint:
+After a note or disposition lands, or after the pull-request body is edited to add the required paragraph, re-run the failed check from the pull request's checks tab or from the command line. `gh run rerun <run-id> --failed` works for an ordinary workflow run. It does not work for a run produced by a ruleset-required workflow: that run carries a `workflow_id` that is not an addressable workflow in the repository the run belongs to, and `gh run rerun` resolves the workflow before re-running the run, so the command fails with `HTTP 404`. This holds even in the repository where the required workflow's file lives — there the file's own workflow id and the id its required runs carry are different, and only the first can be fetched. The URL in that error names the **workflow** id rather than the run id, so the message reads as though the run is gone; it is not. Re-run it through the run-level endpoint:
 
 ```text
 gh api -X POST repos/OWNER/REPO/actions/runs/<run-id>/rerun
@@ -96,7 +96,20 @@ All three lists are required by the shared work-configuration schema, including 
 
 ## Evidence contract
 
-Pull requests to this repository take the same release proof as its callers. A change here is reported ready for merge only after the change-proof check has run, every configured connected reviewer has run, and every top-level inline reviewer thread has a marker-producer disposition.
+Pull requests to this repository take the same release proof as its callers. A change here is reported ready for merge only after its body has the required path-departures paragraph, the change-proof check has run, every configured connected reviewer has run, and every top-level inline reviewer thread has a marker-producer disposition.
+
+Every ready pull-request body must have a Markdown paragraph whose first logical line begins at column zero with the exact lead-in `**Path departures:**`. Write that lead-in in the Markdown source, for example in the Write tab, because copying it from the rendered preview drops the `**` markers. The checker verifies only that paragraph's presence; it does not interpret or require any content after the lead-in. A heading, list item, block quote, indented or fenced code, HTML comment, raw HTML block, or mention later in an existing paragraph does not count. For a blank-line-terminated HTML block, a line directly after a tag line such as `</details>` still belongs to the block, so put a blank line before the paragraph. A `---` or `===` line immediately below the paragraph, with no blank line between, makes it a setext heading and therefore does not count.
+
+The condition reports these exact lines:
+
+```text
+verified: pull request body has a **Path departures:** paragraph
+```
+
+```text
+missing: a pull request body paragraph beginning with **Path departures:**
+satisfy: add the **Path departures:** paragraph to the pull request body and re-run change-proof
+```
 
 When the paths buy use, a `marker_producers` login posts the practice's exact `use` marker for the current head in a pull-request comment, review, or review comment:
 
@@ -121,9 +134,9 @@ The checker ignores leading whitespace and one balanced Markdown inline wrapper�
 
 The checker returns exit `0` only when it has evaluated the pull request head's evidence and that evidence satisfies this contract; a result that does not evaluate the evidence is not a pass.
 
-- **Pass:** the current-head note agrees with the path decision, every connected reviewer has a credited run, and every owed inline disposition is present.
+- **Pass:** the pull-request body has the required paragraph, the current-head note agrees with the path decision, every connected reviewer has a credited run, and every owed inline disposition is present.
 
-- **Fail:** the note is missing, stale, malformed, unauthorized, or false; a configured reviewer has no credited run; or an owed inline disposition is missing or unauthorized.
+- **Fail:** the pull-request body lacks the required paragraph; the note is missing, stale, malformed, unauthorized, or false; a configured reviewer has no credited run; or an owed inline disposition is missing or unauthorized.
 
 A connected reviewer has run when at least one review, inline review comment, or pull-request comment by its login exists; a pull-request comment saying the review was limited, rate limited, skipped, or still running is a notice of not reviewing and does not count, repeated appearances are allowed because a bought second look does not fail the gate, and a completed summary-only pull-request comment counts and owes no invented inline disposition. This notice classification reads vendor comment text rather than a vendor API and can be wrong in both directions when a vendor changes its wording.
 
