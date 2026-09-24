@@ -84,6 +84,31 @@ jobs:
           CONTAINER_PROSE = re.compile(
               r"^ {0,3}(?:>[ \t]?|(?:[-+*]|\d{1,9}[.)])(?:[ \t]+|$))(.*)$"
           )
+          HTML_BLOCK_TYPE_1_START = re.compile(
+              r"^<(pre|script|style|textarea)(?=[ \t>]|$)", re.I
+          )
+          HTML_BLOCK_TYPE_6_START = re.compile(
+              r"^</?(?:address|article|aside|base|basefont|blockquote|body|caption|center|"
+              r"col|colgroup|dd|details|dialog|dir|div|dl|dt|fieldset|figcaption|figure|"
+              r"footer|form|frame|frameset|h[1-6]|head|header|hr|html|iframe|legend|li|"
+              r"link|main|menu|menuitem|nav|noframes|ol|optgroup|option|p|param|search|"
+              r"section|summary|table|tbody|td|tfoot|th|thead|title|tr|track|ul)"
+              r"(?=[ \t]|/?>|$)",
+              re.I,
+          )
+          HTML_BLOCK_TYPE_7_START = re.compile(
+              r"^(?:"
+              r"<[A-Za-z][A-Za-z0-9-]*"
+              r"(?:[ \t]+[A-Za-z_:][A-Za-z0-9_.:-]*"
+              r"(?:[ \t]*=[ \t]*(?:[^ \t\n\f\r\"'=<>`]+|'[^']*'|\"[^\"]*\"))?)*"
+              r"[ \t]*/?>"
+              r"|</[A-Za-z][A-Za-z0-9-]*[ \t]*>"
+              r")[ \t]*$"
+          )
+          HTML_COMMENT_END = re.compile(r"-->")
+          HTML_PROCESSING_INSTRUCTION_END = re.compile(r"\?>")
+          HTML_DECLARATION_END = re.compile(r">")
+          HTML_CDATA_END = re.compile(r"\]\]>")
 
 
           class ProofError(RuntimeError):
@@ -178,6 +203,32 @@ jobs:
               return None
 
 
+          def _html_block_start(
+              line: str, paragraph_open: bool
+          ) -> tuple[re.Pattern[str] | None, bool] | None:
+              source = line.lstrip(" ")
+              if len(line) - len(source) > 3:
+                  return None
+
+              type_1 = HTML_BLOCK_TYPE_1_START.match(source)
+              if type_1 is not None:
+                  tag = re.escape(type_1.group(1))
+                  return re.compile(rf"</{tag}[ \t]*>", re.I), False
+              if source.startswith("<!--"):
+                  return HTML_COMMENT_END, False
+              if source.startswith("<?"):
+                  return HTML_PROCESSING_INSTRUCTION_END, False
+              if re.match(r"^<![A-Za-z]", source):
+                  return HTML_DECLARATION_END, False
+              if source.startswith("<![CDATA["):
+                  return HTML_CDATA_END, False
+              if HTML_BLOCK_TYPE_6_START.match(source):
+                  return None, True
+              if not paragraph_open and HTML_BLOCK_TYPE_7_START.fullmatch(source):
+                  return None, True
+              return None
+
+
           def _has_path_departures_paragraph(body: object) -> bool:
               if not isinstance(body, str) or not body:
                   return False
@@ -185,7 +236,8 @@ jobs:
               paragraph_open = False
               candidate = False
               fence: tuple[str, int] | None = None
-              html_comment = False
+              html_block_end: re.Pattern[str] | None = None
+              html_block_until_blank = False
 
               for line in body.splitlines():
                   if fence is not None:
@@ -196,24 +248,26 @@ jobs:
                           fence = None
                       continue
 
-                  if html_comment:
-                      if "-->" in line:
-                          html_comment = False
+                  if html_block_end is not None:
+                      if html_block_end.search(line):
+                          html_block_end = None
                       continue
 
-                  comment_start = line.find("<!--")
-                  if comment_start >= 0:
-                      prefix = line[:comment_start]
-                      comment_closes = "-->" in line[comment_start + 4:]
-                      if not prefix.strip():
-                          if candidate:
-                              return True
-                          paragraph_open = False
-                          candidate = False
-                          html_comment = not comment_closes
-                          continue
-                      line = prefix
-                      html_comment = not comment_closes
+                  if html_block_until_blank:
+                      if not line.strip():
+                          html_block_until_blank = False
+                      continue
+
+                  html_block = _html_block_start(line, paragraph_open)
+                  if html_block is not None:
+                      if candidate:
+                          return True
+                      paragraph_open = False
+                      candidate = False
+                      end_pattern, html_block_until_blank = html_block
+                      if end_pattern is not None and not end_pattern.search(line):
+                          html_block_end = end_pattern
+                      continue
 
                   if not line.strip():
                       if candidate:

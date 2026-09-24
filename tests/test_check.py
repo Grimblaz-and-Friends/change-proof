@@ -232,6 +232,18 @@ POSITIVE_PATH_DEPARTURES_BODIES = (
     "~~~markdown\nquoted convention\n~~~\n"
     "**Path departures:** Expected path ran without a departure.",
     "<!-- quoted convention -->\n**Path departures:** Expected path ran without a departure.",
+    "<pre>\nquoted convention\n</pre>\n"
+    "**Path departures:** Expected path ran without a departure.",
+    "<?instruction?>\n**Path departures:** Expected path ran without a departure.",
+    "<!DOCTYPE html>\n**Path departures:** Expected path ran without a departure.",
+    "<![CDATA[quoted convention]]>\n"
+    "**Path departures:** Expected path ran without a departure.",
+    "<div>\nquoted convention\n\n"
+    "**Path departures:** Expected path ran without a departure.",
+    "Context\n<div>\n\n**Path departures:** Expected path ran without a departure.",
+    "<custom-tag>\nquoted convention\n\n"
+    "**Path departures:** Expected path ran without a departure.",
+    "Context <!--\n\n**Path departures:** None.\n-->",
 )
 
 
@@ -248,7 +260,14 @@ NEGATIVE_PATH_DEPARTURES_BODIES = (
     "````markdown\n**Path departures:** None.\n```\n**Path departures:** Still fenced.\n````",
     "~~~markdown\n**Path departures:** None.\n~~~",
     "<!--\n**Path departures:** None.\n-->",
-    "Context <!--\n\n**Path departures:** None.\n-->",
+    "<pre>\n\n**Path departures:** None.\n</pre>",
+    "<?instruction\n\n**Path departures:** None.\n?>",
+    "<!DECLARATION\n\n**Path departures:** None.\n>",
+    "<![CDATA[\n\n**Path departures:** None.\n]]>",
+    "<div>\n**Path departures:** None.\n\n",
+    "<custom-tag>\n**Path departures:** None.\n\n",
+    "Context\n<custom-tag>\n**Path departures:** is still the same paragraph.",
+    "Context <!--\n**Path departures:** is still the same paragraph.\n-->",
     "**Path departures:** None.\n---",
     "**Path departures:** None stated\nfor this change.\n===",
 )
