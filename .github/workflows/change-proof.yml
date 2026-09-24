@@ -47,6 +47,7 @@ jobs:
           REPOSITORY_NAME = re.compile(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+\Z")
           GITHUB_LOGIN = re.compile(r"[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?(?:\[bot\])?\Z")
           SLUG = re.compile(r"[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*\Z")
+          FULL_SHA = re.compile(r"[0-9a-fA-F]{40}\Z")
           NO_USE_LINE = re.compile(r"^\s*Use: not required\s+(?:-|—)\s+\S.*$")
           DISPOSITIONS = (
               "fixed",
@@ -125,6 +126,9 @@ jobs:
               attributes: dict[str, str]
               body: str
               author: str
+              timestamp: str = ""
+              source_id: int = 0
+              observed_order: int = 0
 
 
           @dataclass(frozen=True)
@@ -182,13 +186,29 @@ jobs:
               def get(self, endpoint: str, *, paginate: bool = False) -> object:
                   next_endpoint: str | None = endpoint
                   combined: list[object] = []
+                  page_kind: type[list] | type[dict] | None = None
                   while next_endpoint is not None:
                       value, headers = self.request("GET", next_endpoint)
                       if not paginate:
                           return value
-                      if not isinstance(value, list):
-                          raise ProofError(f"GitHub paginated GET returned a non-list for {next_endpoint}")
-                      combined.extend(value)
+                      if isinstance(value, list):
+                          if page_kind not in (None, list):
+                              raise ProofError(
+                                  f"GitHub paginated GET changed response shape at {next_endpoint}"
+                              )
+                          page_kind = list
+                          combined.extend(value)
+                      elif isinstance(value, dict):
+                          if page_kind not in (None, dict):
+                              raise ProofError(
+                                  f"GitHub paginated GET changed response shape at {next_endpoint}"
+                              )
+                          page_kind = dict
+                          combined.append(value)
+                      else:
+                          raise ProofError(
+                              f"GitHub paginated GET returned neither a list nor object for {next_endpoint}"
+                          )
                       next_endpoint = _next_link(headers.get("Link"))
                   return combined
 
@@ -435,11 +455,28 @@ jobs:
               for record in records:
                   body = str(record.get("body") or "")
                   author = _author(record)
+                  raw_timestamp = record.get("submitted_at") or record.get("created_at")
+                  timestamp = raw_timestamp if isinstance(raw_timestamp, str) else ""
+                  raw_source_id = record.get("id")
+                  if isinstance(raw_source_id, int) and not isinstance(raw_source_id, bool):
+                      source_id = raw_source_id
+                  elif isinstance(raw_source_id, str) and raw_source_id.isdigit():
+                      source_id = int(raw_source_id)
+                  else:
+                      source_id = 0
                   for match in MARKER.finditer(body):
                       attributes = {
                           key.lower(): value for key, value in ATTRIBUTE.findall(match.group(2) or "")
                       }
-                      found.append(MarkerRecord(match.group(1).lower(), attributes, body, author))
+                      found.append(MarkerRecord(
+                          match.group(1).lower(),
+                          attributes,
+                          body,
+                          author,
+                          timestamp,
+                          source_id,
+                          len(found),
+                      ))
               return found
 
 
@@ -462,6 +499,122 @@ jobs:
               if attributes["staffing_status"] == "degraded":
                   return bool(reason and SLUG.fullmatch(reason))
               return reason is None
+
+
+          def _commit_files(transport, repo: str, revision: str) -> list[str]:
+              endpoint = f"repos/{repo}/commits/{revision}?per_page=100"
+              value = transport.get(endpoint, paginate=True)
+              pages = value if isinstance(value, list) else [value]
+              paths: list[str] = []
+              for page in pages:
+                  commit = _object(page, endpoint)
+                  if "files" not in commit:
+                      raise ProofError(f"GitHub commit GET omitted files for {revision}")
+                  files = _records(commit["files"], endpoint)
+                  for item in files:
+                      for field in ("filename", "previous_filename"):
+                          path = item.get(field)
+                          if isinstance(path, str) and path not in paths:
+                              paths.append(path)
+              return paths
+
+
+          def _ancestor_application(
+              transport,
+              repo: str,
+              ancestor: str,
+              head: str,
+              rules: dict[str, object],
+          ) -> dict[str, object]:
+              quoted_ancestor = urllib.parse.quote(ancestor, safe="")
+              quoted_head = urllib.parse.quote(head, safe="")
+              endpoint = f"repos/{repo}/compare/{quoted_ancestor}...{quoted_head}"
+              comparison = _object(transport.get(endpoint), endpoint)
+              merge_base = comparison.get("merge_base_commit")
+              merge_base_sha = merge_base.get("sha") if isinstance(merge_base, dict) else None
+              commits = _records(comparison.get("commits", []), endpoint)
+              ahead_by = comparison.get("ahead_by")
+              if comparison.get("status") not in {"ahead", "identical"} or merge_base_sha != ancestor:
+                  return {
+                      "applicable": False,
+                      "reason": f"use evidence head {ancestor} is not an ancestor of current head {head}",
+                  }
+              if not isinstance(ahead_by, int) or isinstance(ahead_by, bool) or ahead_by != len(commits):
+                  return {
+                      "applicable": False,
+                      "reason": f"complete intervening history from {ancestor} is unavailable",
+                  }
+              intervening: list[str] = []
+              for commit in commits:
+                  revision = commit.get("sha")
+                  if not isinstance(revision, str) or FULL_SHA.fullmatch(revision) is None:
+                      return {
+                          "applicable": False,
+                          "reason": f"intervening commit from {ancestor} has no full revision",
+                      }
+                  paths = _commit_files(transport, repo, revision)
+                  intervening.append(revision)
+                  if use_required(paths, rules):
+                      return {
+                          "applicable": False,
+                          "reason": (
+                              f"use evidence at {ancestor} is stale because intervening commit "
+                              f"{revision} changes a use-bought path"
+                          ),
+                          "intervening_commits": intervening,
+                      }
+              return {
+                  "applicable": True,
+                  "reason": "every intervening commit changes only paths outside the use-bought policy",
+                  "intervening_commits": intervening,
+              }
+
+
+          def _ancestor_use(
+              transport,
+              repo: str,
+              head: str,
+              rules: dict[str, object],
+              authorized: list[MarkerRecord],
+          ) -> tuple[MarkerRecord | None, list[str], str | None]:
+              candidates = []
+              for marker in authorized:
+                  evidence_head = marker.attributes.get("head")
+                  if (
+                      marker.name == "use"
+                      and isinstance(evidence_head, str)
+                      and evidence_head != head
+                      and FULL_SHA.fullmatch(evidence_head) is not None
+                      and marker.attributes.get("changed") == "false"
+                      and _valid_use(marker, evidence_head)
+                  ):
+                      candidates.append(marker)
+              candidates.sort(
+                  key=lambda marker: (marker.timestamp, marker.source_id, marker.observed_order),
+                  reverse=True,
+              )
+              newest_reason: str | None = None
+              for marker in candidates:
+                  evidence_head = marker.attributes["head"]
+                  try:
+                      application = _ancestor_application(
+                          transport, repo, evidence_head, head, rules
+                      )
+                  except (OSError, UnicodeError, ValueError, ProofError) as exc:
+                      detail = str(exc) or type(exc).__name__
+                      reason = f"history unavailable from {evidence_head}: {detail}"
+                  else:
+                      reason = str(application.get("reason") or "use evidence is not applicable")
+                      if application.get("applicable"):
+                          revisions = application.get("intervening_commits", [])
+                          if not isinstance(revisions, list) or not all(
+                              isinstance(revision, str) for revision in revisions
+                          ):
+                              raise ProofError("applicable use history has an invalid internal shape")
+                          return marker, revisions, None
+                  if newest_reason is None:
+                      newest_reason = reason
+              return None, [], newest_reason
 
 
           def _strip_balanced_markdown_wrapper(value: str) -> str:
@@ -524,6 +677,8 @@ jobs:
               comments: list[dict[str, object]],
               reviews: list[dict[str, object]],
               review_comments: list[dict[str, object]],
+              transport=None,
+              repo: str = "",
           ) -> tuple[list[Finding], list[str]]:
               failures: list[Finding] = []
               verified: list[str] = []
@@ -539,10 +694,28 @@ jobs:
                   if any(_valid_use(marker, head) for marker in current_use):
                       verified.append("changed paths buy a use and an authorized current-head use marker is valid")
                   else:
-                      failures.append(Finding(
-                          "an authorized, valid use marker for the current head",
-                          "post the completed use note with the exact tradecraft:use:v1 form at this head",
-                      ))
+                      ancestor_marker: MarkerRecord | None = None
+                      intervening: list[str] = []
+                      rejected_reason: str | None = None
+                      if transport is not None and repo:
+                          ancestor_marker, intervening, rejected_reason = _ancestor_use(
+                              transport, repo, head, rules, authorized
+                          )
+                      if ancestor_marker is not None:
+                          evidence_head = ancestor_marker.attributes["head"]
+                          revisions = ", ".join(intervening) if intervening else "none"
+                          verified.append(
+                              "changed paths buy a use and authorized use marker at "
+                              f"{evidence_head} remains valid after intervening commits: {revisions}"
+                          )
+                      else:
+                          missing = "an authorized, valid use marker for the current head"
+                          if rejected_reason is not None:
+                              missing = f"{missing}; latest earlier-head candidate failed: {rejected_reason}"
+                          failures.append(Finding(
+                              missing,
+                              "post the completed use note with the exact tradecraft:use:v1 form at this head",
+                          ))
               else:
                   if current_use:
                       failures.append(Finding(
@@ -775,7 +948,15 @@ jobs:
                               github.get(review_comments_endpoint, paginate=True), review_comments_endpoint
                           )
                           evidence_failures, evidence_verified = evaluate(
-                              head, paths, rules, config, comments, reviews, review_comments
+                              head,
+                              paths,
+                              rules,
+                              config,
+                              comments,
+                              reviews,
+                              review_comments,
+                              github,
+                              repo,
                           )
                           failures.extend(evidence_failures)
                           verified.extend(evidence_verified)
