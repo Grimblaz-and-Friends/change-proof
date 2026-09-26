@@ -59,7 +59,6 @@ def test_self_policy_files_load_and_classify_repository_paths():
     assert work_value["product_repositories"] == []
     assert work.connected_reviewers == frozenset(
         {
-            "greptile-apps[bot]",
             "coderabbitai[bot]",
             "chatgpt-codex-connector[bot]",
         }
