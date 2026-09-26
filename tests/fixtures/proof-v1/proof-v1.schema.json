@@ -1,0 +1,208 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Grimblaz-and-Friends/tradecraft/proof-v1.schema.json",
+  "title": "Tradecraft proof document v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "identity",
+    "policy",
+    "floor",
+    "use",
+    "reviewers",
+    "dispositions",
+    "declarations",
+    "diagnostics"
+  ],
+  "properties": {
+    "schema_version": {"const": 1},
+    "identity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["work", "repository", "issue", "pull_request", "head", "producer_version"],
+      "properties": {
+        "work": {"type": "string", "minLength": 1},
+        "repository": {"type": "string", "minLength": 1},
+        "issue": {"type": "integer", "minimum": 1},
+        "pull_request": {"type": "integer", "minimum": 1},
+        "head": {"$ref": "#/$defs/head"},
+        "producer_version": {"type": "string", "minLength": 1}
+      }
+    },
+    "policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["work_configuration", "use_rules"],
+      "properties": {
+        "work_configuration": {"$ref": "#/$defs/policy_source"},
+        "use_rules": {"$ref": "#/$defs/policy_source"}
+      }
+    },
+    "floor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["head", "source", "checks"],
+      "properties": {
+        "head": {"oneOf": [{"$ref": "#/$defs/head"}, {"type": "null"}]},
+        "source": {"oneOf": [{"$ref": "#/$defs/source"}, {"type": "null"}]},
+        "checks": {"type": "array", "items": {"$ref": "#/$defs/check"}}
+      }
+    },
+    "use": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "required", "classification", "evidence_head", "applicability", "source",
+        "intervening_commits", "reason"
+      ],
+      "properties": {
+        "required": {"type": "boolean"},
+        "classification": {"enum": ["required", "not-required"]},
+        "evidence_head": {"oneOf": [{"$ref": "#/$defs/head"}, {"type": "null"}]},
+        "applicability": {"enum": ["current-head", "ancestor", "generated", "missing"]},
+        "source": {"oneOf": [{"$ref": "#/$defs/source"}, {"type": "null"}]},
+        "intervening_commits": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["sha", "paths"],
+            "properties": {
+              "sha": {"$ref": "#/$defs/head"},
+              "paths": {"type": "array", "items": {"type": "string"}}
+            }
+          }
+        },
+        "reason": {"type": ["string", "null"]}
+      }
+    },
+    "reviewers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["login", "result", "source", "notices"],
+        "properties": {
+          "login": {"type": "string", "minLength": 1},
+          "result": {"enum": ["present", "missing", "notice-only"]},
+          "source": {"oneOf": [{"$ref": "#/$defs/source"}, {"type": "null"}]},
+          "notices": {"type": "array", "items": {"type": "string"}}
+        }
+      }
+    },
+    "dispositions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["thread_id", "reviewer", "source", "reply"],
+        "properties": {
+          "thread_id": {"type": "integer"},
+          "reviewer": {"type": "string"},
+          "source": {"$ref": "#/$defs/source"},
+          "reply": {"oneOf": [{"$ref": "#/$defs/source"}, {"type": "null"}]}
+        }
+      }
+    },
+    "declarations": {"type": "array", "items": {"$ref": "#/$defs/declaration"}},
+    "diagnostics": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["code", "message", "source"],
+        "properties": {
+          "code": {"type": "string", "minLength": 1},
+          "message": {"type": "string", "minLength": 1},
+          "source": {"oneOf": [{"$ref": "#/$defs/source"}, {"type": "null"}]}
+        }
+      }
+    }
+  },
+  "$defs": {
+    "head": {"type": "string", "pattern": "^(?:[0-9a-fA-F]{40}|[0-9a-fA-F]{64})$"},
+    "nullable_text": {"type": ["string", "null"]},
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "repository", "id", "url", "author", "timestamp", "revision"],
+      "properties": {
+        "kind": {"type": "string", "minLength": 1},
+        "repository": {"type": "string", "minLength": 1},
+        "id": {"type": ["integer", "string", "null"]},
+        "url": {"$ref": "#/$defs/nullable_text"},
+        "author": {"$ref": "#/$defs/nullable_text"},
+        "timestamp": {"$ref": "#/$defs/nullable_text"},
+        "revision": {"$ref": "#/$defs/nullable_text"}
+      }
+    },
+    "policy_source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["repository", "path", "revision", "sha256"],
+      "properties": {
+        "repository": {"type": "string", "minLength": 1},
+        "path": {"type": "string", "minLength": 1},
+        "revision": {"type": "string", "minLength": 1},
+        "sha256": {"type": "string", "minLength": 1}
+      }
+    },
+    "check": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id", "name", "app_id", "app_slug", "workflow_id", "run_id", "url",
+        "head", "status", "conclusion", "started_at", "completed_at"
+      ],
+      "properties": {
+        "id": {"type": ["integer", "null"]},
+        "name": {"type": "string", "minLength": 1},
+        "app_id": {"type": ["integer", "null"]},
+        "app_slug": {"$ref": "#/$defs/nullable_text"},
+        "workflow_id": {"type": ["integer", "null"]},
+        "run_id": {"type": ["integer", "null"]},
+        "url": {"$ref": "#/$defs/nullable_text"},
+        "head": {"$ref": "#/$defs/nullable_text"},
+        "status": {"$ref": "#/$defs/nullable_text"},
+        "conclusion": {"$ref": "#/$defs/nullable_text"},
+        "started_at": {"$ref": "#/$defs/nullable_text"},
+        "completed_at": {"$ref": "#/$defs/nullable_text"}
+      }
+    },
+    "declaration": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "stage", "status", "reason", "dispatch_id", "completed_at", "revision",
+        "requested_vendor", "requested_model", "requested_effort",
+        "requested_classification", "actual_vendor", "actual_model", "actual_effort",
+        "fallback_reason", "staffing_status", "same_vendor_reason"
+      ],
+      "properties": {
+        "stage": {"type": "string", "minLength": 1},
+        "status": {"enum": ["declared", "unverifiable"]},
+        "reason": {"$ref": "#/$defs/nullable_text"},
+        "dispatch_id": {"$ref": "#/$defs/nullable_text"},
+        "completed_at": {"$ref": "#/$defs/nullable_text"},
+        "revision": {"$ref": "#/$defs/nullable_text"},
+        "requested_vendor": {"$ref": "#/$defs/nullable_text"},
+        "requested_model": {"$ref": "#/$defs/nullable_text"},
+        "requested_effort": {"$ref": "#/$defs/nullable_text"},
+        "requested_classification": {"$ref": "#/$defs/nullable_text"},
+        "actual_vendor": {"$ref": "#/$defs/nullable_text"},
+        "actual_model": {"$ref": "#/$defs/nullable_text"},
+        "actual_effort": {"$ref": "#/$defs/nullable_text"},
+        "fallback_reason": {"$ref": "#/$defs/nullable_text"},
+        "staffing_status": {"$ref": "#/$defs/nullable_text"},
+        "same_vendor_reason": {"$ref": "#/$defs/nullable_text"}
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"status": {"const": "unverifiable"}}},
+          "then": {"properties": {"reason": {"type": "string", "minLength": 1}}}
+        }
+      ]
+    }
+  }
+}

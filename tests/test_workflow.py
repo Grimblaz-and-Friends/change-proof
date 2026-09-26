@@ -11,6 +11,13 @@ from proof import check
 
 
 ROOT = Path(__file__).resolve().parents[1]
+APPROVED_PERMISSIONS = {
+    "contents": "read",
+    "issues": "read",
+    "pull-requests": "read",
+    "checks": "read",
+    "actions": "read",
+}
 
 
 def normalized_bytes(path):
@@ -119,11 +126,7 @@ def test_workflow_parses_as_yaml_when_pyyaml_is_available():
     assert list(value["jobs"]) == ["proof"]
     proof = value["jobs"]["proof"]
     assert proof["if"] == "github.event_name == 'pull_request'"
-    assert proof["permissions"] == {
-        "contents": "read",
-        "issues": "read",
-        "pull-requests": "read",
-    }
+    assert proof["permissions"] == APPROVED_PERMISSIONS
 
     proof_steps = proof["steps"]
     assert sum("run" in step for step in proof_steps) == 1
@@ -134,6 +137,8 @@ def test_workflow_parses_as_yaml_when_pyyaml_is_available():
     assert proof_steps[0]["uses"] == (
         "actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1"
     )
+    assert proof_steps[-1]["env"]["GITHUB_RUN_ID"] == "${{ github.run_id }}"
+    assert proof_steps[-1]["env"]["GITHUB_RUN_ATTEMPT"] == "${{ github.run_attempt }}"
     assert proof_steps[-1]["run"].encode() == embedded_script()
 
 
@@ -155,11 +160,7 @@ def test_self_caller_parses_and_targets_main():
     assert list(value["jobs"]) == ["change-proof"]
     job = value["jobs"]["change-proof"]
     assert job["name"] == "Change proof (required)"
-    assert job["permissions"] == {
-        "contents": "read",
-        "issues": "read",
-        "pull-requests": "read",
-    }
+    assert job["permissions"] == APPROVED_PERMISSIONS
     assert job["uses"] == (
         "Grimblaz-and-Friends/change-proof/.github/workflows/change-proof.yml@main"
     )
@@ -196,6 +197,7 @@ def test_readme_caller_example_names_its_job_and_reports_the_documented_context(
     )
     caller_job_name = job["name"]
     assert caller_job_name == "Change proof"
+    assert job["permissions"] == APPROVED_PERMISSIONS
 
     called = yaml.safe_load(
         (ROOT / ".github" / "workflows" / "change-proof.yml").read_text(

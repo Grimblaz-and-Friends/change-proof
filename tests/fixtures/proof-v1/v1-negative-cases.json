@@ -1,0 +1,151 @@
+[
+  {
+    "document_patch": {
+      "identity": {
+        "head": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "issue": 12,
+        "producer_version": "0.153.0",
+        "pull_request": 19,
+        "repository": "example/product",
+        "work": "example/product#12"
+      }
+    },
+    "live": {"head": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"},
+    "name": "wrong-head",
+    "reason": "the document head differs from the live pull-request head"
+  },
+  {
+    "document_patch": {
+      "floor": {
+        "checks": [
+          {
+            "app_id": 15368,
+            "app_slug": "github-actions",
+            "completed_at": "2026-09-23T12:05:00Z",
+            "conclusion": "success",
+            "head": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "id": 999,
+            "name": "Tests",
+            "run_id": 91,
+            "started_at": "2026-09-23T12:00:00Z",
+            "status": "completed",
+            "url": "https://github.com/example/product/actions/runs/91",
+            "workflow_id": 71
+          }
+        ],
+        "head": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "source": {
+          "author": "holder",
+          "id": 31,
+          "kind": "pull-request-comment",
+          "repository": "example/product",
+          "revision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "timestamp": "2026-09-23T12:06:00Z",
+          "url": "https://github.com/example/product/pull/19#issuecomment-31"
+        }
+      }
+    },
+    "live": {"floor_check_ids": [81]},
+    "name": "substituted-floor-check",
+    "reason": "the named check id is not a visible current-head floor run"
+  },
+  {
+    "document_patch": {"reviewers": []},
+    "live": {"connected_reviewers": ["reviewer[bot]"]},
+    "name": "omitted-configured-reviewer",
+    "reason": "every trusted configured reviewer needs a separate entry"
+  },
+  {
+    "document_patch": {
+      "reviewers": [
+        {
+          "login": "reviewer[bot]",
+          "notices": [],
+          "result": "present",
+          "source": {
+            "author": "reviewer[bot]",
+            "id": 41,
+            "kind": "review",
+            "repository": "example/product",
+            "revision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "timestamp": "2026-09-23T12:07:00Z",
+            "url": "https://github.com/example/product/pull/19#pullrequestreview-41"
+          }
+        }
+      ]
+    },
+    "live": {"reviewer_notice": "Review limit reached"},
+    "name": "non-review-notice",
+    "reason": "a notice of not reviewing cannot become a receipt"
+  },
+  {
+    "document_patch": {"dispositions": []},
+    "live": {"undisposed_threads": [51]},
+    "name": "omitted-thread",
+    "reason": "a favorable payload cannot hide a visible reviewer thread"
+  },
+  {
+    "document_patch": {
+      "dispositions": [
+        {
+          "reply": {
+            "author": "stranger",
+            "id": 52,
+            "kind": "review-comment",
+            "repository": "example/product",
+            "revision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "timestamp": "2026-09-23T12:09:00Z",
+            "url": "https://github.com/example/product/pull/19#discussion_r52"
+          },
+          "reviewer": "reviewer[bot]",
+          "source": {
+            "author": "reviewer[bot]",
+            "id": 51,
+            "kind": "review-comment",
+            "repository": "example/product",
+            "revision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "timestamp": "2026-09-23T12:08:00Z",
+            "url": "https://github.com/example/product/pull/19#discussion_r51"
+          },
+          "thread_id": 51
+        }
+      ]
+    },
+    "live": {"marker_producers": ["holder"]},
+    "name": "unauthorized-disposition",
+    "reason": "the gate authorizes the reply from trusted configuration"
+  },
+  {
+    "document_patch": {"verified": true},
+    "live": {},
+    "name": "producer-verification-field",
+    "reason": "only the gate emits verified conclusions"
+  },
+  {
+    "document_patch": {
+      "declarations": [
+        {
+          "actual_effort": "xhigh",
+          "actual_model": "gpt-6-sol",
+          "actual_vendor": "codex",
+          "completed_at": "2026-09-23T12:10:00Z",
+          "dispatch_id": "dispatch-fixture",
+          "fallback_reason": null,
+          "reason": null,
+          "requested_classification": "implementation",
+          "requested_effort": "xhigh",
+          "requested_model": "gpt-6-sol",
+          "requested_vendor": "codex",
+          "revision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "same_vendor_reason": null,
+          "staffing_status": "qualified",
+          "stage": "use",
+          "status": "declared"
+        }
+      ]
+    },
+    "live": {"local_records_visible": false},
+    "name": "declaration-rendered-as-verified",
+    "reason": "local bundle and staffing facts remain declarations"
+  }
+]

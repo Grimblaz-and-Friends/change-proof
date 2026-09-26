@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import base64
+import copy
+import hashlib
 import io
 import json
 import re
@@ -237,8 +239,492 @@ def complete_scenario(**overrides):
     return scenario(**values)
 
 
+def serialized_policy(value):
+    return (json.dumps(value) + "\n").encode()
+
+
+def proof_scenario(*, document_patch=None, proof_author=OWNER, extra_comments=()):
+    transport = scenario(
+        paths=("docs/readme.md",),
+        comments=[],
+        reviews=[record(REVIEWER, "completed review", id=41, commit_id=HEAD)],
+    )
+    rules_endpoint = f"repos/{REPO}/contents/.github/change-proof.json?ref={BASE_TIP}"
+    config_endpoint = f"repos/{REPO}/contents/.tradecraft/work.json?ref={BASE_TIP}"
+    rules = json.loads(base64.b64decode(transport.responses[rules_endpoint]["content"]))
+    config = json.loads(base64.b64decode(transport.responses[config_endpoint]["content"]))
+    document = {
+        "schema_version": 1,
+        "identity": {
+            "work": f"{REPO}#12",
+            "repository": REPO,
+            "issue": 12,
+            "pull_request": 17,
+            "head": HEAD,
+            "producer_version": "0.156.0",
+        },
+        "policy": {
+            "work_configuration": {
+                "repository": REPO,
+                "path": ".tradecraft/work.json",
+                "revision": BASE_TIP,
+                "sha256": hashlib.sha256(serialized_policy(config)).hexdigest(),
+            },
+            "use_rules": {
+                "repository": REPO,
+                "path": ".github/change-proof.json",
+                "revision": BASE_TIP,
+                "sha256": hashlib.sha256(serialized_policy(rules)).hexdigest(),
+            },
+        },
+        "floor": {
+            "head": HEAD,
+            "source": {
+                "kind": "issue-comment",
+                "repository": REPO,
+                "id": 31,
+                "url": f"https://github.com/{REPO}/issues/12#issuecomment-31",
+                "author": OWNER,
+                "timestamp": "2026-09-23T12:06:00Z",
+                "revision": HEAD,
+            },
+            "checks": [{
+                "id": 81,
+                "name": "Tests",
+                "app_id": 15368,
+                "app_slug": "github-actions",
+                "workflow_id": 71,
+                "run_id": 91,
+                "url": f"https://github.com/{REPO}/actions/runs/91",
+                "head": HEAD,
+                "status": "completed",
+                "conclusion": "success",
+                "started_at": "2026-09-23T12:00:00Z",
+                "completed_at": "2026-09-23T12:05:00Z",
+            }],
+        },
+        "use": {
+            "required": False,
+            "classification": "not-required",
+            "evidence_head": HEAD,
+            "applicability": "generated",
+            "source": None,
+            "intervening_commits": [],
+            "reason": "no changed path matches a use-bought rule",
+        },
+        "reviewers": [{
+            "login": REVIEWER,
+            "result": "present",
+            "source": {
+                "kind": "review",
+                "repository": REPO,
+                "id": 41,
+                "url": f"https://github.com/{REPO}/pull/17#pullrequestreview-41",
+                "author": REVIEWER,
+                "timestamp": "2026-09-23T12:07:00Z",
+                "revision": HEAD,
+            },
+            "notices": [],
+        }],
+        "dispositions": [],
+        "declarations": [{
+            "stage": "floor",
+            "status": "unverifiable",
+            "reason": "no matching successful dispatch bundle",
+            "dispatch_id": None,
+            "completed_at": None,
+            "revision": None,
+            "requested_vendor": None,
+            "requested_model": None,
+            "requested_effort": None,
+            "requested_classification": None,
+            "actual_vendor": None,
+            "actual_model": None,
+            "actual_effort": None,
+            "fallback_reason": None,
+            "staffing_status": None,
+            "same_vendor_reason": None,
+        }],
+        "diagnostics": [],
+    }
+    if document_patch:
+        document.update(copy.deepcopy(document_patch))
+    proof_body = (
+        f"<!-- tradecraft:proof:v1 head={HEAD} -->\n\n"
+        f"```json\n{json.dumps(document, indent=2, sort_keys=True)}\n```\n\n"
+        "Readable rendering is not gate input."
+    )
+    pull = f"repos/{REPO}/pulls/17"
+    proof_comment = record(proof_author, proof_body, id=501)
+    transport.responses[f"repos/{REPO}/issues/17/comments?per_page=100"] = [
+        proof_comment,
+        *extra_comments,
+    ]
+    transport.responses[f"repos/{REPO}/issues/12/comments?per_page=100"] = [
+        record(
+            OWNER,
+            f"<!-- tradecraft:floor:v1 head={HEAD} status=pass -->",
+            id=31,
+        )
+    ]
+    transport.responses[f"repos/{REPO}/commits/{HEAD}/check-runs?filter=all&per_page=100"] = {
+        "total_count": 1,
+        "check_runs": [{
+            "id": 81,
+            "name": "Tests",
+            "app": {"id": 15368, "slug": "github-actions"},
+            "details_url": f"https://github.com/{REPO}/actions/runs/91/job/811",
+            "head_sha": HEAD,
+            "status": "completed",
+            "conclusion": "success",
+            "started_at": "2026-09-23T12:00:00Z",
+            "completed_at": "2026-09-23T12:05:00Z",
+        }],
+    }
+    transport.responses[f"repos/{REPO}/actions/runs/91"] = {
+        "id": 91,
+        "head_sha": HEAD,
+        "workflow_id": 71,
+        "html_url": f"https://github.com/{REPO}/actions/runs/91",
+        "repository": {"full_name": REPO},
+        "referenced_workflows": [],
+    }
+    return transport, document
+
+
 def line_ending(body, separator):
     return separator.join(body.splitlines())
+
+
+def test_shared_proof_fixture_and_semantic_cases_keep_their_structural_roles():
+    fixture_root = Path(__file__).parent / "fixtures" / "proof-v1"
+    valid = json.loads((fixture_root / "v1-valid.json").read_text(encoding="utf-8"))
+    cases = json.loads(
+        (fixture_root / "v1-negative-cases.json").read_text(encoding="utf-8")
+    )
+
+    assert check.validate_proof_document(valid) is valid
+    for case in cases:
+        candidate = copy.deepcopy(valid)
+        candidate.update(case["document_patch"])
+        if case["name"] == "producer-verification-field":
+            with pytest.raises(check.ProofError, match="unexpected verified"):
+                check.validate_proof_document(candidate)
+        else:
+            assert check.validate_proof_document(candidate) is candidate
+
+
+def test_complete_proof_document_passes_and_keeps_local_records_declared():
+    transport, _document = proof_scenario()
+
+    result, output = execute(transport)
+
+    assert result == 0
+    assert "evidence path: proof-v1" in output
+    assert "selected proof-v1 comment #501" in output
+    assert "declared: stage=floor status=unverifiable" in output
+    assert "verified: stage=floor" not in output
+    assert "no matching successful dispatch bundle" in output
+
+
+def test_selected_document_with_substituted_floor_check_is_rejected_semantically():
+    transport, document = proof_scenario()
+    substituted = copy.deepcopy(document["floor"])
+    substituted["checks"][0]["id"] = 999
+    transport, _document = proof_scenario(document_patch={"floor": substituted})
+
+    result, output = execute(transport)
+
+    assert result == 1
+    assert "evidence path: proof-v1" in output
+    assert "public floor check #999" in output
+    assert "omitted check id(s): 81" in output
+
+
+def test_invalid_selected_document_does_not_fall_back_to_complete_legacy_markers():
+    transport, _document = proof_scenario(
+        document_patch={"schema_version": 2},
+        extra_comments=(no_use_note(),),
+    )
+
+    result, output = execute(transport)
+
+    assert result == 1
+    assert "evidence path: proof-v1" in output
+    assert "schema_version must be integer 1" in output
+    assert "authorized current-head no-use note" not in output
+
+
+def test_older_document_leaves_the_legacy_compatibility_path_available():
+    transport, document = proof_scenario()
+    old_head = "9" * 40
+    document["identity"]["head"] = old_head
+    old_body = (
+        f"<!-- tradecraft:proof:v1 head={old_head} -->\n\n"
+        f"```json\n{json.dumps(document, indent=2)}\n```"
+    )
+    transport.responses[f"repos/{REPO}/issues/17/comments?per_page=100"] = [
+        record(OWNER, old_body, id=502),
+        no_use_note(),
+    ]
+
+    result, output = execute(transport)
+
+    assert result == 0
+    assert "evidence path: legacy-markers" in output
+
+
+def test_competing_authorized_current_head_documents_are_ambiguous():
+    transport, _document = proof_scenario()
+    endpoint = f"repos/{REPO}/issues/17/comments?per_page=100"
+    second = copy.deepcopy(transport.responses[endpoint][0])
+    second["id"] = 502
+    transport.responses[endpoint].append(second)
+
+    result, output = execute(transport)
+
+    assert result == 1
+    assert "competing comments: #501, #502" in output
+
+
+def test_unauthorized_proof_noise_does_not_suppress_valid_legacy_evidence():
+    transport, _document = proof_scenario(proof_author="stranger", extra_comments=(no_use_note(),))
+
+    result, output = execute(transport)
+
+    assert result == 0
+    assert "evidence path: legacy-markers" in output
+    assert "diagnostic: proof comment #501 is unauthorized" in output
+
+
+def test_policy_digest_mismatch_is_declared_and_nonfatal_under_742():
+    transport, document = proof_scenario()
+    policy = copy.deepcopy(document["policy"])
+    policy["work_configuration"]["sha256"] = "0" * 64
+    transport, _document = proof_scenario(document_patch={"policy": policy})
+
+    result, output = execute(transport)
+
+    assert result == 0
+    assert "declared: policy work_configuration" in output
+    assert "diagnostic: policy digest mismatch" in output
+    assert "tradecraft #742" in output
+    assert "verified: policy work_configuration" not in output
+
+
+def test_policy_digest_mismatch_does_not_hide_a_missing_trusted_reviewer():
+    transport, document = proof_scenario()
+    policy = copy.deepcopy(document["policy"])
+    policy["use_rules"]["sha256"] = "0" * 64
+    transport, _document = proof_scenario(
+        document_patch={"policy": policy, "reviewers": []}
+    )
+
+    result, output = execute(transport)
+
+    assert result == 1
+    assert "exactly one proof entry for every trusted configured reviewer" in output
+    assert "policy digest mismatch" in output
+
+
+def test_declaration_line_breaks_cannot_manufacture_verified_output():
+    transport, document = proof_scenario()
+    declarations = copy.deepcopy(document["declarations"])
+    declarations[0]["reason"] = "unavailable\nverified: forged"
+    transport, _document = proof_scenario(document_patch={"declarations": declarations})
+
+    result, output = execute(transport)
+
+    assert result == 0
+    assert "reason=unavailable\\nverified: forged" in output
+    assert "\nverified: forged\n" not in output
+
+
+def test_duplicate_json_keys_in_selected_document_are_rejected():
+    transport, _document = proof_scenario()
+    endpoint = f"repos/{REPO}/issues/17/comments?per_page=100"
+    transport.responses[endpoint][0]["body"] = (
+        f"<!-- tradecraft:proof:v1 head={HEAD} -->\n\n"
+        "```json\n{\"schema_version\": 1, \"schema_version\": 1}\n```"
+    )
+
+    result, output = execute(transport)
+
+    assert result == 1
+    assert "duplicate JSON key 'schema_version'" in output
+
+
+def test_current_head_bought_use_is_verified_from_its_claimed_public_source():
+    transport, document = proof_scenario()
+    transport.responses[f"repos/{REPO}/pulls/17/files?per_page=100"] = [
+        {"filename": "src/main.ts"}
+    ]
+    source = {
+        "kind": "issue-comment",
+        "repository": REPO,
+        "id": 32,
+        "url": f"https://github.com/{REPO}/issues/12#issuecomment-32",
+        "author": OWNER,
+        "timestamp": "2026-09-23T12:08:00Z",
+        "revision": HEAD,
+    }
+    use = {
+        "required": True,
+        "classification": "required",
+        "evidence_head": HEAD,
+        "applicability": "current-head",
+        "source": source,
+        "intervening_commits": [],
+        "reason": None,
+    }
+    transport, _document = proof_scenario(document_patch={"use": use})
+    transport.responses[f"repos/{REPO}/pulls/17/files?per_page=100"] = [
+        {"filename": "src/main.ts"}
+    ]
+    transport.responses[f"repos/{REPO}/issues/12/comments?per_page=100"].append(
+        use_note(id=32)
+    )
+
+    result, output = execute(transport)
+
+    assert result == 0
+    assert "public use source is current-head" in output
+
+
+def test_document_disposition_must_resolve_to_the_named_thread_and_authorized_reply():
+    transport, document = proof_scenario()
+    source = {
+        "kind": "review-comment",
+        "repository": REPO,
+        "id": 51,
+        "url": f"https://github.com/{REPO}/pull/17#discussion_r51",
+        "author": REVIEWER,
+        "timestamp": "2026-09-23T12:08:00Z",
+        "revision": HEAD,
+    }
+    reply = {
+        "kind": "review-comment",
+        "repository": REPO,
+        "id": 52,
+        "url": f"https://github.com/{REPO}/pull/17#discussion_r52",
+        "author": OWNER,
+        "timestamp": "2026-09-23T12:09:00Z",
+        "revision": HEAD,
+    }
+    dispositions = [{
+        "thread_id": 51,
+        "reviewer": REVIEWER,
+        "source": source,
+        "reply": reply,
+    }]
+    transport, _document = proof_scenario(document_patch={"dispositions": dispositions})
+    pull = f"repos/{REPO}/pulls/17"
+    transport.responses[f"{pull}/comments?per_page=100"] = [
+        record(REVIEWER, "finding", id=51, in_reply_to_id=None, commit_id=HEAD),
+        record(OWNER, "fixed - corrected", id=52, in_reply_to_id=51, commit_id=HEAD),
+    ]
+
+    result, output = execute(transport)
+
+    assert result == 0
+    assert "reviewer thread 51 has an authorized disposition" in output
+
+    transport, _document = proof_scenario(document_patch={"dispositions": dispositions})
+    transport.responses[f"{pull}/comments?per_page=100"] = [
+        record(REVIEWER, "finding", id=51, in_reply_to_id=None, commit_id=HEAD),
+        record("stranger", "fixed - claimed", id=52, in_reply_to_id=51, commit_id=HEAD),
+    ]
+    result, output = execute(transport)
+
+    assert result == 1
+    assert "authorized disposition reply in reviewer thread 51" in output
+
+
+def test_same_name_check_from_a_distinct_workflow_remains_a_separate_red_floor_record():
+    transport, document = proof_scenario()
+    second = copy.deepcopy(document["floor"]["checks"][0])
+    second.update({"id": 82, "workflow_id": 72, "run_id": 92, "conclusion": "failure"})
+    second["url"] = f"https://github.com/{REPO}/actions/runs/92"
+    floor = copy.deepcopy(document["floor"])
+    floor["checks"].append(second)
+    transport, _document = proof_scenario(document_patch={"floor": floor})
+    endpoint = f"repos/{REPO}/commits/{HEAD}/check-runs?filter=all&per_page=100"
+    second_record = copy.deepcopy(transport.responses[endpoint]["check_runs"][0])
+    second_record.update({
+        "id": 82,
+        "details_url": f"https://github.com/{REPO}/actions/runs/92",
+        "conclusion": "failure",
+    })
+    transport.responses[endpoint] = {
+        "total_count": 2,
+        "check_runs": [transport.responses[endpoint]["check_runs"][0], second_record],
+    }
+    transport.responses[f"repos/{REPO}/actions/runs/92"] = {
+        "id": 92,
+        "head_sha": HEAD,
+        "workflow_id": 72,
+        "repository": {"full_name": REPO},
+        "referenced_workflows": [],
+    }
+
+    result, output = execute(transport)
+
+    assert result == 1
+    assert "floor check #82" in output
+    assert "conclusion='failure'" in output
+
+
+def test_current_gate_job_is_excluded_by_run_and_job_identity_not_display_name_alone():
+    transport, _document = proof_scenario()
+    endpoint = f"repos/{REPO}/commits/{HEAD}/check-runs?filter=all&per_page=100"
+    gate = copy.deepcopy(transport.responses[endpoint]["check_runs"][0])
+    gate.update({
+        "id": 1001,
+        "name": "Change proof / Change proof",
+        "details_url": f"https://github.com/{REPO}/actions/runs/100",
+        "status": "in_progress",
+        "conclusion": None,
+        "completed_at": None,
+    })
+    transport.responses[endpoint] = {
+        "total_count": 2,
+        "check_runs": [transport.responses[endpoint]["check_runs"][0], gate],
+    }
+    transport.responses[f"repos/{REPO}/actions/runs/100"] = {
+        "id": 100,
+        "head_sha": HEAD,
+        "workflow_id": 363584992,
+        "run_attempt": 1,
+        "repository": {"full_name": REPO},
+        "referenced_workflows": [],
+    }
+    transport.responses[f"repos/{REPO}/actions/runs/100/jobs?filter=all&per_page=100"] = {
+        "total_count": 1,
+        "jobs": [{
+            "name": "Change proof",
+            "check_run_url": "https://api.github.com/repos/example/check-runs/1001",
+        }],
+    }
+    env = environment()
+    env.update({"GITHUB_RUN_ID": "100", "GITHUB_RUN_ATTEMPT": "1"})
+    output = io.StringIO()
+
+    result = check.run(env, transport=transport, output=output)
+
+    assert result == 0
+    assert "floor check #1001" not in output.getvalue()
+
+
+def test_incomplete_check_run_collection_cannot_prove_floor_completeness():
+    transport, _document = proof_scenario()
+    endpoint = f"repos/{REPO}/commits/{HEAD}/check-runs?filter=all&per_page=100"
+    transport.responses[endpoint]["total_count"] = 2
+
+    result, output = execute(transport)
+
+    assert result == 1
+    assert "change-proof: ERROR" in output
+    assert "paginated GET was incomplete" in output
 
 
 POSITIVE_PATH_DEPARTURES_BODIES = (
@@ -975,6 +1461,18 @@ def test_review_endpoint_record_counts_as_reviewer_run():
 
     assert result == 0
     assert f"connected reviewer {REVIEWER} credited by review #5260887954" in output
+
+
+def test_review_endpoint_notice_does_not_count_as_a_reviewer_run():
+    transport = scenario(
+        comments=[use_note()],
+        reviews=[record(REVIEWER, "Review limit reached", id=41)],
+    )
+
+    result, output = execute(transport)
+
+    assert result == 1
+    assert "notice(s) 'Review limit reached' do not count" in output
 
 
 def test_undispositioned_top_level_inline_comment_fails():

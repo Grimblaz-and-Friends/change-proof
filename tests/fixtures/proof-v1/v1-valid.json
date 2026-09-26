@@ -1,0 +1,100 @@
+{
+  "declarations": [
+    {
+      "actual_effort": null,
+      "actual_model": null,
+      "actual_vendor": null,
+      "completed_at": null,
+      "dispatch_id": null,
+      "fallback_reason": null,
+      "reason": "no matching successful dispatch bundle",
+      "requested_classification": null,
+      "requested_effort": null,
+      "requested_model": null,
+      "requested_vendor": null,
+      "revision": null,
+      "same_vendor_reason": null,
+      "staffing_status": null,
+      "stage": "floor",
+      "status": "unverifiable"
+    }
+  ],
+  "diagnostics": [],
+  "dispositions": [],
+  "floor": {
+    "checks": [
+      {
+        "app_id": 15368,
+        "app_slug": "github-actions",
+        "completed_at": "2026-09-23T12:05:00Z",
+        "conclusion": "success",
+        "head": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "id": 81,
+        "name": "Tests",
+        "run_id": 91,
+        "started_at": "2026-09-23T12:00:00Z",
+        "status": "completed",
+        "url": "https://github.com/example/product/actions/runs/91",
+        "workflow_id": 71
+      }
+    ],
+    "head": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "source": {
+      "author": "holder",
+      "id": 31,
+      "kind": "pull-request-comment",
+      "repository": "example/product",
+      "revision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "timestamp": "2026-09-23T12:06:00Z",
+      "url": "https://github.com/example/product/pull/19#issuecomment-31"
+    }
+  },
+  "identity": {
+    "head": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "issue": 12,
+    "producer_version": "0.153.0",
+    "pull_request": 19,
+    "repository": "example/product",
+    "work": "example/product#12"
+  },
+  "policy": {
+    "use_rules": {
+      "path": "lib/use-rules.json",
+      "repository": "example/product",
+      "revision": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "sha256": "2222222222222222222222222222222222222222222222222222222222222222"
+    },
+    "work_configuration": {
+      "path": ".tradecraft/work.json",
+      "repository": "example/product",
+      "revision": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "sha256": "1111111111111111111111111111111111111111111111111111111111111111"
+    }
+  },
+  "reviewers": [
+    {
+      "login": "reviewer[bot]",
+      "notices": [],
+      "result": "present",
+      "source": {
+        "author": "reviewer[bot]",
+        "id": 41,
+        "kind": "review",
+        "repository": "example/product",
+        "revision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "timestamp": "2026-09-23T12:07:00Z",
+        "url": "https://github.com/example/product/pull/19#pullrequestreview-41"
+      }
+    }
+  ],
+  "schema_version": 1,
+  "use": {
+    "applicability": "generated",
+    "classification": "not-required",
+    "evidence_head": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "intervening_commits": [],
+    "reason": "no changed path matches a use-bought rule",
+    "required": false,
+    "source": null
+  }
+}
