@@ -410,6 +410,51 @@ def replace_proof_document(transport, document, *, envelope_head=HEAD, author=OW
     transport.responses[endpoint][0] = record(author, body, id=501)
 
 
+def affirmed_brief_record(
+    *,
+    id=32,
+    author=OWNER,
+    marker="<!-- tradecraft:affirmed-brief:v1 -->",
+    pair="Review risk: ordinary\nReview lane: mechanical",
+    **values,
+):
+    body = f"{marker}\n\nAffirmed brief body.\n\n{pair}"
+    return record(author, body, id=id, **values)
+
+
+def mechanical_proof_scenario(*, bought=False, brief=None):
+    transport, document = proof_scenario()
+    if bought:
+        transport.responses[f"repos/{REPO}/pulls/17/files?per_page=100"] = [
+            {"filename": "src/main.ts"}
+        ]
+    source = {
+        "kind": "issue-comment",
+        "repository": REPO,
+        "id": 32,
+        "url": f"https://github.com/{REPO}/issues/12#issuecomment-32",
+        "author": OWNER,
+        "timestamp": "2026-09-23T12:08:00Z",
+        "revision": None,
+    }
+    document["use"] = {
+        "required": False,
+        "classification": "not-required",
+        "evidence_head": HEAD,
+        "applicability": "generated",
+        "source": source,
+        "intervening_commits": [],
+        "reason": (
+            "the owner-affirmed mechanical lane exempts use even when changed paths "
+            "match the schema-version-1 use policy"
+        ),
+    }
+    work_endpoint = f"repos/{REPO}/issues/12/comments?per_page=100"
+    transport.responses[work_endpoint].append(brief or affirmed_brief_record())
+    replace_proof_document(transport, document)
+    return transport, document
+
+
 def shared_fixture_scenario(case):
     fixture_root = Path(__file__).parent / "fixtures" / "proof-v1"
     document = json.loads((fixture_root / "v1-valid.json").read_text(encoding="utf-8"))
@@ -524,7 +569,22 @@ def recorded_scenario(world_name, comment_name, *, add_path_departures=False):
     endpoint = (
         f"repos/{world['repository']}/issues/{world['pull_request']}/comments?per_page=100"
     )
-    responses[endpoint].insert(0, record("Grimblaz", comment, id=9_000_000_001))
+    proof_comment = world.get("proof_comment", {})
+    proof_id = proof_comment.get("id", 9_000_000_001)
+    proof_author = proof_comment.get("author", "Grimblaz")
+    proof_values = {
+        key: value
+        for key, value in proof_comment.items()
+        if key not in {"author", "id", "index"}
+    }
+    responses[endpoint] = [
+        item for item in responses[endpoint] if item.get("id") != proof_id
+    ]
+    proof_index = proof_comment.get("index", 0)
+    responses[endpoint].insert(
+        proof_index,
+        record(proof_author, comment, id=proof_id, **proof_values),
+    )
     if add_path_departures:
         pull_endpoint = f"repos/{world['repository']}/pulls/{world['pull_request']}"
         responses[pull_endpoint]["body"] = VALID_BODY
@@ -535,6 +595,7 @@ def recorded_scenario(world_name, comment_name, *, add_path_departures=False):
         "PULL_REQUEST_HEAD_SHA": world["head"],
         "GITHUB_API_URL": "https://api.github.com",
     }
+    environ.update({key: str(value) for key, value in world.get("environment", {}).items()})
     return FakeTransport(responses), environ
 
 
@@ -638,6 +699,72 @@ def test_exact_verra_composer_comment_passes_with_case_folded_source_authors():
     assert "floor source pull-request-comment #5787215547" in output.getvalue()
 
 
+def test_exact_mechanical_producer_comment_passes_against_recorded_github_facts():
+    transport, environ = recorded_scenario(
+        "world-tc767.trimmed.json", "tradecraft-767.comment.md"
+    )
+    output = io.StringIO()
+
+    result = check.run(environ, transport=transport, output=output)
+    rendered = output.getvalue()
+
+    assert result == 0
+    assert (
+        "verified: owner-affirmed mechanical lane in "
+        "Grimblaz-and-Friends/tradecraft#759 issue-comment #5851221027 exempts use; "
+        "changed paths would otherwise not require use"
+    ) in rendered
+    assert "missing: a current-head generated no-use record matching trusted policy" not in rendered
+    proof_endpoint = "repos/Grimblaz-and-Friends/tradecraft/issues/767/comments?per_page=100"
+    assert sum(
+        item.get("id") == 5852491047 for item in transport.responses[proof_endpoint]
+    ) == 1
+    assert (
+        "excluded: current gate's earlier attempt run #36292658635 attempt #1 "
+        "check #108545582382"
+    ) in rendered
+    assert (
+        "excluded: current gate execution run #36292658635 check #108549502051"
+    ) in rendered
+
+
+def test_recorded_mechanical_producer_comment_is_the_exact_prechange_falsifier():
+    fixture_root = Path(__file__).parent / "fixtures" / "proof-v1" / "recorded"
+    body = (fixture_root / "tradecraft-767.comment.md").read_text(encoding="utf-8")
+    candidate = check._proof_candidates(
+        [record("Grimblaz", body, id=5852491047)], frozenset({"grimblaz"})
+    )[0]
+    assert candidate.error is None
+    use = candidate.document["use"]
+
+    assert use["required"] is False
+    assert use["classification"] == "not-required"
+    assert use["evidence_head"] == "4f12aa5efa0ae765cebd213f89eec7da754c3d6a"
+    assert use["applicability"] == "generated"
+    assert use["intervening_commits"] == []
+    assert use["reason"]
+    assert use["source"] is not None
+
+
+def test_recorded_mechanical_producer_comment_passes_a_synthetic_bought_path_overlay():
+    transport, environ = recorded_scenario(
+        "world-tc767.trimmed.json", "tradecraft-767.comment.md"
+    )
+    files_endpoint = "repos/Grimblaz-and-Friends/tradecraft/pulls/767/files?per_page=100"
+    assert transport.responses[files_endpoint] == [{"filename": ".tradecraft/work.json"}]
+    transport.responses[files_endpoint][0]["filename"] = "lib/work.py"
+    output = io.StringIO()
+
+    result = check.run(environ, transport=transport, output=output)
+
+    assert result == 0
+    assert (
+        "verified: owner-affirmed mechanical lane in "
+        "Grimblaz-and-Friends/tradecraft#759 issue-comment #5851221027 exempts use; "
+        "changed paths would otherwise require use"
+    ) in output.getvalue()
+
+
 def test_recorded_current_gate_attempts_are_distinct_from_a_caller_run():
     transport, environ = recorded_scenario(
         "world-verra476.trimmed.json",
@@ -684,6 +811,412 @@ def test_recorded_crlf_policy_digests_are_declared_and_nonfatal():
     assert rendered.count("diagnostic: policy digest mismatch") == 2
     assert "tradecraft #742" in rendered
     assert "missing:" not in rendered
+
+
+@pytest.mark.parametrize(
+    ("bought", "path_result"),
+    ((False, "not require"), (True, "require")),
+)
+def test_owner_affirmed_mechanical_lane_exempts_both_path_classifications(
+    bought, path_result
+):
+    transport, _document = mechanical_proof_scenario(bought=bought)
+
+    result, output = execute(transport)
+
+    assert result == 0
+    assert (
+        f"verified: owner-affirmed mechanical lane in {REPO}#12 issue-comment #32 "
+        f"exempts use; changed paths would otherwise {path_result} use"
+    ) in output
+    assert "trusted policy classifies the changed paths as no-use" not in output
+
+
+@pytest.mark.parametrize(
+    "kind", ("pull-request-comment", "review", "review-comment")
+)
+def test_mechanical_lane_source_must_use_the_work_issue_surface(kind):
+    transport, document = mechanical_proof_scenario()
+    document["use"]["source"]["kind"] = kind
+    replace_proof_document(transport, document)
+
+    result, output = execute(transport)
+
+    assert result == 1
+    assert f"wrong surface {kind}; expected issue-comment" in output
+    assert "verified: owner-affirmed mechanical lane" not in output
+
+
+def test_mechanical_lane_source_must_name_the_evaluated_repository():
+    transport, document = mechanical_proof_scenario()
+    document["use"]["source"]["repository"] = "example/other"
+    replace_proof_document(transport, document)
+
+    result, output = execute(transport)
+
+    assert result == 1
+    assert f"affirmed-brief source in {REPO}" in output
+    assert "repository example/other" in output
+
+
+def test_mechanical_lane_source_must_be_on_the_named_work_issue():
+    transport, document = mechanical_proof_scenario()
+    document["use"]["source"]["id"] = 99
+    replace_proof_document(transport, document)
+
+    result, output = execute(transport)
+
+    assert result == 1
+    assert f"issue-comment source #99 on {REPO}#12" in output
+    assert "not on its claimed surface" in output
+
+
+def test_mechanical_lane_source_rejects_a_forged_claimed_author():
+    transport, document = mechanical_proof_scenario()
+    document["use"]["source"]["author"] = "stranger"
+    replace_proof_document(transport, document)
+
+    result, output = execute(transport)
+
+    assert result == 1
+    assert "author differs from the public record" in output
+
+
+def test_mechanical_lane_source_requires_a_base_tip_marker_producer():
+    transport, document = mechanical_proof_scenario()
+    work_endpoint = f"repos/{REPO}/issues/12/comments?per_page=100"
+    transport.responses[work_endpoint][-1]["user"]["login"] = "head-only-producer"
+    document["use"]["source"]["author"] = "head-only-producer"
+    head_config_endpoint = f"repos/{REPO}/contents/.tradecraft/work.json?ref={HEAD}"
+    head_config = json.loads(base64.b64decode(transport.responses[head_config_endpoint]["content"]))
+    head_config["marker_producers"].append("head-only-producer")
+    transport.responses[head_config_endpoint] = contents(head_config)
+    replace_proof_document(transport, document)
+
+    result, output = execute(transport)
+
+    assert result == 1
+    assert "head-only-producer is not a configured marker producer" in output
+
+
+@pytest.mark.parametrize(
+    "marker",
+    (
+        "<!-- tradecraft:affirmed-brief:v1 extra=true -->",
+        "<!-- tradecraft:affirmed-brief:v1 bare-garbage -->",
+    ),
+)
+def test_mechanical_lane_source_requires_an_attribute_free_affirmed_marker(marker):
+    transport, _document = mechanical_proof_scenario(
+        brief=affirmed_brief_record(marker=marker)
+    )
+
+    result, output = execute(transport)
+
+    assert result == 1
+    assert "exact attribute-free tradecraft:affirmed-brief:v1 marker" in output
+
+
+def test_work_issue_equal_to_pull_request_is_a_named_surface_collision():
+    transport, document = mechanical_proof_scenario()
+    document["identity"]["issue"] = 17
+    document["identity"]["work"] = f"{REPO}#17"
+    work_endpoint = f"repos/{REPO}/issues/12/comments?per_page=100"
+    pull_endpoint = f"repos/{REPO}/issues/17/comments?per_page=100"
+    proof_comment = transport.responses[pull_endpoint][0]
+    transport.responses[pull_endpoint] = [
+        proof_comment,
+        *copy.deepcopy(transport.responses[work_endpoint]),
+    ]
+    replace_proof_document(transport, document)
+
+    result, output = execute(transport)
+
+    assert result == 1
+    assert "issue-comment source #32 is misplaced on the pull-request surface" in output
+    assert "name the actual work issue" in output
+
+
+@pytest.mark.parametrize(
+    ("bought", "remedy"),
+    (
+        (True, "run the use owed by affirmed-brief issue-comment #33"),
+        (False, "recompose proof as an ordinary policy-based no-use record"),
+    ),
+)
+def test_later_connected_brief_supersedes_the_mechanical_source(bought, remedy):
+    transport, _document = mechanical_proof_scenario(bought=bought)
+    work_endpoint = f"repos/{REPO}/issues/12/comments?per_page=100"
+    transport.responses[work_endpoint].append(
+        affirmed_brief_record(id=33, pair="Review risk: ordinary\nReview lane: connected")
+    )
+
+    result, output = execute(transport)
+
+    assert result == 1
+    assert "issue-comment #32 is superseded by issue-comment #33" in output
+    assert remedy in output
+    assert "verified: owner-affirmed mechanical lane" not in output
+
+
+def test_later_mechanical_brief_requires_recomposition_and_then_passes():
+    transport, document = mechanical_proof_scenario()
+    work_endpoint = f"repos/{REPO}/issues/12/comments?per_page=100"
+    transport.responses[work_endpoint].append(affirmed_brief_record(id=33))
+
+    result, output = execute(transport)
+
+    assert result == 1
+    assert "issue-comment #32 is superseded by issue-comment #33" in output
+
+    document["use"]["source"]["id"] = 33
+    document["use"]["source"]["url"] = (
+        f"https://github.com/{REPO}/issues/12#issuecomment-33"
+    )
+    replace_proof_document(transport, document)
+    result, output = execute(transport)
+
+    assert result == 0
+    assert "issue-comment #33 exempts use" in output
+
+
+def test_artifact_form_copy_is_the_latest_affirmed_record():
+    copied = affirmed_brief_record(
+        id=33,
+        pair=(
+            "Purpose: preserve the settled artifact.\n\n"
+            "<!-- tradecraft:affirmed-brief:v1 -->\n\n"
+            "Review risk: ordinary\nReview lane: mechanical"
+        ),
+    )
+    transport, document = mechanical_proof_scenario()
+    work_endpoint = f"repos/{REPO}/issues/12/comments?per_page=100"
+    transport.responses[work_endpoint].append(copied)
+    document["use"]["source"]["id"] = 33
+    replace_proof_document(transport, document)
+
+    result, output = execute(transport)
+
+    assert result == 0
+    assert "issue-comment #33 exempts use" in output
+
+
+def test_later_unauthorized_affirmed_comment_does_not_supersede_authority():
+    transport, _document = mechanical_proof_scenario()
+    work_endpoint = f"repos/{REPO}/issues/12/comments?per_page=100"
+    transport.responses[work_endpoint].append(
+        affirmed_brief_record(id=33, author="stranger")
+    )
+
+    result, output = execute(transport)
+
+    assert result == 0
+    assert "issue-comment #32 exempts use" in output
+
+
+def test_github_comment_order_not_updated_at_selects_the_latest_brief():
+    transport, _document = mechanical_proof_scenario()
+    work_endpoint = f"repos/{REPO}/issues/12/comments?per_page=100"
+    transport.responses[work_endpoint][-1]["updated_at"] = "2026-09-23T13:00:00Z"
+    transport.responses[work_endpoint].append(affirmed_brief_record(
+        id=33,
+        pair="Review risk: ordinary\nReview lane: connected",
+        updated_at="2026-09-22T13:00:00Z",
+    ))
+
+    result, output = execute(transport)
+
+    assert result == 1
+    assert "issue-comment #32 is superseded by issue-comment #33" in output
+
+
+@pytest.mark.parametrize(
+    ("pair", "passes", "expected"),
+    (
+        ("ReViEw RiSk:\tOrDiNaRy  \r\nReViEw LaNe: MeChAnIcAl\r\n", True, None),
+        ("Review lane: mechanical", False, "recognized Review risk lines=0"),
+        ("Review risk: ordinary", False, "recognized Review lane lines=0"),
+        (
+            "Review risk: ordinary\nReview risk: ordinary\nReview lane: mechanical",
+            False,
+            "recognized Review risk lines=2",
+        ),
+        (
+            "Review risk: ordinary\nReview lane: mechanical\nReview lane: connected",
+            False,
+            "recognized Review lane lines=2",
+        ),
+        ("Review risk: unknown\nReview lane: mechanical", False, "recognized Review risk lines=0"),
+        (
+            "Review risk: ordinary\nReview lane: substantial-panel",
+            False,
+            "unlawful review pair ordinary / substantial-panel",
+        ),
+        (
+            "Review risk: ordinary\nReview lane: connected",
+            False,
+            "found ordinary / connected",
+        ),
+        (
+            "Review risk: elevated\nReview lane: routine-panel",
+            False,
+            "found elevated / routine-panel",
+        ),
+        (
+            "Review risk: critical\nReview lane: substantial-panel",
+            False,
+            "found critical / substantial-panel",
+        ),
+    ),
+)
+def test_mechanical_lane_requires_one_lawful_ordinary_mechanical_pair(
+    pair, passes, expected
+):
+    transport, _document = mechanical_proof_scenario(
+        brief=affirmed_brief_record(pair=pair)
+    )
+
+    result, output = execute(transport)
+
+    assert result == (0 if passes else 1)
+    if expected is not None:
+        assert expected in output
+        assert "verified: owner-affirmed mechanical lane" not in output
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    (
+        ("required", True),
+        ("classification", "required"),
+        ("evidence_head", "d" * 40),
+        ("intervening_commits", [{"sha": "d" * 40, "paths": ["docs/readme.md"]}]),
+        ("reason", ""),
+        ("applicability", "current-head"),
+    ),
+)
+def test_mechanical_lane_does_not_relax_generated_carrier_shape(field, value):
+    transport, document = mechanical_proof_scenario()
+    document["use"][field] = value
+    replace_proof_document(transport, document)
+
+    result, output = execute(transport)
+
+    assert result == 1
+    assert "verified: owner-affirmed mechanical lane" not in output
+
+
+def test_lane_sounding_reason_without_source_does_not_exempt_bought_paths():
+    transport, document = mechanical_proof_scenario(bought=True)
+    document["use"]["source"] = None
+    replace_proof_document(transport, document)
+
+    result, output = execute(transport)
+
+    assert result == 1
+    assert "proof use classification matching trusted policy: required" in output
+    assert "verified: owner-affirmed mechanical lane" not in output
+
+
+def test_irrelevant_mechanical_brief_does_not_override_current_head_use():
+    transport, document = proof_scenario()
+    transport.responses[f"repos/{REPO}/pulls/17/files?per_page=100"] = [
+        {"filename": "src/main.ts"}
+    ]
+    source = {
+        "kind": "issue-comment",
+        "repository": REPO,
+        "id": 32,
+        "url": f"https://github.com/{REPO}/issues/12#issuecomment-32",
+        "author": OWNER,
+        "timestamp": "2026-09-23T12:08:00Z",
+        "revision": HEAD,
+    }
+    document["use"] = {
+        "required": True,
+        "classification": "required",
+        "evidence_head": HEAD,
+        "applicability": "current-head",
+        "source": source,
+        "intervening_commits": [],
+        "reason": "current-head use completed",
+    }
+    work_endpoint = f"repos/{REPO}/issues/12/comments?per_page=100"
+    transport.responses[work_endpoint].extend((
+        use_note(id=32),
+        affirmed_brief_record(id=33),
+    ))
+    replace_proof_document(transport, document)
+
+    result, output = execute(transport)
+
+    assert result == 0
+    assert "trusted policy requires use and the public use source is current-head" in output
+    assert "verified: owner-affirmed mechanical lane" not in output
+
+
+def test_mechanical_brief_does_not_change_the_marker_only_path():
+    transport = scenario(
+        paths=("src/main.ts",),
+        comments=[affirmed_brief_record()],
+        reviews=[record(REVIEWER, "completed review")],
+    )
+
+    result, output = execute(transport)
+
+    assert result == 1
+    assert "evidence path: legacy-markers" in output
+    assert "authorized, valid use marker" in output
+    assert "verified: owner-affirmed mechanical lane" not in output
+
+
+def test_valid_mechanical_lane_does_not_clear_missing_path_departures():
+    transport, _document = mechanical_proof_scenario()
+    transport.responses[f"repos/{REPO}/pulls/17"]["body"] = ""
+
+    result, output = execute(transport)
+
+    assert result == 1
+    assert "Path departures" in output
+    assert "verified: owner-affirmed mechanical lane" in output
+
+
+def test_valid_mechanical_lane_does_not_clear_a_failed_floor_check():
+    transport, document = mechanical_proof_scenario()
+    document["floor"]["checks"][0]["conclusion"] = "failure"
+    check_endpoint = f"repos/{REPO}/commits/{HEAD}/check-runs?filter=all&per_page=100"
+    transport.responses[check_endpoint]["check_runs"][0]["conclusion"] = "failure"
+    replace_proof_document(transport, document)
+
+    result, output = execute(transport)
+
+    assert result == 1
+    assert "completed acceptable result for floor check #81" in output
+    assert "verified: owner-affirmed mechanical lane" in output
+
+
+def test_valid_mechanical_lane_does_not_clear_a_missing_reviewer():
+    transport, document = mechanical_proof_scenario()
+    document["reviewers"] = []
+    replace_proof_document(transport, document)
+
+    result, output = execute(transport)
+
+    assert result == 1
+    assert "exactly one proof entry for every trusted configured reviewer" in output
+    assert "verified: owner-affirmed mechanical lane" in output
+
+
+def test_mechanical_lane_cannot_pass_when_work_comments_are_unreadable():
+    transport, _document = mechanical_proof_scenario()
+    work_endpoint = f"repos/{REPO}/issues/12/comments?per_page=100"
+    transport.responses[work_endpoint] = check.ProofError("recording unavailable")
+
+    result, output = execute(transport)
+
+    assert result == 1
+    assert "readable work-issue comments for issue 12: recording unavailable" in output
+    assert "verified: owner-affirmed mechanical lane" not in output
 
 
 def test_complete_proof_document_passes_and_keeps_local_records_declared():
