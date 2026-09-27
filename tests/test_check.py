@@ -1053,6 +1053,18 @@ def test_unclosed_unauthorized_proof_prefix_is_scanned_in_linear_time():
     assert elapsed < 0.5
 
 
+def test_unclosed_legacy_marker_prefix_is_scanned_in_linear_time():
+    body = "<!-- tradecraft:proof:v1 " + (" " * 250_000)
+    comments = [record("stranger", body, id=777)]
+
+    started = time.perf_counter()
+    found = check.markers(comments)
+    elapsed = time.perf_counter() - started
+
+    assert found == []
+    assert elapsed < 0.5
+
+
 @pytest.mark.parametrize("payload_kind", ("unhashable-enum", "deep-json"))
 def test_authorized_parse_failures_are_named_candidate_failures(payload_kind):
     transport, document = proof_scenario()
