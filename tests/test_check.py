@@ -618,6 +618,37 @@ def test_exact_verra_composer_comment_passes_with_case_folded_source_authors():
     assert "floor source pull-request-comment #5787215547" in output.getvalue()
 
 
+def test_recorded_current_gate_attempts_are_distinct_from_a_caller_run():
+    transport, environ = recorded_scenario(
+        "world-verra476.trimmed.json",
+        "verra-476.comment.md",
+        add_path_departures=True,
+    )
+    environ.update({
+        "GITHUB_RUN_ID": "35804256431",
+        "GITHUB_RUN_ATTEMPT": "2",
+    })
+    output = io.StringIO()
+
+    result = check.run(environ, transport=transport, output=output)
+    rendered = output.getvalue()
+
+    assert result == 0
+    assert (
+        "excluded: current gate execution run #35804256431 check #107031065299 "
+        "is not floor evidence because a gate cannot prove itself"
+    ) in rendered
+    assert (
+        "excluded: current gate's earlier attempt run #35804256431 attempt #1 "
+        "check #107001377611 is not floor evidence because the current gate is attempt #2"
+    ) in rendered
+    assert "caller proof execution run #35804256431" not in rendered
+    assert (
+        "excluded: caller proof execution run #35804256441 check #107001378116 "
+        "is not floor evidence because it invokes the reusable change-proof job"
+    ) in rendered
+
+
 def test_recorded_crlf_policy_digests_are_declared_and_nonfatal():
     transport, environ = recorded_scenario(
         "world-verra476.trimmed.json",
@@ -1191,7 +1222,11 @@ def test_reusable_proof_run_is_excluded_only_for_the_exact_referenced_source(
             }],
         }
 
-    result, output = execute(transport)
+    environ = environment()
+    environ.update({"GITHUB_RUN_ID": "100", "GITHUB_RUN_ATTEMPT": "1"})
+    rendered = io.StringIO()
+    result = check.run(environ, transport=transport, output=rendered)
+    output = rendered.getvalue()
 
     assert result == (0 if exact_reference else 1)
     if exact_reference:

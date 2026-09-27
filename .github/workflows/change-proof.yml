@@ -1240,10 +1240,15 @@ jobs:
                           ))
                           continue
                       job_attempt = associated[0].get("run_attempt")
-                      is_current = (
-                          current_run_id is not None
-                          and run_id == current_run_id
-                          and (current_run_attempt is None or job_attempt == current_run_attempt)
+                      same_current_run = current_run_id is not None and run_id == current_run_id
+                      is_current = same_current_run and (
+                          current_run_attempt is None or job_attempt == current_run_attempt
+                      )
+                      is_earlier_current_attempt = (
+                          same_current_run
+                          and current_run_attempt is not None
+                          and _is_integer(job_attempt)
+                          and job_attempt < current_run_attempt
                       )
                       if _is_proof_job(associated[0]):
                           if is_current:
@@ -1252,11 +1257,24 @@ jobs:
                                   "evidence because a gate cannot prove itself"
                               )
                               exclude = True
-                          elif references_gate:
+                          elif is_earlier_current_attempt:
                               excluded.append(
-                                  f"caller proof execution run #{run_id} check #{raw_id} is not floor "
-                                  "evidence because it invokes the reusable change-proof job"
+                                  f"current gate's earlier attempt run #{run_id} attempt #{job_attempt} "
+                                  f"check #{raw_id} is not floor evidence because the current gate is "
+                                  f"attempt #{current_run_attempt}"
                               )
+                              exclude = True
+                          elif references_gate:
+                              if current_run_id is not None and run_id != current_run_id:
+                                  excluded.append(
+                                      f"caller proof execution run #{run_id} check #{raw_id} is not floor "
+                                      "evidence because it invokes the reusable change-proof job"
+                                  )
+                              else:
+                                  excluded.append(
+                                      f"reusable proof execution run #{run_id} check #{raw_id} is not floor "
+                                      "evidence because it invokes the reusable change-proof job"
+                                  )
                               exclude = True
                   if exclude:
                       continue
