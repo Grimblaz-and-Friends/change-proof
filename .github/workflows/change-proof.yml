@@ -41,7 +41,7 @@ jobs:
           import os
           import re
           import sys
-          from typing import Mapping, TextIO
+          from typing import Callable, Mapping, TextIO
           import urllib.error
           import urllib.parse
           import urllib.request
@@ -1033,6 +1033,24 @@ jobs:
               return value if isinstance(value, str) else ""
 
 
+          def _source_records(
+              kind: str,
+              comments: list[dict[str, object]],
+              work_comments: list[dict[str, object]],
+              reviews: list[dict[str, object]],
+              review_comments: list[dict[str, object]],
+          ) -> list[dict[str, object]] | None:
+              if kind == "pull-request-comment":
+                  return comments
+              if kind == "issue-comment":
+                  return work_comments
+              if kind == "review":
+                  return reviews
+              if kind in {"review-comment", "inline-review-comment"}:
+                  return review_comments
+              return None
+
+
           def _resolve_source(
               source: dict[str, object],
               repo: str,
@@ -1044,15 +1062,8 @@ jobs:
               if str(source["repository"]).lower() != repo.lower():
                   return None, f"source repository {source['repository']} is outside {repo}"
               kind = str(source["kind"]).lower()
-              if kind == "pull-request-comment":
-                  records = comments
-              elif kind == "issue-comment":
-                  records = work_comments
-              elif kind == "review":
-                  records = reviews
-              elif kind in {"review-comment", "inline-review-comment"}:
-                  records = review_comments
-              else:
+              records = _source_records(kind, comments, work_comments, reviews, review_comments)
+              if records is None:
                   return None, f"source kind {source['kind']!r} is not a supported public evidence surface"
               identity = _source_identity(source["id"])
               record = next(
@@ -1065,6 +1076,28 @@ jobs:
               if isinstance(claimed_author, str) and claimed_author.lower() != _author(record):
                   return None, f"{kind} source {identity} author differs from the public record"
               return record, None
+
+
+          def _missing_source_pointer(
+              source: dict[str, object],
+              repo: str,
+              comments: list[dict[str, object]],
+              work_comments: list[dict[str, object]],
+              reviews: list[dict[str, object]],
+              review_comments: list[dict[str, object]],
+              matches: Callable[[dict[str, object]], bool],
+          ) -> tuple[bool, dict[str, object] | None]:
+              if str(source["repository"]).lower() != repo.lower():
+                  return False, None
+              records = _source_records(
+                  str(source["kind"]).lower(), comments, work_comments, reviews, review_comments
+              )
+              if records is None:
+                  return False, None
+              identity = _source_identity(source["id"])
+              if any(_source_identity(item.get("id")) == identity for item in records):
+                  return False, None
+              return True, next((item for item in records if matches(item)), None)
 
 
           def _valid_floor(marker: MarkerRecord, head: str) -> bool:
@@ -1144,13 +1177,14 @@ jobs:
               head: str,
               current_run_id: int | None,
               current_run_attempt: int | None,
-          ) -> tuple[list[dict[str, object]], list[Finding]]:
+          ) -> tuple[list[dict[str, object]], list[Finding], list[str]]:
               endpoint = f"repos/{repo}/commits/{head}/check-runs?filter=all&per_page=100"
               check_runs = _paginated_objects(transport.get(endpoint, paginate=True), endpoint, "check_runs")
               run_cache: dict[int, dict[str, object]] = {}
               jobs_cache: dict[int, list[dict[str, object]]] = {}
               candidates: list[dict[str, object]] = []
               findings: list[Finding] = []
+              excluded: list[str] = []
               for check_run in check_runs:
                   raw_id = check_run.get("id")
                   if not _is_integer(raw_id):
@@ -1190,9 +1224,10 @@ jobs:
                           workflow_id = run["workflow_id"]
 
                   exclude = False
+                  references_gate = run is not None and _run_references_gate(run)
                   needs_association = run is not None and (
                       (current_run_id is not None and run_id == current_run_id)
-                      or _run_references_gate(run)
+                      or references_gate
                   )
                   if needs_association and run_id is not None:
                       if run_id not in jobs_cache:
@@ -1210,8 +1245,19 @@ jobs:
                           and run_id == current_run_id
                           and (current_run_attempt is None or job_attempt == current_run_attempt)
                       )
-                      if _is_proof_job(associated[0]) and (is_current or _run_references_gate(run or {})):
-                          exclude = True
+                      if _is_proof_job(associated[0]):
+                          if is_current:
+                              excluded.append(
+                                  f"current gate execution run #{run_id} check #{raw_id} is not floor "
+                                  "evidence because a gate cannot prove itself"
+                              )
+                              exclude = True
+                          elif references_gate:
+                              excluded.append(
+                                  f"caller proof execution run #{run_id} check #{raw_id} is not floor "
+                                  "evidence because it invokes the reusable change-proof job"
+                              )
+                              exclude = True
                   if exclude:
                       continue
 
@@ -1249,7 +1295,7 @@ jobs:
                   ) if previous is not None else None
                   if previous_key is None or sort_key > previous_key:
                       latest[group] = check
-              return sorted(latest.values(), key=lambda item: int(item["id"])), findings
+              return sorted(latest.values(), key=lambda item: int(item["id"])), findings, excluded
 
 
           def _check_difference(expected: dict[str, object], actual: dict[str, object]) -> str | None:
@@ -1356,15 +1402,18 @@ jobs:
               policy_bytes: dict[tuple[str, str], bytes],
               current_run_id: int | None,
               current_run_attempt: int | None,
-          ) -> tuple[list[Finding], list[str], list[str], list[str]]:
+          ) -> tuple[list[Finding], list[str], list[str], list[str], list[str], list[str]]:
               failures: list[Finding] = []
               verified: list[str] = [f"selected proof-v1 comment #{comment_id}"]
               policy_verified, declared, diagnostics = _policy_rendering(document, repo, policy_bytes)
+              producer_diagnostics: list[str] = []
               verified.extend(policy_verified)
               declared.extend(_declaration_lines(document))
               for item in document["diagnostics"]:
                   assert isinstance(item, dict)
-                  diagnostics.append(f"{_safe_text(item['code'])}: {_safe_text(item['message'])}")
+                  producer_diagnostics.append(
+                      f"{_safe_text(item['code'])}: {_safe_text(item['message'])}"
+                  )
 
               identity = document["identity"]
               assert isinstance(identity, dict)
@@ -1378,7 +1427,11 @@ jobs:
               )
               for passes, message in identity_checks:
                   if not passes:
-                      failures.append(Finding(message, "recompose and post proof for the live pull-request identity"))
+                      failures.append(Finding(
+                          message,
+                          f"correct or replace comment #{comment_id} for the live pull-request identity "
+                          "so exactly one authorized current-head proof document remains",
+                      ))
               if not failures:
                   verified.append(f"proof identity matches {repo} pull request #{number} at {head}")
 
@@ -1401,22 +1454,57 @@ jobs:
                       source, repo, comments, work_comments, reviews, review_comments
                   )
                   floor_markers = markers([record]) if record is not None else []
+                  pointer_missing, alternate = _missing_source_pointer(
+                      source,
+                      repo,
+                      comments,
+                      work_comments,
+                      reviews,
+                      review_comments,
+                      lambda item: (
+                          _author(item) in config.marker_producers
+                          and any(_valid_floor(marker, head) for marker in markers([item]))
+                      ),
+                  )
                   if (
                       source_error is not None
                       or record is None
                       or _author(record) not in config.marker_producers
                       or not any(_valid_floor(marker, head) for marker in floor_markers)
                   ):
-                      detail = source_error or "the source is unauthorized or lacks the exact current-head floor marker"
+                      if pointer_missing and alternate is not None:
+                          alternate_id = _source_identity(alternate.get("id"))
+                          kind = str(source["kind"]).lower()
+                          detail = (
+                              f"document pointer is stale; matching {kind} #{alternate_id} already exists"
+                          )
+                          remedy = (
+                              f"recompose proof from {kind} #{alternate_id} instead of posting a duplicate"
+                          )
+                      elif pointer_missing:
+                          detail = f"floor record is missing: {source_error}"
+                          remedy = (
+                              "post the exact successful floor marker on its lawful source surface and "
+                              "recompose proof"
+                          )
+                      else:
+                          detail = (
+                              source_error
+                              or "the source is unauthorized or lacks the exact current-head floor marker"
+                          )
+                          remedy = (
+                              "correct the document's floor source, or post the exact successful floor "
+                              "marker when the public record itself is invalid, then recompose proof"
+                          )
                       failures.append(Finding(
                           f"an authorized valid floor source: {detail}",
-                          "post the exact successful floor marker on its lawful source surface and recompose proof",
+                          remedy,
                       ))
                   else:
                       floor_source_verified = True
                       verified.append(f"floor source {_safe_text(source['kind'])} #{_safe_text(source['id'])} is authorized and current-head")
 
-              actual_checks, check_findings = _public_floor_checks(
+              actual_checks, check_findings, excluded = _public_floor_checks(
                   transport, repo, head, current_run_id, current_run_attempt
               )
               failures.extend(check_findings)
@@ -1487,16 +1575,70 @@ jobs:
                           use_source, repo, comments, work_comments, reviews, review_comments
                       )
                       source_markers = markers([record]) if record is not None else []
+                      lawful_markers = [
+                          marker
+                          for marker in source_markers
+                          if _valid_use(marker, evidence_head)
+                      ]
+                      requires_unchanged = evidence_head != head
+                      applicable_markers = [
+                          marker
+                          for marker in lawful_markers
+                          if not requires_unchanged or marker.attributes.get("changed") == "false"
+                      ]
                       valid_source = (
                           source_error is None
                           and record is not None
                           and _author(record) in config.marker_producers
-                          and any(_valid_use(marker, evidence_head) for marker in source_markers)
+                          and bool(applicable_markers)
                       )
                       if not valid_source:
+                          pointer_missing, alternate = _missing_source_pointer(
+                              use_source,
+                              repo,
+                              comments,
+                              work_comments,
+                              reviews,
+                              review_comments,
+                              lambda item: (
+                                  _author(item) in config.marker_producers
+                                  and any(
+                                      _valid_use(marker, evidence_head)
+                                      and (
+                                          not requires_unchanged
+                                          or marker.attributes.get("changed") == "false"
+                                      )
+                                      for marker in markers([item])
+                                  )
+                              ),
+                          )
+                          if pointer_missing and alternate is not None:
+                              alternate_id = _source_identity(alternate.get("id"))
+                              kind = str(use_source["kind"]).lower()
+                              detail = (
+                                  f"document pointer is stale; matching {kind} #{alternate_id} already exists"
+                              )
+                              remedy = (
+                                  f"recompose proof from {kind} #{alternate_id} instead of posting a duplicate"
+                              )
+                          elif pointer_missing:
+                              detail = f"use record is missing: {source_error}"
+                              remedy = "post a lawful use marker on its claimed surface and recompose proof"
+                          elif requires_unchanged and lawful_markers and not applicable_markers:
+                              detail = "ancestor use evidence requires an ancestor use marker with changed=false"
+                              remedy = (
+                                  "post current-head use evidence, or post an ancestor marker with "
+                                  "changed=false after confirming no use-bought change"
+                              )
+                          else:
+                              detail = source_error or "marker is invalid or unauthorized"
+                              remedy = (
+                                  "correct the document's use source, or post a lawful use marker when "
+                                  "the public record itself is invalid, then recompose proof"
+                              )
                           failures.append(Finding(
-                              f"an authorized valid public use source: {source_error or 'marker is invalid or unauthorized'}",
-                              "post a lawful use marker on its claimed surface and recompose proof",
+                              f"an authorized valid public use source: {detail}",
+                              remedy,
                           ))
                       elif evidence_head == head:
                           if use["applicability"] != "current-head" or use["intervening_commits"]:
@@ -1586,20 +1728,62 @@ jobs:
                           f"have {login} complete its review and recompose proof",
                       ))
                       continue
+                  source_kind = str(source.get("kind") or "").lower()
+                  accepted_review_kinds = {
+                      "review", "review-comment", "inline-review-comment", "pull-request-comment",
+                  }
+                  if source_kind not in accepted_review_kinds:
+                      failures.append(Finding(
+                          f"a valid completed public review receipt for {login}: source kind "
+                          f"{source_kind or 'without a kind'} cannot credit a pull-request review",
+                          f"have {login} review this pull request through a review, inline review "
+                          "comment, or non-notice pull-request comment, then recompose proof",
+                      ))
+                      continue
                   record, source_error = _resolve_source(
                       source, repo, comments, work_comments, reviews, review_comments
                   )
-                  source_kind = str(source.get("kind") or "").lower()
                   notice = (
                       _review_notice(str(record.get("body") or ""))
-                      if record is not None and source_kind in {"review", "pull-request-comment"}
+                      if record is not None and source_kind == "pull-request-comment"
                       else None
                   )
                   if source_error is not None or record is None or _author(record) != login or notice is not None:
+                      pointer_missing, alternate = _missing_source_pointer(
+                          source,
+                          repo,
+                          comments,
+                          work_comments,
+                          reviews,
+                          review_comments,
+                          lambda item: (
+                              _author(item) == login
+                              and (
+                                  source_kind != "pull-request-comment"
+                                  or _review_notice(str(item.get("body") or "")) is None
+                              )
+                          ),
+                      )
+                      if pointer_missing and alternate is not None:
+                          alternate_id = _source_identity(alternate.get("id"))
+                          detail = (
+                              f"document pointer is stale; matching {source_kind} "
+                              f"#{alternate_id} already exists"
+                          )
+                          remedy = (
+                              f"recompose proof from {source_kind} #{alternate_id} instead of asking "
+                              f"{login} to review again"
+                          )
+                      elif pointer_missing:
+                          detail = f"review record is missing: {source_error}"
+                          remedy = f"have {login} post a completed review receipt and recompose proof"
+                      else:
+                          detail = source_error or notice or "source author differs"
+                          remedy = f"have {login} post a completed review receipt and recompose proof"
                       failures.append(Finding(
                           f"a valid completed public review receipt for {login}: "
-                          f"{source_error or notice or 'source author differs'}",
-                          f"have {login} post a completed review receipt and recompose proof",
+                          f"{detail}",
+                          remedy,
                       ))
                   else:
                       verified.append(f"connected reviewer {login} credited by {_safe_text(source['kind'])} #{_safe_text(source['id'])}")
@@ -1674,7 +1858,7 @@ jobs:
                       verified.append(f"reviewer thread {thread_id} has an authorized disposition")
               if not owed:
                   verified.append("every top-level inline reviewer comment has a marker-producer disposition")
-              return failures, verified, declared, diagnostics
+              return failures, verified, declared, diagnostics, producer_diagnostics, excluded
 
 
           def evaluate(
@@ -1957,6 +2141,8 @@ jobs:
                   verified = preflight_verified
                   declared: list[str] = []
                   diagnostics: list[str] = []
+                  producer_diagnostics: list[str] = []
+                  excluded: list[str] = []
                   evidence_path: str | None = None
                   if selected_policy is not None:
                       rules = load_use_rules(selected_policy[".github/change-proof.json"])
@@ -2037,7 +2223,8 @@ jobs:
                                       failures.append(Finding(
                                           f"a valid selected proof-v1 document in comment #{candidate.comment_id}: "
                                           f"{candidate.error or 'document is missing'}",
-                                          "recompose the proof document from the record and post it at this head",
+                                          f"correct or replace comment #{candidate.comment_id} so exactly one "
+                                          "authorized current-head proof document remains",
                                       ))
                                   elif not unscoped:
                                       identity = candidate.document["identity"]
@@ -2065,7 +2252,14 @@ jobs:
                                           for path, record in records.items():
                                               if record is not None:
                                                   policy_bytes[(path, revision)] = record[1]
-                                      document_failures, document_verified, document_declared, document_diagnostics = evaluate_document(
+                                      (
+                                          document_failures,
+                                          document_verified,
+                                          document_declared,
+                                          document_diagnostics,
+                                          document_producer_diagnostics,
+                                          document_excluded,
+                                      ) = evaluate_document(
                                           candidate.document,
                                           candidate.envelope_head or "",
                                           candidate.comment_id,
@@ -2095,6 +2289,8 @@ jobs:
                                       verified.extend(document_verified)
                                       declared.extend(document_declared)
                                       diagnostics.extend(document_diagnostics)
+                                      producer_diagnostics.extend(document_producer_diagnostics)
+                                      excluded.extend(document_excluded)
                           else:
                               evidence_path = "legacy-markers"
                               evidence_failures, evidence_verified = evaluate(
@@ -2128,8 +2324,12 @@ jobs:
                           print(f"verified: {statement}", file=destination)
                       for statement in declared:
                           print(f"declared: {statement}", file=destination)
+                      for statement in producer_diagnostics:
+                          print(f"producer-diagnostic: {statement}", file=destination)
                       for statement in diagnostics:
                           print(f"diagnostic: {statement}", file=destination)
+                      for statement in excluded:
+                          print(f"excluded: {statement}", file=destination)
                       for finding in failures:
                           print(f"missing: {_safe_text(finding.missing)}", file=destination)
                           print(f"satisfy: {_safe_text(finding.satisfy)}", file=destination)
@@ -2141,8 +2341,12 @@ jobs:
                       print(f"verified: {statement}", file=destination)
                   for statement in declared:
                       print(f"declared: {statement}", file=destination)
+                  for statement in producer_diagnostics:
+                      print(f"producer-diagnostic: {statement}", file=destination)
                   for statement in diagnostics:
                       print(f"diagnostic: {statement}", file=destination)
+                  for statement in excluded:
+                      print(f"excluded: {statement}", file=destination)
                   return 0
               except (OSError, UnicodeError, ValueError, ProofError) as exc:
                   print("change-proof: ERROR", file=destination)

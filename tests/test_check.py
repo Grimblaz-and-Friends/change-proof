@@ -552,7 +552,9 @@ def test_shared_proof_fixture_and_semantic_cases_keep_their_structural_roles():
         ("wrong-head", "proof identity head", False),
         ("substituted-floor-check", "public floor check #999", False),
         ("omitted-configured-reviewer", "missing: reviewer[bot]", False),
-        ("non-review-notice", "Review limit reached", False),
+        # A review object remains a legacy receipt regardless of its body. The
+        # pull-request-comment notice case is covered separately below.
+        ("non-review-notice", "credited by review #41", True),
         ("omitted-thread", "missing: 51", False),
         ("unauthorized-disposition", "reviewer thread 51", False),
         ("producer-verification-field", "unexpected verified", False),
@@ -594,6 +596,11 @@ def test_exact_tradecraft_composer_comments_pass_against_recorded_github_facts(c
     assert result == 0
     assert "evidence path: proof-v1" in output.getvalue()
     assert "floor source pull-request-comment #5804738722" in output.getvalue()
+    assert "producer-diagnostic: invalid-marker-claim:" in output.getvalue()
+    assert not any(
+        line.startswith("diagnostic: invalid-marker-claim:")
+        for line in output.getvalue().splitlines()
+    )
 
 
 def test_exact_verra_composer_comment_passes_with_case_folded_source_authors():
@@ -766,6 +773,8 @@ def test_duplicate_json_keys_in_selected_document_are_rejected():
 
     assert result == 1
     assert "duplicate JSON key 'schema_version'" in output
+    assert "correct or replace comment #501" in output
+    assert "exactly one authorized current-head proof document remains" in output
 
 
 def test_current_head_bought_use_is_verified_from_its_claimed_public_source():
@@ -925,6 +934,10 @@ def test_current_gate_job_is_excluded_by_run_and_job_identity_not_display_name_a
 
     assert result == 0
     assert "floor check #1001" not in output.getvalue()
+    assert (
+        "excluded: current gate execution run #100 check #1001 is not floor evidence "
+        "because a gate cannot prove itself"
+    ) in output.getvalue()
 
 
 def test_incomplete_check_run_collection_cannot_prove_floor_completeness():
@@ -1183,6 +1196,10 @@ def test_reusable_proof_run_is_excluded_only_for_the_exact_referenced_source(
     assert result == (0 if exact_reference else 1)
     if exact_reference:
         assert "floor check #82" not in output
+        assert (
+            "excluded: caller proof execution run #92 check #82 is not floor evidence "
+            "because it invokes the reusable change-proof job"
+        ) in output
     else:
         assert "omitted check id(s): 82" in output
 
@@ -1265,6 +1282,19 @@ def test_document_ancestor_use_accepts_intervening_paths_as_sets():
     assert "remains applicable" in output
 
 
+def test_document_ancestor_use_rejects_a_changed_true_marker():
+    transport = ancestor_proof_scenario()
+    endpoint = f"repos/{REPO}/issues/12/comments?per_page=100"
+    transport.responses[endpoint][-1] = use_note(
+        head=ANCESTOR, changed=True, id=32
+    )
+
+    result, output = execute(transport)
+
+    assert result == 1
+    assert "ancestor use marker with changed=false" in output
+
+
 def test_document_ancestor_compare_failure_is_a_named_use_failure():
     transport = ancestor_proof_scenario()
     transport.responses[compare_endpoint(ANCESTOR)] = check.GitHubNotFound(
@@ -1295,7 +1325,7 @@ def test_missing_work_issue_is_a_named_source_failure_not_a_gate_error():
     assert "correct the named issue" in output
 
 
-def test_document_review_notice_is_not_a_completed_receipt():
+def test_document_review_body_is_credited_exactly_like_the_legacy_path():
     transport, _document = proof_scenario()
     transport.responses[f"repos/{REPO}/pulls/17/reviews?per_page=100"][0][
         "body"
@@ -1303,9 +1333,57 @@ def test_document_review_notice_is_not_a_completed_receipt():
 
     result, output = execute(transport)
 
+    assert result == 0
+    assert f"connected reviewer {REVIEWER} credited by review #41" in output
+
+
+def test_document_pull_request_notice_is_not_a_completed_receipt():
+    transport, document = proof_scenario()
+    document["reviewers"][0]["source"] = {
+        "kind": "pull-request-comment",
+        "repository": REPO,
+        "id": 42,
+        "url": f"https://github.com/{REPO}/pull/17#issuecomment-42",
+        "author": REVIEWER,
+        "timestamp": "2026-09-23T12:07:00Z",
+        "revision": HEAD,
+    }
+    replace_proof_document(transport, document)
+    endpoint = f"repos/{REPO}/issues/17/comments?per_page=100"
+    transport.responses[endpoint].append(
+        record(REVIEWER, "Review limit reached", id=42)
+    )
+
+    result, output = execute(transport)
+
     assert result == 1
     assert f"completed public review receipt for {REVIEWER}" in output
     assert "Review limit reached" in output
+
+
+def test_document_work_issue_comment_cannot_credit_a_pull_request_review():
+    transport, document = proof_scenario()
+    document["reviewers"][0]["source"] = {
+        "kind": "issue-comment",
+        "repository": REPO,
+        "id": 42,
+        "url": f"https://github.com/{REPO}/issues/12#issuecomment-42",
+        "author": REVIEWER,
+        "timestamp": "2026-09-23T12:07:00Z",
+        "revision": HEAD,
+    }
+    replace_proof_document(transport, document)
+    endpoint = f"repos/{REPO}/issues/12/comments?per_page=100"
+    transport.responses[endpoint].append(
+        record(REVIEWER, "completed review", id=42)
+    )
+
+    result, output = execute(transport)
+
+    assert result == 1
+    assert f"review receipt for {REVIEWER}" in output
+    assert "source kind issue-comment" in output
+    assert "cannot credit a pull-request review" in output
 
 
 def test_document_inline_comment_text_that_says_running_still_counts_as_a_receipt():
@@ -1322,6 +1400,28 @@ def test_document_inline_comment_text_that_says_running_still_counts_as_a_receip
     replace_proof_document(transport, document)
     transport.responses[f"repos/{REPO}/pulls/17/comments?per_page=100"] = [
         record(REVIEWER, "The service is running normally.", id=41, in_reply_to_id=50)
+    ]
+
+    result, output = execute(transport)
+
+    assert result == 0
+    assert f"connected reviewer {REVIEWER} credited by review-comment #41" in output
+
+
+def test_document_inline_notice_text_is_credited_exactly_like_the_legacy_path():
+    transport, document = proof_scenario()
+    document["reviewers"][0]["source"] = {
+        "kind": "review-comment",
+        "repository": REPO,
+        "id": 41,
+        "url": f"https://github.com/{REPO}/pull/17#discussion_r41",
+        "author": REVIEWER,
+        "timestamp": "2026-09-23T12:07:00Z",
+        "revision": HEAD,
+    }
+    replace_proof_document(transport, document)
+    transport.responses[f"repos/{REPO}/pulls/17/comments?per_page=100"] = [
+        record(REVIEWER, "Review limit reached", id=41, in_reply_to_id=50)
     ]
 
     result, output = execute(transport)
@@ -1466,6 +1566,46 @@ def test_source_id_on_another_comment_collection_is_not_on_the_claimed_surface()
 
     assert result == 1
     assert "issue-comment source 31 is not on its claimed surface" in output
+
+
+def test_stale_floor_source_pointer_recomposes_instead_of_posting_a_duplicate():
+    transport, document = proof_scenario()
+    document["floor"]["source"]["id"] = 999
+    replace_proof_document(transport, document)
+
+    result, output = execute(transport)
+
+    assert result == 1
+    assert "document pointer is stale" in output
+    assert "matching issue-comment #31 already exists" in output
+    assert "recompose proof from issue-comment #31" in output
+    assert "post the exact successful floor marker" not in output
+
+
+def test_stale_reviewer_source_pointer_recomposes_instead_of_buying_another_review():
+    transport, document = proof_scenario()
+    document["reviewers"][0]["source"]["id"] = 999
+    replace_proof_document(transport, document)
+
+    result, output = execute(transport)
+
+    assert result == 1
+    assert "document pointer is stale; matching review #41 already exists" in output
+    assert "recompose proof from review #41" in output
+    assert f"asking {REVIEWER} to review again" in output
+
+
+def test_missing_floor_source_record_still_tells_the_holder_to_post_it():
+    transport, document = proof_scenario()
+    document["floor"]["source"]["id"] = 999
+    replace_proof_document(transport, document)
+    transport.responses[f"repos/{REPO}/issues/12/comments?per_page=100"] = []
+
+    result, output = execute(transport)
+
+    assert result == 1
+    assert "floor record is missing" in output
+    assert "post the exact successful floor marker" in output
 
 
 @pytest.mark.parametrize(
