@@ -6,6 +6,7 @@ import hashlib
 import io
 import json
 import re
+import time
 from pathlib import Path
 
 import pytest
@@ -389,6 +390,14 @@ def proof_scenario(*, document_patch=None, proof_author=OWNER, extra_comments=()
         "repository": {"full_name": REPO},
         "referenced_workflows": [],
     }
+    transport.responses[f"repos/{REPO}/actions/runs/91/jobs?filter=all&per_page=100"] = {
+        "total_count": 1,
+        "jobs": [{
+            "name": "Tests",
+            "check_run_url": f"https://api.github.com/repos/{REPO}/check-runs/81",
+            "run_attempt": 1,
+        }],
+    }
     return transport, document
 
 
@@ -487,6 +496,14 @@ def shared_fixture_scenario(case):
             "html_url": f"https://github.com/{repo}/actions/runs/91",
             "repository": {"full_name": repo},
             "referenced_workflows": [],
+        },
+        f"repos/{repo}/actions/runs/91/jobs?filter=all&per_page=100": {
+            "total_count": 1,
+            "jobs": [{
+                "name": "Tests",
+                "check_run_url": f"https://api.github.com/repos/{repo}/check-runs/81",
+                "run_attempt": 1,
+            }],
         },
     }
     environ = {
@@ -594,12 +611,15 @@ def test_exact_tradecraft_composer_comments_pass_against_recorded_github_facts(c
     result = check.run(environ, transport=transport, output=output)
 
     assert result == 0
-    assert "evidence path: proof-v1" in output.getvalue()
-    assert "floor source pull-request-comment #5804738722" in output.getvalue()
-    assert "producer-diagnostic: invalid-marker-claim:" in output.getvalue()
+    rendered = output.getvalue()
+    assert "evidence path: proof-v1" in rendered
+    assert "floor source pull-request-comment #5804738722" in rendered
+    assert "floor check #107431978288 ask-declaration" in rendered
+    assert "floor check #107426496559 ask-declaration" not in rendered
+    assert "producer-diagnostic: invalid-marker-claim:" in rendered
     assert not any(
         line.startswith("diagnostic: invalid-marker-claim:")
-        for line in output.getvalue().splitlines()
+        for line in rendered.splitlines()
     )
 
 
@@ -917,6 +937,14 @@ def test_same_name_check_from_a_distinct_workflow_remains_a_separate_red_floor_r
         "repository": {"full_name": REPO},
         "referenced_workflows": [],
     }
+    transport.responses[f"repos/{REPO}/actions/runs/92/jobs?filter=all&per_page=100"] = {
+        "total_count": 1,
+        "jobs": [{
+            "name": "Tests",
+            "check_run_url": f"https://api.github.com/repos/{REPO}/check-runs/80",
+            "run_attempt": 1,
+        }],
+    }
 
     result, output = execute(transport)
 
@@ -1013,6 +1041,18 @@ def test_unauthorized_proof_bodies_are_not_parsed(evidence_path, payload_kind):
     assert "Traceback" not in output
 
 
+def test_unclosed_unauthorized_proof_prefix_is_scanned_in_linear_time():
+    body = "<!-- tradecraft:proof:v1 " + (" " * 250_000)
+    comments = [record("stranger", body, id=777)]
+
+    started = time.perf_counter()
+    candidates = check._proof_candidates(comments, frozenset({OWNER}))
+    elapsed = time.perf_counter() - started
+
+    assert candidates == []
+    assert elapsed < 0.5
+
+
 @pytest.mark.parametrize("payload_kind", ("unhashable-enum", "deep-json"))
 def test_authorized_parse_failures_are_named_candidate_failures(payload_kind):
     transport, document = proof_scenario()
@@ -1032,6 +1072,35 @@ def test_authorized_parse_failures_are_named_candidate_failures(payload_kind):
     assert "change-proof: FAIL" in output
     assert "valid selected proof-v1 document in comment #501" in output
     assert "Traceback" not in output
+
+
+def test_invalid_selected_json_reports_comment_position_and_no_legacy_fallback():
+    transport, _document = proof_scenario()
+    endpoint = f"repos/{REPO}/issues/17/comments?per_page=100"
+    transport.responses[endpoint][0] = record(
+        OWNER,
+        "\n".join((
+            "Readable prefix",
+            f"<!-- tradecraft:proof:v1 head={HEAD} -->",
+            "```json",
+            "{",
+            '"schema_version": 1,',
+            "not-json",
+            "}",
+            "```",
+        )),
+        id=501,
+    )
+
+    result, output = execute(transport)
+
+    assert result == 1
+    assert "proof document JSON parse error at comment line 6 column 1" in output
+    assert (
+        "diagnostic: legacy markers were not evaluated because a current-head proof "
+        "document was selected"
+    ) in output
+    assert "evidence path: proof-v1" in output
 
 
 @pytest.mark.parametrize(
@@ -1116,12 +1185,13 @@ def test_policy_provenance_is_compared_with_fetched_head_bytes(matches):
         assert "diagnostic: policy digest mismatch for work_configuration" in output
 
 
-def test_older_failed_rerun_does_not_replace_the_newer_successful_attempt():
+def test_newer_run_of_one_workflow_supersedes_the_older_failed_run():
     transport, _document = proof_scenario()
     endpoint = f"repos/{REPO}/commits/{HEAD}/check-runs?filter=all&per_page=100"
     old = copy.deepcopy(transport.responses[endpoint]["check_runs"][0])
     old.update({
         "id": 80,
+        "details_url": f"https://github.com/{REPO}/actions/runs/90/job/800",
         "conclusion": "failure",
         "started_at": "2026-09-23T11:00:00Z",
         "completed_at": "2026-09-23T11:05:00Z",
@@ -1130,12 +1200,100 @@ def test_older_failed_rerun_does_not_replace_the_newer_successful_attempt():
         "total_count": 2,
         "check_runs": [old, transport.responses[endpoint]["check_runs"][0]],
     }
+    transport.responses[f"repos/{REPO}/actions/runs/90"] = {
+        "id": 90,
+        "head_sha": HEAD,
+        "workflow_id": 71,
+        "html_url": f"https://github.com/{REPO}/actions/runs/90",
+        "repository": {"full_name": REPO},
+        "referenced_workflows": [],
+    }
+    transport.responses[f"repos/{REPO}/actions/runs/90/jobs?filter=all&per_page=100"] = {
+        "total_count": 1,
+        "jobs": [{
+            "name": "Tests",
+            "check_run_url": f"https://api.github.com/repos/{REPO}/check-runs/80",
+            "run_attempt": 1,
+        }],
+    }
 
     result, output = execute(transport)
 
     assert result == 0
     assert "floor check #81" in output
     assert "floor check #80" not in output
+
+
+def test_newer_attempt_of_one_run_supersedes_the_older_failed_attempt():
+    transport, _document = proof_scenario()
+    endpoint = f"repos/{REPO}/commits/{HEAD}/check-runs?filter=all&per_page=100"
+    old = copy.deepcopy(transport.responses[endpoint]["check_runs"][0])
+    old.update({
+        "id": 80,
+        "details_url": f"https://github.com/{REPO}/actions/runs/91/job/800",
+        "conclusion": "failure",
+        "started_at": "2026-09-23T11:00:00Z",
+        "completed_at": "2026-09-23T11:05:00Z",
+    })
+    transport.responses[endpoint] = {
+        "total_count": 2,
+        "check_runs": [old, transport.responses[endpoint]["check_runs"][0]],
+    }
+    jobs_endpoint = f"repos/{REPO}/actions/runs/91/jobs?filter=all&per_page=100"
+    current = copy.deepcopy(transport.responses[jobs_endpoint]["jobs"][0])
+    current["run_attempt"] = 2
+    transport.responses[jobs_endpoint] = {
+        "total_count": 2,
+        "jobs": [
+            {
+                "name": "Tests",
+                "check_run_url": f"https://api.github.com/repos/{REPO}/check-runs/80",
+                "run_attempt": 1,
+            },
+            current,
+        ],
+    }
+
+    result, output = execute(transport)
+
+    assert result == 0
+    assert "floor check #81" in output
+    assert "floor check #80" not in output
+
+
+def test_same_named_jobs_in_one_run_attempt_are_never_collapsed():
+    transport, _document = proof_scenario()
+    endpoint = f"repos/{REPO}/commits/{HEAD}/check-runs?filter=all&per_page=100"
+    failed = copy.deepcopy(transport.responses[endpoint]["check_runs"][0])
+    failed.update({
+        "id": 80,
+        "details_url": f"https://github.com/{REPO}/actions/runs/91/job/800",
+        "conclusion": "failure",
+        "started_at": "2026-09-23T11:00:00Z",
+        "completed_at": "2026-09-23T11:05:00Z",
+    })
+    transport.responses[endpoint] = {
+        "total_count": 2,
+        "check_runs": [failed, transport.responses[endpoint]["check_runs"][0]],
+    }
+    jobs_endpoint = f"repos/{REPO}/actions/runs/91/jobs?filter=all&per_page=100"
+    transport.responses[jobs_endpoint] = {
+        "total_count": 2,
+        "jobs": [
+            {
+                "name": "Tests",
+                "check_run_url": f"https://api.github.com/repos/{REPO}/check-runs/80",
+                "run_attempt": 1,
+            },
+            transport.responses[jobs_endpoint]["jobs"][0],
+        ],
+    }
+
+    result, output = execute(transport)
+
+    assert result == 1
+    assert "omitted check id(s): 80" in output
+    assert "conclusion='failure'" in output
 
 
 def test_newer_pending_rerun_blocks_the_older_successful_attempt():
@@ -1173,6 +1331,14 @@ def test_newer_pending_rerun_blocks_the_older_successful_attempt():
         "html_url": f"https://github.com/{REPO}/actions/runs/92",
         "repository": {"full_name": REPO},
         "referenced_workflows": [],
+    }
+    transport.responses[f"repos/{REPO}/actions/runs/92/jobs?filter=all&per_page=100"] = {
+        "total_count": 1,
+        "jobs": [{
+            "name": "Tests",
+            "check_run_url": f"https://api.github.com/repos/{REPO}/check-runs/82",
+            "run_attempt": 1,
+        }],
     }
 
     result, output = execute(transport)
@@ -1212,15 +1378,14 @@ def test_reusable_proof_run_is_excluded_only_for_the_exact_referenced_source(
         "repository": {"full_name": REPO},
         "referenced_workflows": [{"path": source}],
     }
-    if exact_reference:
-        transport.responses[f"repos/{REPO}/actions/runs/92/jobs?filter=all&per_page=100"] = {
-            "total_count": 1,
-            "jobs": [{
-                "name": "caller / Change proof",
-                "check_run_url": "https://api.github.com/repos/example/check-runs/82",
-                "run_attempt": 1,
-            }],
-        }
+    transport.responses[f"repos/{REPO}/actions/runs/92/jobs?filter=all&per_page=100"] = {
+        "total_count": 1,
+        "jobs": [{
+            "name": "caller / Change proof",
+            "check_run_url": f"https://api.github.com/repos/{REPO}/check-runs/82",
+            "run_attempt": 1,
+        }],
+    }
 
     environ = environment()
     environ.update({"GITHUB_RUN_ID": "100", "GITHUB_RUN_ATTEMPT": "1"})
@@ -1237,6 +1402,69 @@ def test_reusable_proof_run_is_excluded_only_for_the_exact_referenced_source(
         ) in output
     else:
         assert "omitted check id(s): 82" in output
+
+
+def test_reusable_run_with_two_proof_named_jobs_is_ambiguous_and_neither_is_exempted():
+    transport, _document = proof_scenario()
+    endpoint = f"repos/{REPO}/commits/{HEAD}/check-runs?filter=all&per_page=100"
+    template = transport.responses[endpoint]["check_runs"][0]
+    proof_job = copy.deepcopy(template)
+    proof_job.update({
+        "id": 82,
+        "name": "caller / Change proof",
+        "details_url": f"https://github.com/{REPO}/actions/runs/92/job/820",
+    })
+    unrelated = copy.deepcopy(template)
+    unrelated.update({
+        "id": 83,
+        "name": "unrelated / Change proof",
+        "details_url": f"https://github.com/{REPO}/actions/runs/92/job/830",
+        "conclusion": "failure",
+    })
+    transport.responses[endpoint] = {
+        "total_count": 3,
+        "check_runs": [template, proof_job, unrelated],
+    }
+    transport.responses[f"repos/{REPO}/actions/runs/92"] = {
+        "id": 92,
+        "head_sha": HEAD,
+        "workflow_id": 72,
+        "html_url": f"https://github.com/{REPO}/actions/runs/92",
+        "repository": {"full_name": REPO},
+        "referenced_workflows": [{
+            "path": "Grimblaz-and-Friends/change-proof/.github/workflows/"
+            "change-proof.yml@refs/heads/main",
+        }],
+    }
+    transport.responses[f"repos/{REPO}/actions/runs/92/jobs?filter=all&per_page=100"] = {
+        "total_count": 2,
+        "jobs": [
+            {
+                "name": "caller / Change proof",
+                "check_run_url": f"https://api.github.com/repos/{REPO}/check-runs/82",
+                "run_attempt": 1,
+            },
+            {
+                "name": "unrelated / Change proof",
+                "check_run_url": f"https://api.github.com/repos/{REPO}/check-runs/83",
+                "run_attempt": 1,
+            },
+        ],
+    }
+    environ = environment()
+    environ.update({"GITHUB_RUN_ID": "100", "GITHUB_RUN_ATTEMPT": "1"})
+    rendered = io.StringIO()
+
+    result = check.run(environ, transport=transport, output=rendered)
+    output = rendered.getvalue()
+
+    assert result == 1
+    assert "unambiguous reusable proof job in run 92 attempt 1" in output
+    assert "check #82 name='caller / Change proof'" in output
+    assert "check #83 name='unrelated / Change proof'" in output
+    assert "omitted check id(s): 82, 83" in output
+    assert "conclusion='failure'" in output
+    assert "excluded: caller proof execution run #92" not in output
 
 
 def test_github_actions_check_without_an_actions_run_url_remains_a_visible_check():

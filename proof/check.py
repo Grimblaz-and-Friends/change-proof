@@ -23,9 +23,7 @@ GITHUB_LOGIN = re.compile(r"[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?(?:\[bot\])?
 SLUG = re.compile(r"[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*\Z")
 FULL_SHA = re.compile(r"[0-9a-fA-F]{40}\Z")
 DOCUMENT_HEAD = re.compile(r"(?:[0-9a-fA-F]{40}|[0-9a-fA-F]{64})\Z")
-PROOF_ENVELOPE = re.compile(
-    r"<!--\s*tradecraft:proof:v1(?:\s+([^>]*?))?\s*-->", re.I
-)
+PROOF_TOKEN = "tradecraft:proof:v1"
 JSON_FENCE = re.compile(
     r"(?:\A|\r?\n)[ \t]*```(?:json)?[ \t]*\r?\n(.*?)(?:\r?\n)[ \t]*```[ \t]*(?=\r?\n|\Z)",
     re.I | re.S,
@@ -686,6 +684,46 @@ def _invalid_json_constant(value: str) -> object:
     raise ProofError(f"proof document contains non-JSON numeric constant {value}")
 
 
+def _proof_envelopes(body: str):
+    """Yield proof envelope ends and attributes with a linear HTML-comment scan."""
+    lowered = body.lower()
+    position = 0
+    while True:
+        start = lowered.find("<!--", position)
+        if start < 0:
+            return
+        end = lowered.find("-->", start + 4)
+        if end < 0:
+            return
+        content = body[start + 4:end].strip()
+        if content.lower().startswith(PROOF_TOKEN):
+            remainder = content[len(PROOF_TOKEN):]
+            if not remainder or remainder[0].isspace():
+                yield end + 3, remainder.strip()
+        position = end + 3
+
+
+def _proof_envelope_head(raw_attributes: str) -> tuple[str | None, str | None]:
+    pairs = ATTRIBUTE.findall(raw_attributes)
+    attributes = {key.lower(): value for key, value in pairs}
+    unmatched = ATTRIBUTE.sub("", raw_attributes).strip()
+    envelope_head = attributes.get("head")
+    if (
+        unmatched
+        or len(pairs) != 1
+        or set(attributes) != {"head"}
+        or not isinstance(envelope_head, str)
+        or DOCUMENT_HEAD.fullmatch(envelope_head) is None
+    ):
+        return None, "proof envelope must carry exactly one full head attribute"
+    return envelope_head, None
+
+
+def _comment_position(body: str, offset: int) -> tuple[int, int]:
+    prefix = body[:offset].replace("\r\n", "\n").replace("\r", "\n")
+    return prefix.count("\n") + 1, len(prefix.rsplit("\n", 1)[-1]) + 1
+
+
 def _proof_candidates(
     comments: list[dict[str, object]], authorized_authors: frozenset[str]
 ) -> list[ProofCandidate]:
@@ -695,39 +733,41 @@ def _proof_candidates(
         author = _author(comment)
         raw_id = comment.get("id")
         comment_id = raw_id if _is_integer(raw_id) else 0
-        for envelope in PROOF_ENVELOPE.finditer(body):
-            raw_attributes = envelope.group(1) or ""
-            pairs = ATTRIBUTE.findall(raw_attributes)
-            attributes = {key.lower(): value for key, value in pairs}
-            unmatched = ATTRIBUTE.sub("", raw_attributes).strip()
-            envelope_head = attributes.get("head")
-            error: str | None = None
+        if author not in authorized_authors:
+            # Unauthorized comments need only the cheap envelope identity probe used
+            # for the required diagnostic. Their framing and JSON are never parsed.
+            if PROOF_TOKEN not in body.lower():
+                continue
+            for _envelope_end, raw_attributes in _proof_envelopes(body):
+                envelope_head, error = _proof_envelope_head(raw_attributes)
+                if error is None:
+                    candidates.append(
+                        ProofCandidate(comment_id, author, envelope_head, None, None)
+                    )
+            continue
+        for envelope_end, raw_attributes in _proof_envelopes(body):
+            envelope_head, error = _proof_envelope_head(raw_attributes)
             document: dict[str, object] | None = None
-            if (
-                unmatched
-                or len(pairs) != 1
-                or set(attributes) != {"head"}
-                or not isinstance(envelope_head, str)
-                or DOCUMENT_HEAD.fullmatch(envelope_head) is None
-            ):
-                envelope_head = None
-                error = "proof envelope must carry exactly one full head attribute"
-            elif author not in authorized_authors:
-                # The envelope is enough to report unauthorized current-head noise. Never
-                # parse an untrusted producer's potentially adversarial JSON body.
-                pass
-            else:
-                fenced = JSON_FENCE.findall(body[envelope.end():])
+            if error is None:
+                after_envelope = body[envelope_end:]
+                fenced = list(JSON_FENCE.finditer(after_envelope))
                 if len(fenced) != 1:
                     error = "proof envelope must be followed by exactly one fenced JSON object"
                 else:
                     try:
                         parsed = json.loads(
-                            fenced[0],
+                            fenced[0].group(1),
                             object_pairs_hook=_unique_json_object,
                             parse_constant=_invalid_json_constant,
                         )
                         document = validate_proof_document(parsed)
+                    except json.JSONDecodeError as exc:
+                        absolute = envelope_end + fenced[0].start(1) + exc.pos
+                        line, column = _comment_position(body, absolute)
+                        error = (
+                            f"proof document JSON parse error at comment line {line} "
+                            f"column {column}: {exc.msg}"
+                        )
                     except Exception as exc:
                         error = str(exc) or type(exc).__name__
             candidates.append(ProofCandidate(comment_id, author, envelope_head, document, error))
@@ -1140,6 +1180,13 @@ def _is_proof_job(job: dict[str, object]) -> bool:
     return isinstance(name, str) and (name == "Change proof" or name.endswith(" / Change proof"))
 
 
+def _job_label(job: dict[str, object]) -> str:
+    name = job.get("name")
+    check_url = job.get("check_run_url")
+    check_id = check_url.rstrip("/").rsplit("/", 1)[-1] if isinstance(check_url, str) else "unknown"
+    return f"check #{check_id} name={name!r}"
+
+
 def _public_floor_checks(
     transport,
     repo: str,
@@ -1154,6 +1201,7 @@ def _public_floor_checks(
     candidates: list[dict[str, object]] = []
     findings: list[Finding] = []
     excluded: list[str] = []
+    ambiguous_proof_executions: set[tuple[int, int]] = set()
     for check_run in check_runs:
         raw_id = check_run.get("id")
         if not _is_integer(raw_id):
@@ -1194,21 +1242,29 @@ def _public_floor_checks(
 
         exclude = False
         references_gate = run is not None and _run_references_gate(run)
-        needs_association = run is not None and (
-            (current_run_id is not None and run_id == current_run_id)
-            or references_gate
-        )
-        if needs_association and run_id is not None:
+        job_attempt: int | None = None
+        associated_job: dict[str, object] | None = None
+        jobs: list[dict[str, object]] = []
+        if run is not None and run_id is not None:
             if run_id not in jobs_cache:
                 jobs_cache[run_id] = _run_jobs(transport, repo, run_id)
-            associated = [job for job in jobs_cache[run_id] if _job_matches_check(job, raw_id)]
+            jobs = jobs_cache[run_id]
+            associated = [job for job in jobs if _job_matches_check(job, raw_id)]
             if len(associated) != 1:
                 findings.append(Finding(
-                    f"an unambiguous job association for proof check #{raw_id} in run {run_id}",
+                    f"an unambiguous job association for check #{raw_id} in run {run_id}",
                     "make the Actions run expose one job record linked to that check before re-running",
                 ))
                 continue
-            job_attempt = associated[0].get("run_attempt")
+            associated_job = associated[0]
+            raw_attempt = associated_job.get("run_attempt")
+            if not _is_integer(raw_attempt) or raw_attempt <= 0:
+                findings.append(Finding(
+                    f"a positive run attempt for check #{raw_id} in run {run_id}",
+                    "make the Actions jobs record identify its run attempt before re-running",
+                ))
+                continue
+            job_attempt = raw_attempt
             same_current_run = current_run_id is not None and run_id == current_run_id
             is_current = same_current_run and (
                 current_run_attempt is None or job_attempt == current_run_attempt
@@ -1219,7 +1275,24 @@ def _public_floor_checks(
                 and _is_integer(job_attempt)
                 and job_attempt < current_run_attempt
             )
-            if _is_proof_job(associated[0]):
+            proof_jobs = [
+                job for job in jobs
+                if job.get("run_attempt") == job_attempt and _is_proof_job(job)
+            ] if same_current_run or references_gate else []
+            if (same_current_run or references_gate) and len(proof_jobs) != 1:
+                execution = (run_id, job_attempt)
+                if execution not in ambiguous_proof_executions:
+                    candidate_labels = ", ".join(
+                        _job_label(job) for job in proof_jobs
+                    ) or "none"
+                    findings.append(Finding(
+                        f"an unambiguous reusable proof job in run {run_id} attempt "
+                        f"{job_attempt}; candidate jobs: {candidate_labels}",
+                        "make exactly one job in that run attempt identify the reusable "
+                        "Change proof job, then re-run",
+                    ))
+                    ambiguous_proof_executions.add(execution)
+            elif proof_jobs and associated_job == proof_jobs[0]:
                 if is_current:
                     excluded.append(
                         f"current gate execution run #{run_id} check #{raw_id} is not floor "
@@ -1255,6 +1328,7 @@ def _public_floor_checks(
             "app_slug": app_slug,
             "workflow_id": workflow_id,
             "run_id": run_id,
+            "run_attempt": job_attempt,
             "url": (
                 run.get("html_url")
                 if isinstance(run, dict) and isinstance(run.get("html_url"), str)
@@ -1267,22 +1341,27 @@ def _public_floor_checks(
             "completed_at": check_run.get("completed_at"),
         })
 
-    latest: dict[tuple[object, object, object], dict[str, object]] = {}
+    latest: list[dict[str, object]] = []
+    rerun_families: dict[
+        tuple[object, object, object], list[dict[str, object]]
+    ] = {}
     for check in candidates:
-        workflow_identity: object = check["workflow_id"]
-        if workflow_identity is None and check["run_id"] is not None:
-            workflow_identity = ("run", check["run_id"])
-        elif workflow_identity is None:
-            workflow_identity = ("app", check["app_id"] or "unknown-producer")
-        group = (check["app_id"], workflow_identity, check["name"])
-        sort_key = (str(check["started_at"] or ""), int(check["id"]))
-        previous = latest.get(group)
-        previous_key = (
-            str(previous["started_at"] or ""), int(previous["id"])
-        ) if previous is not None else None
-        if previous_key is None or sort_key > previous_key:
-            latest[group] = check
-    return sorted(latest.values(), key=lambda item: int(item["id"])), findings, excluded
+        if (
+            not _is_integer(check["workflow_id"])
+            or not _is_integer(check["run_id"])
+            or not _is_integer(check["run_attempt"])
+        ):
+            latest.append(check)
+            continue
+        family = (check["app_id"], check["workflow_id"], check["name"])
+        rerun_families.setdefault(family, []).append(check)
+    for family_checks in rerun_families.values():
+        executions: dict[tuple[int, int], list[dict[str, object]]] = {}
+        for check in family_checks:
+            execution = (int(check["run_id"]), int(check["run_attempt"]))
+            executions.setdefault(execution, []).append(check)
+        latest.extend(executions[max(executions)])
+    return sorted(latest, key=lambda item: int(item["id"])), findings, excluded
 
 
 def _check_difference(expected: dict[str, object], actual: dict[str, object]) -> str | None:
@@ -2191,6 +2270,11 @@ def run(
                         )
                 if unscoped or current:
                     evidence_path = "proof-v1"
+                    if len(current) == 1:
+                        diagnostics.append(
+                            "legacy markers were not evaluated because a current-head proof "
+                            "document was selected"
+                        )
                     if unscoped:
                         for candidate in unscoped:
                             failures.append(Finding(
