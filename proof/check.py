@@ -18,9 +18,6 @@ import urllib.request
 
 MARKER = re.compile(r"<!--\s*+tradecraft:([a-z-]+):v1(?:\s++([^>]*))?-->", re.I)
 ATTRIBUTE = re.compile(r"([a-z_]+)=([^\s]+)", re.I)
-AFFIRMED_BRIEF_MARKER = re.compile(
-    r"<!--\s*+tradecraft:affirmed-brief:v1(?:\s++([^>]*))?-->", re.I
-)
 REVIEW_RISK_LINE = re.compile(
     r"^Review risk:\s*(ordinary|elevated|critical)\s*$", re.I | re.M
 )
@@ -1105,8 +1102,9 @@ def _resolve_source(
 
 def _has_exact_affirmed_brief(body: str) -> bool:
     return any(
-        not (match.group(1) or "").strip()
-        for match in AFFIRMED_BRIEF_MARKER.finditer(body)
+        match.group(1).lower() == "affirmed-brief"
+        and not (match.group(2) or "").strip()
+        for match in MARKER.finditer(body)
     )
 
 
@@ -1152,12 +1150,11 @@ def _lane_recomposition(
     if pair != ("ordinary", "mechanical"):
         if bought:
             return (
-                f"run the use owed by affirmed-brief issue-comment #{latest_id} and "
-                "recompose proof from the latest authorized record"
+                f"run the use owed by affirmed-brief issue-comment #{latest_id}, then "
+                "recompose proof from that use record"
             )
         return (
-            "recompose proof as an ordinary policy-based no-use record from latest "
-            f"affirmed-brief issue-comment #{latest_id}"
+            "recompose proof as an ordinary policy-based no-use record with no source"
         )
     return (
         "recompose proof from latest authorized affirmed-brief issue-comment "
@@ -1179,19 +1176,20 @@ def _mechanical_lane_source(
 ) -> tuple[Finding | None, str | None]:
     source_id = _source_identity(source.get("id")) or "without an id"
     expected_work = f"{repo}#{issue}"
+    source_kind = str(source.get("kind") or "").lower()
+    if source_kind != "issue-comment":
+        return Finding(
+            f"an affirmed-brief source on {expected_work}: source #{source_id} uses wrong "
+            f"surface {_safe_text(source.get('kind'))}; expected issue-comment",
+            "point the proof use source at the work issue's latest authorized "
+            "affirmed-brief issue-comment and recompose proof",
+        ), None
     if issue == number:
         return Finding(
             f"a work-issue affirmed source distinct from pull request #{number}: "
             f"issue-comment source #{source_id} is misplaced on the pull-request surface",
             "name the actual work issue and recompose proof from its latest authorized "
             "affirmed-brief record",
-        ), None
-    if str(source.get("kind") or "").lower() != "issue-comment":
-        return Finding(
-            f"an affirmed-brief source on {expected_work}: source #{source_id} uses wrong "
-            f"surface {_safe_text(source.get('kind'))}; expected issue-comment",
-            "point the proof use source at the work issue's latest authorized "
-            "affirmed-brief issue-comment and recompose proof",
         ), None
     if str(source.get("repository") or "").lower() != repo.lower():
         return Finding(

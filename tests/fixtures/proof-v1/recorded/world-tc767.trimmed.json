@@ -1,217 +1,52 @@
 {
-  "base_tip": "6789582047cf306607573ecaff25ba1a4eda379d",
-  "capture_time": "2026-09-27T20:35:00Z",
-  "environment": {
-    "GITHUB_RUN_ATTEMPT": 5,
-    "GITHUB_RUN_ID": 36292658635
-  },
+  "repository": "Grimblaz-and-Friends/tradecraft",
+  "pull_request": 767,
   "head": "4f12aa5efa0ae765cebd213f89eec7da754c3d6a",
+  "base_tip": "6789582047cf306607573ecaff25ba1a4eda379d",
+  "capture_time": "2026-09-27T21:12:01.696262+00:00",
+  "environment": {
+    "GITHUB_RUN_ID": 36292658635,
+    "GITHUB_RUN_ATTEMPT": 5
+  },
   "proof_comment": {
-    "author": "Grimblaz",
-    "created_at": "2026-09-27T04:04:44Z",
     "id": 5852491047,
+    "author": "Grimblaz",
     "index": 2,
+    "created_at": "2026-09-27T04:04:44Z",
     "updated_at": "2026-09-27T04:21:14Z"
   },
-  "provenance": "Real GitHub REST records for tradecraft pull request #767 and work issue #759, captured after merge and field-trimmed for the gate. The proof comment is exact 0.156.0 producer output. The main ref is reconstructed at the base tip established by gate run 36292658635 attempt 5 rather than today's mutable main. Earlier gate-attempt check records are reconstructed from that run's filter=all jobs response. Gate run 36292658635 attempt 5, job 108549502051, used checker cb5b746f92457dc6075099db0f9d2d3c24341fdf.",
-  "pull_request": 767,
-  "repository": "Grimblaz-and-Friends/tradecraft",
+  "provenance": "Public GitHub REST records recaptured with GET only; every collection member, consumed field, and consumed comment body is retained verbatim, except the explicit historical reconstructions listed below. The proof comment is exact 0.156.0 producer output.",
+  "reconstructions": [
+    {
+      "field": "environment",
+      "value": "gate run 36292658635 attempt 5",
+      "basis": "attempt-5 job log for job 108549502051"
+    },
+    {
+      "field": "responses['repos/Grimblaz-and-Friends/tradecraft/git/ref/heads/main'].object.sha",
+      "value": "6789582047cf306607573ecaff25ba1a4eda379d",
+      "basis": "base tip printed by the attempt-5 gate job"
+    },
+    {
+      "field": "responses['repos/Grimblaz-and-Friends/tradecraft/pulls/767'].state",
+      "value": "open",
+      "basis": "pull request #767 and work issue #759 were open during attempt 5; their later closed states are not attributed to that run"
+    }
+  ],
   "responses": {
-    "repos/Grimblaz-and-Friends/tradecraft/actions/runs/36292658635": {
-      "head_sha": "4f12aa5efa0ae765cebd213f89eec7da754c3d6a",
-      "html_url": "https://github.com/Grimblaz-and-Friends/tradecraft/actions/runs/36292658635",
-      "id": 36292658635,
-      "referenced_workflows": [
-        {
-          "path": "Grimblaz-and-Friends/change-proof/.github/workflows/change-proof.yml@main",
-          "ref": "refs/heads/main",
-          "sha": "cb5b746f92457dc6075099db0f9d2d3c24341fdf"
-        }
-      ],
-      "repository": {
-        "full_name": "Grimblaz-and-Friends/tradecraft"
+    "repos/Grimblaz-and-Friends/tradecraft/pulls/767": {
+      "number": 767,
+      "state": "open",
+      "draft": false,
+      "body": "> **In plain terms:** Greptile is no longer a required reviewer in this repository. Its login is removed from `.tradecraft/work.json`'s `connected_reviewers`, so from the next pull request on, neither the entrance nor the gate waits on it. `greptile.json` stays, so Greptile still reviews where it runs, and its comments are advisory. This follows row 6 of #746 as the owner amended it on 2026-09-27.\n\nCloses #759\n\n**Waiting on you:** the merge. No ask is marked on this change.\n\n- **Brief:** [affirmed on #759, re-put with the owner's amendment](https://github.com/Grimblaz-and-Friends/tradecraft/issues/759#issuecomment-5851221027), `Review risk: ordinary` / `Review lane: mechanical`.\n\n## What landed\n\n- **Row 1:** `greptile-apps[bot]` is removed from `connected_reviewers` in `.tradecraft/work.json`. Nothing else in that file changed, and `greptile.json` is unchanged. CodeRabbit and Codex remain the connected reviewers.\n\n## Proof\n\n- **Floor.** Run by the builder through `run floor` at `4f12aa5`: lint 0 findings, 1,140 passed, 1 skipped ([floor](https://github.com/Grimblaz-and-Friends/tradecraft/pull/767#issuecomment-5852487982)). CI `lint-and-test` passes on ubuntu-latest and windows-latest at that head.\n- **Builder.** Codex `gpt-5.6-sol` at `xhigh` through `run build`, session [recorded on #759](https://github.com/Grimblaz-and-Friends/tradecraft/issues/759#issuecomment-5852421302).\n- **Connected reviewers at `4f12aa5`.** CodeRabbit generated no actionable comments. Codex completed its review with no comments. Greptile posted a real review (confidence 5/5, no inline comments), not its credit-limit notice. The gate credits all three.\n- **Required gate: red at `4f12aa5`**, for one reason only: `missing: a current-head generated no-use record matching trusted policy`, because the record carries a `source`. It verified the floor, the proof identity and all three reviewers.\n\n**Path departures:** the required gate is bypassed, red at `4f12aa5`. The owner affirmed the mechanical lane, so `run proof` writes a generated no-use record whose `source` is the affirmed brief comment. The shared gate accepts a generated no-use record only when `source` is null (`proof/check.py` at `cb5b746`, the `valid_generated` test), so it rejects this record. This change's only path, `.tradecraft/work.json`, matches none of the gate's use rules, so the change buys no use by either the paths or the lane. The red is the record's shape, not a missing use. change-proof #21 covers the lane for paths that do buy a use, and this is the case where they buy none. There was no artifact, cold seat or use, because the mechanical lane exempts all three. The gate reads the base branch's configuration, which still lists Greptile, so it still expected, and credited, a Greptile record. Two earlier gate reruns failed on the holder's sequencing (tradecraft #765's shape): one ran while the pull request was a draft, and one found no `Path departures` paragraph and floor checks from a replaced CI run. Merging over the red gate is the owner's decision.\n\n\ud83e\udd16 Generated with [Claude Code](https://claude.com/claude-code)\n",
+      "head": {
+        "sha": "4f12aa5efa0ae765cebd213f89eec7da754c3d6a"
       },
-      "workflow_id": 363574484
-    },
-    "repos/Grimblaz-and-Friends/tradecraft/actions/runs/36292658635/jobs?filter=all&per_page=100": {
-      "jobs": [
-        {
-          "check_run_url": "https://api.github.com/repos/Grimblaz-and-Friends/tradecraft/check-runs/108545582382",
-          "name": "Change proof (required) / Change proof",
-          "run_attempt": 1
-        },
-        {
-          "check_run_url": "https://api.github.com/repos/Grimblaz-and-Friends/tradecraft/check-runs/108547254666",
-          "name": "Change proof (required) / Change proof",
-          "run_attempt": 2
-        },
-        {
-          "check_run_url": "https://api.github.com/repos/Grimblaz-and-Friends/tradecraft/check-runs/108547697600",
-          "name": "Change proof (required) / Change proof",
-          "run_attempt": 3
-        },
-        {
-          "check_run_url": "https://api.github.com/repos/Grimblaz-and-Friends/tradecraft/check-runs/108548610111",
-          "name": "Change proof (required) / Change proof",
-          "run_attempt": 4
-        },
-        {
-          "check_run_url": "https://api.github.com/repos/Grimblaz-and-Friends/tradecraft/check-runs/108549502051",
-          "name": "Change proof (required) / Change proof",
-          "run_attempt": 5
-        }
-      ],
-      "total_count": 5
-    },
-    "repos/Grimblaz-and-Friends/tradecraft/actions/runs/36293856632": {
-      "head_sha": "4f12aa5efa0ae765cebd213f89eec7da754c3d6a",
-      "html_url": "https://github.com/Grimblaz-and-Friends/tradecraft/actions/runs/36293856632",
-      "id": 36293856632,
-      "referenced_workflows": [],
-      "repository": {
-        "full_name": "Grimblaz-and-Friends/tradecraft"
+      "base": {
+        "ref": "main",
+        "sha": "6789582047cf306607573ecaff25ba1a4eda379d"
       },
-      "workflow_id": 335259309
-    },
-    "repos/Grimblaz-and-Friends/tradecraft/actions/runs/36293856632/jobs?filter=all&per_page=100": {
-      "jobs": [
-        {
-          "check_run_url": "https://api.github.com/repos/Grimblaz-and-Friends/tradecraft/check-runs/108548930130",
-          "name": "ask-declaration",
-          "run_attempt": 1
-        },
-        {
-          "check_run_url": "https://api.github.com/repos/Grimblaz-and-Friends/tradecraft/check-runs/108548930241",
-          "name": "lint-and-test (windows-latest)",
-          "run_attempt": 1
-        },
-        {
-          "check_run_url": "https://api.github.com/repos/Grimblaz-and-Friends/tradecraft/check-runs/108548930259",
-          "name": "lint-and-test (ubuntu-latest)",
-          "run_attempt": 1
-        }
-      ],
-      "total_count": 3
-    },
-    "repos/Grimblaz-and-Friends/tradecraft/commits/4f12aa5efa0ae765cebd213f89eec7da754c3d6a/check-runs?filter=all&per_page=100": {
-      "check_runs": [
-        {
-          "app": {"id": 15368, "slug": "github-actions"},
-          "completed_at": "2026-09-27T03:52:22Z",
-          "conclusion": "failure",
-          "details_url": "https://github.com/Grimblaz-and-Friends/tradecraft/actions/runs/36292658635/job/108545582382",
-          "head_sha": "4f12aa5efa0ae765cebd213f89eec7da754c3d6a",
-          "id": 108545582382,
-          "name": "Change proof (required) / Change proof",
-          "started_at": "2026-09-27T03:52:18Z",
-          "status": "completed"
-        },
-        {
-          "app": {"id": 15368, "slug": "github-actions"},
-          "completed_at": "2026-09-27T04:04:53Z",
-          "conclusion": "failure",
-          "details_url": "https://github.com/Grimblaz-and-Friends/tradecraft/actions/runs/36292658635/job/108547254666",
-          "head_sha": "4f12aa5efa0ae765cebd213f89eec7da754c3d6a",
-          "id": 108547254666,
-          "name": "Change proof (required) / Change proof",
-          "started_at": "2026-09-27T04:04:50Z",
-          "status": "completed"
-        },
-        {
-          "app": {"id": 867647, "slug": "greptile-apps"},
-          "completed_at": "2026-09-27T04:06:48Z",
-          "conclusion": "success",
-          "details_url": "https://greptile.com/",
-          "head_sha": "4f12aa5efa0ae765cebd213f89eec7da754c3d6a",
-          "id": 108547334634,
-          "name": "Greptile Review",
-          "started_at": "2026-09-27T04:05:21Z",
-          "status": "completed"
-        },
-        {
-          "app": {"id": 15368, "slug": "github-actions"},
-          "completed_at": "2026-09-27T04:08:16Z",
-          "conclusion": "failure",
-          "details_url": "https://github.com/Grimblaz-and-Friends/tradecraft/actions/runs/36292658635/job/108547697600",
-          "head_sha": "4f12aa5efa0ae765cebd213f89eec7da754c3d6a",
-          "id": 108547697600,
-          "name": "Change proof (required) / Change proof",
-          "started_at": "2026-09-27T04:08:06Z",
-          "status": "completed"
-        },
-        {
-          "app": {"id": 15368, "slug": "github-actions"},
-          "completed_at": "2026-09-27T04:14:57Z",
-          "conclusion": "failure",
-          "details_url": "https://github.com/Grimblaz-and-Friends/tradecraft/actions/runs/36292658635/job/108548610111",
-          "head_sha": "4f12aa5efa0ae765cebd213f89eec7da754c3d6a",
-          "id": 108548610111,
-          "name": "Change proof (required) / Change proof",
-          "started_at": "2026-09-27T04:14:46Z",
-          "status": "completed"
-        },
-        {
-          "app": {"id": 15368, "slug": "github-actions"},
-          "completed_at": "2026-09-27T04:17:12Z",
-          "conclusion": "success",
-          "details_url": "https://github.com/Grimblaz-and-Friends/tradecraft/actions/runs/36293856632/job/108548930130",
-          "head_sha": "4f12aa5efa0ae765cebd213f89eec7da754c3d6a",
-          "id": 108548930130,
-          "name": "ask-declaration",
-          "started_at": "2026-09-27T04:17:04Z",
-          "status": "completed"
-        },
-        {
-          "app": {"id": 15368, "slug": "github-actions"},
-          "completed_at": "2026-09-27T04:20:33Z",
-          "conclusion": "success",
-          "details_url": "https://github.com/Grimblaz-and-Friends/tradecraft/actions/runs/36293856632/job/108548930241",
-          "head_sha": "4f12aa5efa0ae765cebd213f89eec7da754c3d6a",
-          "id": 108548930241,
-          "name": "lint-and-test (windows-latest)",
-          "started_at": "2026-09-27T04:17:04Z",
-          "status": "completed"
-        },
-        {
-          "app": {"id": 15368, "slug": "github-actions"},
-          "completed_at": "2026-09-27T04:17:47Z",
-          "conclusion": "success",
-          "details_url": "https://github.com/Grimblaz-and-Friends/tradecraft/actions/runs/36293856632/job/108548930259",
-          "head_sha": "4f12aa5efa0ae765cebd213f89eec7da754c3d6a",
-          "id": 108548930259,
-          "name": "lint-and-test (ubuntu-latest)",
-          "started_at": "2026-09-27T04:17:05Z",
-          "status": "completed"
-        },
-        {
-          "app": {"id": 15368, "slug": "github-actions"},
-          "completed_at": "2026-09-27T04:21:31Z",
-          "conclusion": "failure",
-          "details_url": "https://github.com/Grimblaz-and-Friends/tradecraft/actions/runs/36292658635/job/108549502051",
-          "head_sha": "4f12aa5efa0ae765cebd213f89eec7da754c3d6a",
-          "id": 108549502051,
-          "name": "Change proof (required) / Change proof",
-          "started_at": "2026-09-27T04:21:21Z",
-          "status": "completed"
-        }
-      ],
-      "total_count": 9
-    },
-    "repos/Grimblaz-and-Friends/tradecraft/contents/.github/change-proof.json?ref=4f12aa5efa0ae765cebd213f89eec7da754c3d6a": {
-      "content": "ewogICJzY2hlbWFfdmVyc2lvbiI6IDEsCiAgInJ1bGVzIjogWwogICAgewogICAgICAibmFtZSI6ICJydW50aW1lLW9yLXVzZXItc3VyZmFjZSIsCiAgICAgICJpbmNsdWRlIjogWwogICAgICAgICJhZ2VudHMvKioiLAogICAgICAgICJjb21tYW5kcy8qKiIsCiAgICAgICAgImhvb2tzLyoqIiwKICAgICAgICAibGliLyoqIiwKICAgICAgICAic2tpbGxzLyoqIiwKICAgICAgICAiLmNsYXVkZS1wbHVnaW4vKioiCiAgICAgIF0sCiAgICAgICJleGNsdWRlIjogWwogICAgICAgICIqKi90ZXN0cy8qKiIsCiAgICAgICAgIioqL3Rlc3RfKi5weSIsCiAgICAgICAgIioqLypfdGVzdC5weSIKICAgICAgXQogICAgfQogIF0KfQo=",
-      "encoding": "base64"
-    },
-    "repos/Grimblaz-and-Friends/tradecraft/contents/.github/change-proof.json?ref=6789582047cf306607573ecaff25ba1a4eda379d": {
-      "content": "ewogICJzY2hlbWFfdmVyc2lvbiI6IDEsCiAgInJ1bGVzIjogWwogICAgewogICAgICAibmFtZSI6ICJydW50aW1lLW9yLXVzZXItc3VyZmFjZSIsCiAgICAgICJpbmNsdWRlIjogWwogICAgICAgICJhZ2VudHMvKioiLAogICAgICAgICJjb21tYW5kcy8qKiIsCiAgICAgICAgImhvb2tzLyoqIiwKICAgICAgICAibGliLyoqIiwKICAgICAgICAic2tpbGxzLyoqIiwKICAgICAgICAiLmNsYXVkZS1wbHVnaW4vKioiCiAgICAgIF0sCiAgICAgICJleGNsdWRlIjogWwogICAgICAgICIqKi90ZXN0cy8qKiIsCiAgICAgICAgIioqL3Rlc3RfKi5weSIsCiAgICAgICAgIioqLypfdGVzdC5weSIKICAgICAgXQogICAgfQogIF0KfQo=",
-      "encoding": "base64"
-    },
-    "repos/Grimblaz-and-Friends/tradecraft/contents/.tradecraft/work.json?ref=4f12aa5efa0ae765cebd213f89eec7da754c3d6a": {
-      "content": "ewogICJzY2hlbWFfdmVyc2lvbiI6IDEsCiAgInByb2R1Y3RfcmVwb3NpdG9yaWVzIjogWwogICAgIkdyaW1ibGF6LWFuZC1GcmllbmRzL09yZ2FuaXphdGlvbnMtb2YtVmVycmEiLAogICAgIkdyaW1ibGF6LWFuZC1GcmllbmRzL0RhZW1vbiIKICBdLAogICJjb25uZWN0ZWRfcmV2aWV3ZXJzIjogWwogICAgImNvZGVyYWJiaXRhaVtib3RdIiwKICAgICJjaGF0Z3B0LWNvZGV4LWNvbm5lY3Rvcltib3RdIgogIF0sCiAgIm1hcmtlcl9wcm9kdWNlcnMiOiBbCiAgICAiR3JpbWJsYXoiCiAgXSwKICAicmV2aWV3ZXJfbGFiZWwiOiAicmV2aWV3ZXJzIgp9Cg==",
-      "encoding": "base64"
-    },
-    "repos/Grimblaz-and-Friends/tradecraft/contents/.tradecraft/work.json?ref=6789582047cf306607573ecaff25ba1a4eda379d": {
-      "content": "ewogICJzY2hlbWFfdmVyc2lvbiI6IDEsCiAgInByb2R1Y3RfcmVwb3NpdG9yaWVzIjogWwogICAgIkdyaW1ibGF6LWFuZC1GcmllbmRzL09yZ2FuaXphdGlvbnMtb2YtVmVycmEiLAogICAgIkdyaW1ibGF6LWFuZC1GcmllbmRzL0RhZW1vbiIKICBdLAogICJjb25uZWN0ZWRfcmV2aWV3ZXJzIjogWwogICAgImNvZGVyYWJiaXRhaVtib3RdIiwKICAgICJncmVwdGlsZS1hcHBzW2JvdF0iLAogICAgImNoYXRncHQtY29kZXgtY29ubmVjdG9yW2JvdF0iCiAgXSwKICAibWFya2VyX3Byb2R1Y2VycyI6IFsKICAgICJHcmltYmxheiIKICBdLAogICJyZXZpZXdlcl9sYWJlbCI6ICJyZXZpZXdlcnMiCn0K",
-      "encoding": "base64"
+      "changed_files": 1
     },
     "repos/Grimblaz-and-Friends/tradecraft/git/ref/heads/main": {
       "object": {
@@ -220,70 +55,684 @@
     },
     "repos/Grimblaz-and-Friends/tradecraft/issues/759/comments?per_page=100": [
       {
-        "body": "<!-- tradecraft:affirmed-brief:v1 -->\n\n# Affirmed implementation brief — Greptile leaves tradecraft's review configuration\n\n*Affirmed by the owner as row 6 of #746 (affirmed 2026-09-24, \"affirm\", in that change's holder's session), which calls this mechanical work ahead of that build; restated here for this repository by the Steward on the owner's word on 2026-09-26, \"please set up 746 row 6 for me\".*\n\n**Shape.** Greptile leaves this repository's review configuration, as row 6 of #746 affirmed: its login `greptile-apps[bot]` leaves `.tradecraft/work.json`'s `connected_reviewers` and `greptile.json` is deleted.\n\n**Readers.** Owner; holder session; builder; the connected reviewers that remain.\n\n| Decision | Why | Owner | Holder | Builder | Connected reviewers |\n|---|---|---|---|---|---|\n| **1. Remove `greptile-apps[bot]` from `connected_reviewers` in `.tradecraft/work.json` and delete `greptile.json`; change nothing else in either.** | The owner affirmed row 6 of #746 on 2026-09-24: Greptile leaves every work configuration now, as mechanical work ahead of the lab's own reviewer; its trial reached its credit limit, and its limit notice is credited as a review (#744, change-proof #22). | One file and one list entry removed. | Removes exactly these; the entrance and the gate stop waiting on Greptile from the next pull request. | Makes the two edits and runs the floor. | CodeRabbit and Codex stay the connected reviewers here. |\n\n**Not this.** No change to the Greptile GitHub app's installation, which is the owner's organisation setting; no change to any other reviewer or to the lab's own reviewer, which joins only after it passes (#746 row 6); no other file.\n\nReview risk: ordinary\nReview lane: mechanical\n",
-        "created_at": "2026-09-26T19:53:54Z",
         "id": 5849372099,
+        "body": "<!-- tradecraft:affirmed-brief:v1 -->\n\n# Affirmed implementation brief \u2014 Greptile leaves tradecraft's review configuration\n\n*Affirmed by the owner as row 6 of #746 (affirmed 2026-09-24, \"affirm\", in that change's holder's session), which calls this mechanical work ahead of that build; restated here for this repository by the Steward on the owner's word on 2026-09-26, \"please set up 746 row 6 for me\".*\n\n**Shape.** Greptile leaves this repository's review configuration, as row 6 of #746 affirmed: its login `greptile-apps[bot]` leaves `.tradecraft/work.json`'s `connected_reviewers` and `greptile.json` is deleted.\n\n**Readers.** Owner; holder session; builder; the connected reviewers that remain.\n\n| Decision | Why | Owner | Holder | Builder | Connected reviewers |\n|---|---|---|---|---|---|\n| **1. Remove `greptile-apps[bot]` from `connected_reviewers` in `.tradecraft/work.json` and delete `greptile.json`; change nothing else in either.** | The owner affirmed row 6 of #746 on 2026-09-24: Greptile leaves every work configuration now, as mechanical work ahead of the lab's own reviewer; its trial reached its credit limit, and its limit notice is credited as a review (#744, change-proof #22). | One file and one list entry removed. | Removes exactly these; the entrance and the gate stop waiting on Greptile from the next pull request. | Makes the two edits and runs the floor. | CodeRabbit and Codex stay the connected reviewers here. |\n\n**Not this.** No change to the Greptile GitHub app's installation, which is the owner's organisation setting; no change to any other reviewer or to the lab's own reviewer, which joins only after it passes (#746 row 6); no other file.\n\nReview risk: ordinary\nReview lane: mechanical\n",
+        "created_at": "2026-09-26T19:53:54Z",
         "updated_at": "2026-09-26T19:53:54Z",
-        "user": {"login": "Grimblaz"}
+        "user": {
+          "login": "Grimblaz"
+        }
       },
       {
-        "body": "<!-- tradecraft:affirmed-brief:v1 -->\n\n# Affirmed implementation brief, re-put — Greptile leaves tradecraft's review configuration\n\n*Affirmed by the owner as row 6 of #746 (affirmed 2026-09-24, \"affirm\", in that change's holder's session), which calls this mechanical work ahead of that build; restated here for this repository by the Steward on the owner's word on 2026-09-26, \"please set up 746 row 6 for me\"; re-put whole on 2026-09-27 carrying the owner's amendment to row 6: \"give me a straightforward resolution that won't cost too much. I guess we can just leave it off of Daemon and on Verra\"; `greptile.json` stays, so Greptile keeps reviewing where it is free, and only its entry in the required list goes.*\n\n**Shape.** Greptile leaves this repository's review configuration, as row 6 of #746 affirmed: its login `greptile-apps[bot]` leaves `.tradecraft/work.json`'s `connected_reviewers`, and `greptile.json` stays so Greptile keeps its label-gated reviews where it runs.\n\n**Readers.** Owner; holder session; builder; the connected reviewers that remain.\n\n| Decision | Why | Owner | Holder | Builder | Connected reviewers |\n|---|---|---|---|---|---|\n| **1. Remove `greptile-apps[bot]` from `connected_reviewers` in `.tradecraft/work.json`; keep `greptile.json`; change nothing else in that file.** | The owner affirmed row 6 of #746 on 2026-09-24: Greptile leaves every work configuration now, as mechanical work ahead of the lab's own reviewer; its trial reached its credit limit, and its limit notice is credited as a review (#744, change-proof #22). | One list entry removed; Greptile's comments become advisory. | Removes exactly these; the entrance and the gate stop waiting on Greptile from the next pull request. | Makes the one edit and runs the floor. | CodeRabbit and Codex stay the connected reviewers here. |\n\n**Not this.** No change to the Greptile GitHub app's installation, which is the owner's organisation setting; no change to any other reviewer or to the lab's own reviewer, which joins only after it passes (#746 row 6); no other file.\n\nReview risk: ordinary\nReview lane: mechanical\n",
-        "created_at": "2026-09-27T00:20:37Z",
         "id": 5851221027,
+        "body": "<!-- tradecraft:affirmed-brief:v1 -->\n\n# Affirmed implementation brief, re-put \u2014 Greptile leaves tradecraft's review configuration\n\n*Affirmed by the owner as row 6 of #746 (affirmed 2026-09-24, \"affirm\", in that change's holder's session), which calls this mechanical work ahead of that build; restated here for this repository by the Steward on the owner's word on 2026-09-26, \"please set up 746 row 6 for me\"; re-put whole on 2026-09-27 carrying the owner's amendment to row 6: \"give me a straightforward resolution that won't cost too much. I guess we can just leave it off of Daemon and on Verra\"; `greptile.json` stays, so Greptile keeps reviewing where it is free, and only its entry in the required list goes.*\n\n**Shape.** Greptile leaves this repository's review configuration, as row 6 of #746 affirmed: its login `greptile-apps[bot]` leaves `.tradecraft/work.json`'s `connected_reviewers`, and `greptile.json` stays so Greptile keeps its label-gated reviews where it runs.\n\n**Readers.** Owner; holder session; builder; the connected reviewers that remain.\n\n| Decision | Why | Owner | Holder | Builder | Connected reviewers |\n|---|---|---|---|---|---|\n| **1. Remove `greptile-apps[bot]` from `connected_reviewers` in `.tradecraft/work.json`; keep `greptile.json`; change nothing else in that file.** | The owner affirmed row 6 of #746 on 2026-09-24: Greptile leaves every work configuration now, as mechanical work ahead of the lab's own reviewer; its trial reached its credit limit, and its limit notice is credited as a review (#744, change-proof #22). | One list entry removed; Greptile's comments become advisory. | Removes exactly these; the entrance and the gate stop waiting on Greptile from the next pull request. | Makes the one edit and runs the floor. | CodeRabbit and Codex stay the connected reviewers here. |\n\n**Not this.** No change to the Greptile GitHub app's installation, which is the owner's organisation setting; no change to any other reviewer or to the lab's own reviewer, which joins only after it passes (#746 row 6); no other file.\n\nReview risk: ordinary\nReview lane: mechanical\n",
+        "created_at": "2026-09-27T00:20:37Z",
         "updated_at": "2026-09-27T00:20:37Z",
-        "user": {"login": "Grimblaz"}
+        "user": {
+          "login": "Grimblaz"
+        }
       },
       {
+        "id": 5852421302,
         "body": "<!-- tradecraft:builder-session:v1 session=01a0e0f6-9840-77e3-bdf2-b5681d36a994 -->\n\nBuild returned: `4f12aa5` on `tradecraft/759-5cc3ebab25ec` removes `greptile-apps[bot]` from `connected_reviewers` and keeps `greptile.json`; the builder reports its floor passed (1,140 passed, 1 skipped, zero lint findings).",
         "created_at": "2026-09-27T03:51:47Z",
-        "id": 5852421302,
         "updated_at": "2026-09-27T03:51:47Z",
-        "user": {"login": "Grimblaz"}
+        "user": {
+          "login": "Grimblaz"
+        }
       }
     ],
     "repos/Grimblaz-and-Friends/tradecraft/issues/767/comments?per_page=100": [
       {
-        "body": "<!-- This is an auto-generated comment: summarize by coderabbit.ai -->\n\nNo actionable comments were generated in the recent review. 🎉",
-        "created_at": "2026-09-27T03:52:19Z",
         "id": 5852424198,
+        "body": "<!-- This is an auto-generated comment: summarize by coderabbit.ai -->\n<!-- review_stack_entry_start -->\n\n<a href=\"https://app.coderabbit.ai/change-stack/Grimblaz-and-Friends/tradecraft/pull/767\"><img src=\"https://storage.googleapis.com/coderabbit_public_assets/review-stack-in-coderabbit-ui-dark.svg?v=2\" alt=\"Review in Change Stack \u2192\" width=\"220\" height=\"32\"></a>\n\nNavigate logical layers of code changes, visualize relationships, and explore their blast radius.\n\n<!-- review_stack_entry_end -->\n<!-- recent_review_start -->\n\nNo actionable comments were generated in the recent review. \ud83c\udf89\n\n<details>\n<summary>\u2139\ufe0f Recent review info</summary>\n\n<details>\n<summary>\u2699\ufe0f Run configuration</summary>\n\n**Configuration used**: Repository: Grimblaz-and-Friends/tradecraft/.coderabbit.yaml\n\n**Review profile**: CHILL\n\n**Plan**: Advanced\n\n**Run ID**: `8c41a960-c16a-4177-866f-b52ee8d63127`\n\n</details>\n\n<details>\n<summary>\ud83d\udce5 Commits</summary>\n\nReviewing files that changed from the base of the PR and between 6789582047cf306607573ecaff25ba1a4eda379d and 4f12aa5efa0ae765cebd213f89eec7da754c3d6a.\n\n</details>\n\n<details>\n<summary>\ud83d\udcd2 Files selected for processing (1)</summary>\n\n* `.tradecraft/work.json`\n\n</details>\n\n<details>\n<summary>\ud83d\udca4 Files with no reviewable changes (1)</summary>\n\n* .tradecraft/work.json\n\n</details>\n\n**Included review availability:** This review used your included allowance. Your plan provides up to 1 included review per hour; 0 remain after this review.\n\n</details>\n\n---\n\n\n\n<!-- recent_review_end -->\n<!-- walkthrough_start -->\n\n<details>\n<summary>\ud83d\udcdd Walkthrough</summary>\n\n## Walkthrough\n\nThe `connected_reviewers` list in `.tradecraft/work.json` no longer includes `greptile-apps[bot]`. The list retains `coderabbitai[bot]` and `chatgpt-codex-connector[bot]`.\n\n### Changes\n\n**Reviewer configuration**\n\n|Layer / File(s)|Summary|\n|---|---|\n|**Connected reviewer list** <br> `.tradecraft/work.json`|The `connected_reviewers` list removes `greptile-apps[bot]`.|\n\n<!-- change_assessment_start -->\n**Priority:** \u2796 Normal\n\n\n\n\n\n**Estimated code review effort:** 1 (Trivial) | ~2 minutes\n\n<!-- change_assessment_commit:\"4f12aa5efa0ae765cebd213f89eec7da754c3d6a\" -->\n**Change:** Other \u00b7 **Severity of issue fixed:** Medium\n<!-- change_assessment_end -->\n\n</details>\n\n<!-- walkthrough_end -->\n<!-- final_review_risk_start -->\n**Merge Risk:** _\u26aa Minimal_ \u00b7 up to `4f12a`\n<!-- final_review_risk_coverage:{\"sourceCommitId\":\"4f12aa5efa0ae765cebd213f89eec7da754c3d6a\",\"coveredCommitId\":\"4f12aa5efa0ae765cebd213f89eec7da754c3d6a\",\"kind\":\"reviewed\"} -->\n\nRemoving Greptile from the connected reviewer list appears mergeable after normal checks. This PR\u2019s own gate may still wait for Greptile because it reads the base-branch configuration.\n<!-- final_review_risk_end -->\n<!-- pre_merge_checks_walkthrough_start -->\n\n<details>\n<summary>\ud83d\udea5 Pre-merge checks | \u2705 4 | \u274c 1</summary>\n\n### \u274c Failed checks (1 warning)\n\n|      Check name     | Status     | Explanation                                                                                                                                                                                               | Resolution                                                                                                               |\n| :-----------------: | :--------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :----------------------------------------------------------------------------------------------------------------------- |\n| Linked Issues check | \u26a0\ufe0f Warning | Issue `#759` requires two coding changes: remove `greptile-apps[bot]` from `.tradecraft/work.json` and delete `greptile.json`. The PR removes the login from `connected_reviewers`, but the PR summary sta\u2026 | Delete `greptile.json` in this pull request, or update the linked issue and scope if that requirement no longer applies. |\n\n<details>\n<summary>\u2705 Passed checks (4 passed)</summary>\n\n|         Check name         | Status   | Explanation                                                                                                                                                                                               |\n| :------------------------: | :------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |\n| Out of Scope Changes check | \u2705 Passed | The only reported change removes `greptile-apps[bot]` from `.tradecraft/work.json` `connected_reviewers`. This change directly implements the configuration objective in issue `#759`. No unrelated change\u2026 |\n|     Docstring Coverage     | \u2705 Passed | No functions found in the changed files to evaluate docstring coverage. Skipping docstring coverage check. Docstring coverage is scoped to functions touched by this diff. Analyzed 0 functions across 0\u2026 |\n|      Description Check     | \u2705 Passed | Check skipped - CodeRabbit\u2019s high-level summary is enabled.                                                                                                                                               |\n|         Title check        | \u2705 Passed | The title clearly identifies the primary change: removing Greptile from the connected reviewers. It is specific and related to the changeset.                                                             |\n\n</details>\n\n<details>\n<summary>Full details: Linked Issues check</summary>\n\n**Explanation**\n\nIssue `#759` requires two coding changes: remove `greptile-apps[bot]` from `.tradecraft/work.json` and delete `greptile.json`. The PR removes the login from `connected_reviewers`, but the PR summary states that `greptile.json` remains unchanged. The deletion requirement is not met.\n\n</details>\n\n</details>\n\n<!-- pre_merge_checks_walkthrough_end -->\n\n- [ ] <!-- {\"checkboxId\":\"585bb3f6-faf5-4dbf-96d2-74e382adf19a\"} --> Fix all pre-merge checks with AI\n<!-- finishing_touch_checkbox_start -->\n\n<details>\n<summary>\u2728 Finishing Touches \ud83d\udca1 1</summary>\n\n<!-- finishing_touch_suggestion:fix_ci -->\n<details open>\n<summary>\ud83d\udee0\ufe0f Fix failing CI checks \ud83d\udca1</summary>\n\n- [ ] <!-- {\"checkboxId\": \"9f0d24fb-b419-4f01-baf0-8b26b6424f34\", \"radioGroupId\": \"fix-ci-output-choice-group-unknown_comment_id\"} --> Commit to this branch\n- [ ] <!-- {\"checkboxId\": \"6d21cfe8-ec3f-40e2-9222-b8318b64d3b0\", \"radioGroupId\": \"fix-ci-output-choice-group-unknown_comment_id\"} --> Create a new PR\n\n</details>\n<details open>\n<summary>\ud83e\uddea Generate unit tests (beta)</summary>\n\n- [ ] <!-- {\"checkboxId\": \"6ba7b810-9dad-11d1-80b4-00c04fd430c8\", \"radioGroupId\": \"utg-output-choice-group-unknown_comment_id\"} --> Commit to this branch\n- [ ] <!-- {\"checkboxId\": \"f47ac10b-58cc-4372-a567-0e02b2c3d479\", \"radioGroupId\": \"utg-output-choice-group-unknown_comment_id\"} --> Create a new PR\n\n</details>\n\n</details>\n\n<!-- finishing_touch_checkbox_end -->\n<!-- tips_start -->\n\n---\n\nThanks for using [CodeRabbit](https://coderabbit.ai?utm_source=oss&utm_medium=github&utm_campaign=Grimblaz-and-Friends/tradecraft&utm_content=767)! It's free for OSS, and your support helps us grow. If you like it, consider giving us a shout-out.\n\n<details>\n<summary>\u2764\ufe0f Share</summary>\n\n- [X](https://twitter.com/intent/tweet?text=I%20just%20used%20%40coderabbitai%20for%20my%20code%20review%2C%20and%20it%27s%20fantastic%21%20It%27s%20free%20for%20OSS%20and%20offers%20a%20free%20trial%20for%20the%20proprietary%20code.%20Check%20it%20out%3A&url=https%3A//coderabbit.ai)\n- [Mastodon](https://mastodon.social/share?text=I%20just%20used%20%40coderabbitai%20for%20my%20code%20review%2C%20and%20it%27s%20fantastic%21%20It%27s%20free%20for%20OSS%20and%20offers%20a%20free%20trial%20for%20the%20proprietary%20code.%20Check%20it%20out%3A%20https%3A%2F%2Fcoderabbit.ai)\n- [Reddit](https://www.reddit.com/submit?title=Great%20tool%20for%20code%20review%20-%20CodeRabbit&text=I%20just%20used%20CodeRabbit%20for%20my%20code%20review%2C%20and%20it%27s%20fantastic%21%20It%27s%20free%20for%20OSS%20and%20offers%20a%20free%20trial%20for%20proprietary%20code.%20Check%20it%20out%3A%20https%3A//coderabbit.ai)\n- [LinkedIn](https://www.linkedin.com/sharing/share-offsite/?url=https%3A%2F%2Fcoderabbit.ai&mini=true&title=Great%20tool%20for%20code%20review%20-%20CodeRabbit&summary=I%20just%20used%20CodeRabbit%20for%20my%20code%20review%2C%20and%20it%27s%20fantastic%21%20It%27s%20free%20for%20OSS%20and%20offers%20a%20free%20trial%20for%20proprietary%20code)\n\n</details>\n\n\n<sub>Comment `@coderabbitai help` to get the list of available commands.</sub>\n\n<!-- tips_end -->",
+        "created_at": "2026-09-27T03:52:19Z",
         "updated_at": "2026-09-27T04:17:09Z",
-        "user": {"login": "coderabbitai[bot]"}
+        "user": {
+          "login": "coderabbitai[bot]"
+        }
       },
       {
+        "id": 5852487982,
         "body": "<!-- tradecraft:floor:v1 head=4f12aa5efa0ae765cebd213f89eec7da754c3d6a status=pass -->\n\nFloor passed at `4f12aa5`, run by the builder through `run floor` (Codex `gpt-5.6-sol` at `xhigh`, session `01a0e0f6-9840-77e3-bdf2-b5681d36a994`).\n\n```text\npython tools/dev.py check\n```\n\n```text\nlint: 0 finding(s)\n1140 passed, 1 skipped in 314.68s (0:05:14)\n```\n",
         "created_at": "2026-09-27T04:04:08Z",
-        "id": 5852487982,
         "updated_at": "2026-09-27T04:04:08Z",
-        "user": {"login": "Grimblaz"}
+        "user": {
+          "login": "Grimblaz"
+        }
       },
       {
-        "body": "<!-- codex-pull-request-review-summary -->\n\n## Codex Review Summary\n\n| Review | Status | Commit | Review trigger |\n| --- | --- | --- | --- |\n| Code Review | Completed | `4f12aa5` | Draft marked ready |",
-        "created_at": "2026-09-27T04:05:29Z",
+        "id": 5852491047,
+        "body": "<!-- tradecraft:proof:v1 head=4f12aa5efa0ae765cebd213f89eec7da754c3d6a -->\n\n```json\n{\n  \"declarations\": [\n    {\n      \"actual_effort\": null,\n      \"actual_model\": null,\n      \"actual_vendor\": \"codex\",\n      \"completed_at\": \"2026-09-27T04:03:54.129544+00:00\",\n      \"dispatch_id\": \"df04228909514016a085a61b524b822c\",\n      \"fallback_reason\": null,\n      \"reason\": null,\n      \"requested_classification\": null,\n      \"requested_effort\": \"xhigh\",\n      \"requested_model\": \"gpt-5.6-sol\",\n      \"requested_vendor\": \"codex\",\n      \"revision\": \"4f12aa5efa0ae765cebd213f89eec7da754c3d6a\",\n      \"same_vendor_reason\": null,\n      \"staffing_status\": \"qualified\",\n      \"stage\": \"floor\",\n      \"status\": \"declared\"\n    }\n  ],\n  \"diagnostics\": [],\n  \"dispositions\": [],\n  \"floor\": {\n    \"checks\": [\n      {\n        \"app_id\": 867647,\n        \"app_slug\": \"greptile-apps\",\n        \"completed_at\": \"2026-09-27T04:06:48Z\",\n        \"conclusion\": \"success\",\n        \"head\": \"4f12aa5efa0ae765cebd213f89eec7da754c3d6a\",\n        \"id\": 108547334634,\n        \"name\": \"Greptile Review\",\n        \"run_id\": null,\n        \"started_at\": \"2026-09-27T04:05:21Z\",\n        \"status\": \"completed\",\n        \"url\": \"https://greptile.com/\",\n        \"workflow_id\": null\n      },\n      {\n        \"app_id\": 15368,\n        \"app_slug\": \"github-actions\",\n        \"completed_at\": \"2026-09-27T04:17:12Z\",\n        \"conclusion\": \"success\",\n        \"head\": \"4f12aa5efa0ae765cebd213f89eec7da754c3d6a\",\n        \"id\": 108548930130,\n        \"name\": \"ask-declaration\",\n        \"run_id\": 36293856632,\n        \"started_at\": \"2026-09-27T04:17:04Z\",\n        \"status\": \"completed\",\n        \"url\": \"https://github.com/Grimblaz-and-Friends/tradecraft/actions/runs/36293856632\",\n        \"workflow_id\": 335259309\n      },\n      {\n        \"app_id\": 15368,\n        \"app_slug\": \"github-actions\",\n        \"completed_at\": \"2026-09-27T04:17:47Z\",\n        \"conclusion\": \"success\",\n        \"head\": \"4f12aa5efa0ae765cebd213f89eec7da754c3d6a\",\n        \"id\": 108548930259,\n        \"name\": \"lint-and-test (ubuntu-latest)\",\n        \"run_id\": 36293856632,\n        \"started_at\": \"2026-09-27T04:17:05Z\",\n        \"status\": \"completed\",\n        \"url\": \"https://github.com/Grimblaz-and-Friends/tradecraft/actions/runs/36293856632\",\n        \"workflow_id\": 335259309\n      },\n      {\n        \"app_id\": 15368,\n        \"app_slug\": \"github-actions\",\n        \"completed_at\": \"2026-09-27T04:20:33Z\",\n        \"conclusion\": \"success\",\n        \"head\": \"4f12aa5efa0ae765cebd213f89eec7da754c3d6a\",\n        \"id\": 108548930241,\n        \"name\": \"lint-and-test (windows-latest)\",\n        \"run_id\": 36293856632,\n        \"started_at\": \"2026-09-27T04:17:04Z\",\n        \"status\": \"completed\",\n        \"url\": \"https://github.com/Grimblaz-and-Friends/tradecraft/actions/runs/36293856632\",\n        \"workflow_id\": 335259309\n      }\n    ],\n    \"head\": \"4f12aa5efa0ae765cebd213f89eec7da754c3d6a\",\n    \"source\": {\n      \"author\": \"grimblaz\",\n      \"id\": 5852487982,\n      \"kind\": \"pull-request-comment\",\n      \"repository\": \"Grimblaz-and-Friends/tradecraft\",\n      \"revision\": \"4f12aa5efa0ae765cebd213f89eec7da754c3d6a\",\n      \"timestamp\": \"2026-09-27T04:04:08Z\",\n      \"url\": \"https://github.com/Grimblaz-and-Friends/tradecraft/pull/767#issuecomment-5852487982\"\n    }\n  },\n  \"identity\": {\n    \"head\": \"4f12aa5efa0ae765cebd213f89eec7da754c3d6a\",\n    \"issue\": 759,\n    \"producer_version\": \"0.156.0\",\n    \"pull_request\": 767,\n    \"repository\": \"Grimblaz-and-Friends/tradecraft\",\n    \"work\": \"Grimblaz-and-Friends/tradecraft#759\"\n  },\n  \"policy\": {\n    \"use_rules\": {\n      \"path\": \"lib/use-rules.json\",\n      \"repository\": \"Grimblaz-and-Friends/tradecraft\",\n      \"revision\": \"6789582047cf306607573ecaff25ba1a4eda379d\",\n      \"sha256\": \"11f48690d4ff8b19e31b632380e025413b32b2a0ac9de543f2b9e51a7b0907ee\"\n    },\n    \"work_configuration\": {\n      \"path\": \".tradecraft/work.json\",\n      \"repository\": \"Grimblaz-and-Friends/tradecraft\",\n      \"revision\": \"6789582047cf306607573ecaff25ba1a4eda379d\",\n      \"sha256\": \"943da02760b23218e4fb0cef77e50f66eebe7bf19ef096f5cd48bdf2deafa506\"\n    }\n  },\n  \"reviewers\": [\n    {\n      \"login\": \"chatgpt-codex-connector[bot]\",\n      \"notices\": [],\n      \"result\": \"present\",\n      \"source\": {\n        \"author\": \"chatgpt-codex-connector[bot]\",\n        \"id\": 5852495163,\n        \"kind\": \"pull-request-comment\",\n        \"repository\": \"Grimblaz-and-Friends/tradecraft\",\n        \"revision\": null,\n        \"timestamp\": \"2026-09-27T04:05:29Z\",\n        \"url\": \"https://github.com/Grimblaz-and-Friends/tradecraft/pull/767#issuecomment-5852495163\"\n      }\n    },\n    {\n      \"login\": \"coderabbitai[bot]\",\n      \"notices\": [],\n      \"result\": \"present\",\n      \"source\": {\n        \"author\": \"coderabbitai[bot]\",\n        \"id\": 5852424198,\n        \"kind\": \"pull-request-comment\",\n        \"repository\": \"Grimblaz-and-Friends/tradecraft\",\n        \"revision\": null,\n        \"timestamp\": \"2026-09-27T03:52:19Z\",\n        \"url\": \"https://github.com/Grimblaz-and-Friends/tradecraft/pull/767#issuecomment-5852424198\"\n      }\n    },\n    {\n      \"login\": \"greptile-apps[bot]\",\n      \"notices\": [],\n      \"result\": \"present\",\n      \"source\": {\n        \"author\": \"greptile-apps[bot]\",\n        \"id\": 5852502444,\n        \"kind\": \"pull-request-comment\",\n        \"repository\": \"Grimblaz-and-Friends/tradecraft\",\n        \"revision\": null,\n        \"timestamp\": \"2026-09-27T04:06:46Z\",\n        \"url\": \"https://github.com/Grimblaz-and-Friends/tradecraft/pull/767#issuecomment-5852502444\"\n      }\n    }\n  ],\n  \"schema_version\": 1,\n  \"use\": {\n    \"applicability\": \"generated\",\n    \"classification\": \"not-required\",\n    \"evidence_head\": \"4f12aa5efa0ae765cebd213f89eec7da754c3d6a\",\n    \"intervening_commits\": [],\n    \"reason\": \"the owner-affirmed mechanical lane exempts use even when changed paths match the schema-version-1 use policy\",\n    \"required\": false,\n    \"source\": {\n      \"author\": \"grimblaz\",\n      \"id\": 5851221027,\n      \"kind\": \"issue-comment\",\n      \"repository\": \"Grimblaz-and-Friends/tradecraft\",\n      \"revision\": null,\n      \"timestamp\": \"2026-09-27T00:20:37Z\",\n      \"url\": \"https://github.com/Grimblaz-and-Friends/tradecraft/issues/759#issuecomment-5851221027\"\n    }\n  }\n}\n```\n\n### Readable proof\n\n- evidence: Grimblaz-and-Friends/tradecraft#759 pull request #767 at 4f12aa5efa0ae765cebd213f89eec7da754c3d6a\n- evidence: floor source present; 4 public check record(s)\n- evidence: use classification not-required; applicability generated\n- evidence: use reason the owner-affirmed mechanical lane exempts use even when changed paths match the schema-version-1 use policy; source https://github.com/Grimblaz-and-Friends/tradecraft/issues/759#issuecomment-5851221027\n- evidence: reviewer chatgpt-codex-connector[bot]: present\n- evidence: reviewer coderabbitai[bot]: present\n- evidence: reviewer greptile-apps[bot]: present\n- declared: floor: declared (df04228909514016a085a61b524b822c)\n\n<!-- tradecraft:no-use:v1 head=4f12aa5efa0ae765cebd213f89eec7da754c3d6a -->\nUse: not required - the owner-affirmed mechanical lane exempts use even when changed paths match the schema-version-1 use policy.\n",
+        "created_at": "2026-09-27T04:04:44Z",
+        "updated_at": "2026-09-27T04:21:14Z",
+        "user": {
+          "login": "Grimblaz"
+        }
+      },
+      {
         "id": 5852495163,
+        "body": "<!-- codex-pull-request-review-summary -->\n\n## Codex Review Summary\n\nThis comment shows the latest Codex review activity on this pull request.\n\n| Review | Status | Commit | Review trigger |\n| --- | --- | --- | --- |\n| \ud83d\udcdd **Code Review** | \u2705 **Completed** <relative-time datetime=\"2026-09-27T04:07:16.190775Z\">2026-09-27T04:07:16.190775Z</relative-time> | `4f12aa5` | Draft marked ready |\n\n\n\n<details> <summary>\u2139\ufe0f About Codex in GitHub</summary>\n<br/>\n\n[Your team has set up Codex to review pull requests in this repo](https://chatgpt.com/codex/cloud/settings/general). Reviews are triggered when you\n- Open a pull request for review\n- Mark a draft as ready\n- Comment \"@codex review\" or \"@codex security review\".\n\nCodex reacts with \ud83d\udc40 while any review is running, comments if it has suggestions, and reacts with \ud83d\udc4d once all reviews finish with no findings.\n\n</details>",
+        "created_at": "2026-09-27T04:05:29Z",
         "updated_at": "2026-09-27T04:07:16Z",
-        "user": {"login": "chatgpt-codex-connector[bot]"}
+        "user": {
+          "login": "chatgpt-codex-connector[bot]"
+        }
       },
       {
-        "body": "<!-- greptile_summary -->\n\nConfidence Score: 5/5\n\n[Low risk] Removes a bot from the connected reviewers list.\n\nThe PR appears safe to merge.",
-        "created_at": "2026-09-27T04:06:46Z",
         "id": 5852502444,
+        "body": "<!-- greptile_summary -->\n\n<h2><a href=\"https://app.greptile.com/api/retrigger?id=70068715\"><picture><source media=\"(prefers-color-scheme: dark)\" srcset=\"https://greptile-static-assets.s3.amazonaws.com/badges/RetriggerDark.svg?v=2\"><source media=\"(prefers-color-scheme: light)\" srcset=\"https://greptile-static-assets.s3.amazonaws.com/badges/Retrigger.svg?v=2\"><img alt=\"Retrigger\" src=\"https://greptile-static-assets.s3.amazonaws.com/badges/Retrigger.svg?v=2\" align=\"right\"></picture></a>Confidence Score: 5/5</h2>\n\n**[Low risk]** Removes a bot from the connected reviewers list\\.\n\nThe PR appears safe to merge.\n\n<details><summary>Summary</summary>\n\nRemoves Greptile from the configured connected reviewers while retaining CodeRabbit and Codex. Greptile may still run, but its review is advisory rather than required by the work-cell gate.\n</details>\n\n<!-- greptile_confidence_score:5 -->\n\n<sub>Reviews (1) \u00b7 Last reviewed commit: [\"Remove Greptile from required reviewers\"](https://github.com/grimblaz-and-friends/tradecraft/commit/4f12aa5efa0ae765cebd213f89eec7da754c3d6a)</sub>",
+        "created_at": "2026-09-27T04:06:46Z",
         "updated_at": "2026-09-27T04:06:54Z",
-        "user": {"login": "greptile-apps[bot]"}
+        "user": {
+          "login": "greptile-apps[bot]"
+        }
       }
     ],
-    "repos/Grimblaz-and-Friends/tradecraft/pulls/767": {
-      "base": {"ref": "main", "sha": "6789582047cf306607573ecaff25ba1a4eda379d"},
-      "body": "> **In plain terms:** Greptile is no longer a required reviewer in this repository. Its login is removed from `.tradecraft/work.json`'s `connected_reviewers`, so from the next pull request on, neither the entrance nor the gate waits on it. `greptile.json` stays, so Greptile still reviews where it runs, and its comments are advisory. This follows row 6 of #746 as the owner amended it on 2026-09-27.\n\nCloses #759\n\n**Path departures:** the required gate is bypassed, red at `4f12aa5`. The owner affirmed the mechanical lane, so `run proof` writes a generated no-use record whose `source` is the affirmed brief comment. The shared gate accepts a generated no-use record only when `source` is null, so it rejects this record. This change's only path, `.tradecraft/work.json`, matches none of the gate's use rules. There was no artifact, cold seat or use, because the mechanical lane exempts all three. Merging over the red gate is the owner's decision.\n",
-      "changed_files": 1,
-      "draft": false,
-      "head": {"sha": "4f12aa5efa0ae765cebd213f89eec7da754c3d6a"},
-      "number": 767,
-      "state": "closed"
-    },
-    "repos/Grimblaz-and-Friends/tradecraft/pulls/767/comments?per_page=100": [],
     "repos/Grimblaz-and-Friends/tradecraft/pulls/767/files?per_page=100": [
-      {"filename": ".tradecraft/work.json"}
+      {
+        "filename": ".tradecraft/work.json"
+      }
     ],
-    "repos/Grimblaz-and-Friends/tradecraft/pulls/767/reviews?per_page=100": []
+    "repos/Grimblaz-and-Friends/tradecraft/pulls/767/reviews?per_page=100": [],
+    "repos/Grimblaz-and-Friends/tradecraft/pulls/767/comments?per_page=100": [],
+    "repos/Grimblaz-and-Friends/tradecraft/contents/.github/change-proof.json?ref=4f12aa5efa0ae765cebd213f89eec7da754c3d6a": {
+      "encoding": "base64",
+      "content": "ewogICJzY2hlbWFfdmVyc2lvbiI6IDEsCiAgInJ1bGVzIjogWwogICAgewog\nICAgICAibmFtZSI6ICJydW50aW1lLW9yLXVzZXItc3VyZmFjZSIsCiAgICAg\nICJpbmNsdWRlIjogWwogICAgICAgICJhZ2VudHMvKioiLAogICAgICAgICJj\nb21tYW5kcy8qKiIsCiAgICAgICAgImhvb2tzLyoqIiwKICAgICAgICAibGli\nLyoqIiwKICAgICAgICAic2tpbGxzLyoqIiwKICAgICAgICAiLmNsYXVkZS1w\nbHVnaW4vKioiCiAgICAgIF0sCiAgICAgICJleGNsdWRlIjogWwogICAgICAg\nICIqKi90ZXN0cy8qKiIsCiAgICAgICAgIioqL3Rlc3RfKi5weSIsCiAgICAg\nICAgIioqLypfdGVzdC5weSIKICAgICAgXQogICAgfQogIF0KfQo=\n"
+    },
+    "repos/Grimblaz-and-Friends/tradecraft/contents/.tradecraft/work.json?ref=4f12aa5efa0ae765cebd213f89eec7da754c3d6a": {
+      "encoding": "base64",
+      "content": "ewogICJzY2hlbWFfdmVyc2lvbiI6IDEsCiAgInByb2R1Y3RfcmVwb3NpdG9y\naWVzIjogWwogICAgIkdyaW1ibGF6LWFuZC1GcmllbmRzL09yZ2FuaXphdGlv\nbnMtb2YtVmVycmEiLAogICAgIkdyaW1ibGF6LWFuZC1GcmllbmRzL0RhZW1v\nbiIKICBdLAogICJjb25uZWN0ZWRfcmV2aWV3ZXJzIjogWwogICAgImNvZGVy\nYWJiaXRhaVtib3RdIiwKICAgICJjaGF0Z3B0LWNvZGV4LWNvbm5lY3Rvclti\nb3RdIgogIF0sCiAgIm1hcmtlcl9wcm9kdWNlcnMiOiBbCiAgICAiR3JpbWJs\nYXoiCiAgXSwKICAicmV2aWV3ZXJfbGFiZWwiOiAicmV2aWV3ZXJzIgp9Cg==\n"
+    },
+    "repos/Grimblaz-and-Friends/tradecraft/contents/.github/change-proof.json?ref=6789582047cf306607573ecaff25ba1a4eda379d": {
+      "encoding": "base64",
+      "content": "ewogICJzY2hlbWFfdmVyc2lvbiI6IDEsCiAgInJ1bGVzIjogWwogICAgewog\nICAgICAibmFtZSI6ICJydW50aW1lLW9yLXVzZXItc3VyZmFjZSIsCiAgICAg\nICJpbmNsdWRlIjogWwogICAgICAgICJhZ2VudHMvKioiLAogICAgICAgICJj\nb21tYW5kcy8qKiIsCiAgICAgICAgImhvb2tzLyoqIiwKICAgICAgICAibGli\nLyoqIiwKICAgICAgICAic2tpbGxzLyoqIiwKICAgICAgICAiLmNsYXVkZS1w\nbHVnaW4vKioiCiAgICAgIF0sCiAgICAgICJleGNsdWRlIjogWwogICAgICAg\nICIqKi90ZXN0cy8qKiIsCiAgICAgICAgIioqL3Rlc3RfKi5weSIsCiAgICAg\nICAgIioqLypfdGVzdC5weSIKICAgICAgXQogICAgfQogIF0KfQo=\n"
+    },
+    "repos/Grimblaz-and-Friends/tradecraft/contents/.tradecraft/work.json?ref=6789582047cf306607573ecaff25ba1a4eda379d": {
+      "encoding": "base64",
+      "content": "ewogICJzY2hlbWFfdmVyc2lvbiI6IDEsCiAgInByb2R1Y3RfcmVwb3NpdG9y\naWVzIjogWwogICAgIkdyaW1ibGF6LWFuZC1GcmllbmRzL09yZ2FuaXphdGlv\nbnMtb2YtVmVycmEiLAogICAgIkdyaW1ibGF6LWFuZC1GcmllbmRzL0RhZW1v\nbiIKICBdLAogICJjb25uZWN0ZWRfcmV2aWV3ZXJzIjogWwogICAgImNvZGVy\nYWJiaXRhaVtib3RdIiwKICAgICJncmVwdGlsZS1hcHBzW2JvdF0iLAogICAg\nImNoYXRncHQtY29kZXgtY29ubmVjdG9yW2JvdF0iCiAgXSwKICAibWFya2Vy\nX3Byb2R1Y2VycyI6IFsKICAgICJHcmltYmxheiIKICBdLAogICJyZXZpZXdl\ncl9sYWJlbCI6ICJyZXZpZXdlcnMiCn0K\n"
+    },
+    "repos/Grimblaz-and-Friends/tradecraft/commits/4f12aa5efa0ae765cebd213f89eec7da754c3d6a/check-runs?filter=all&per_page=100": {
+      "total_count": 21,
+      "check_runs": [
+        {
+          "id": 108549502051,
+          "name": "Change proof (required) / Change proof",
+          "details_url": "https://github.com/Grimblaz-and-Friends/tradecraft/actions/runs/36292658635/job/108549502051",
+          "head_sha": "4f12aa5efa0ae765cebd213f89eec7da754c3d6a",
+          "status": "completed",
+          "conclusion": "failure",
+          "started_at": "2026-09-27T04:21:21Z",
+          "completed_at": "2026-09-27T04:21:31Z",
+          "app": {
+            "id": 15368,
+            "slug": "github-actions"
+          },
+          "check_suite": {
+            "id": 98275970967
+          }
+        },
+        {
+          "id": 108548930259,
+          "name": "lint-and-test (ubuntu-latest)",
+          "details_url": "https://github.com/Grimblaz-and-Friends/tradecraft/actions/runs/36293856632/job/108548930259",
+          "head_sha": "4f12aa5efa0ae765cebd213f89eec7da754c3d6a",
+          "status": "completed",
+          "conclusion": "success",
+          "started_at": "2026-09-27T04:17:05Z",
+          "completed_at": "2026-09-27T04:17:47Z",
+          "app": {
+            "id": 15368,
+            "slug": "github-actions"
+          },
+          "check_suite": {
+            "id": 98279090995
+          }
+        },
+        {
+          "id": 108548930241,
+          "name": "lint-and-test (windows-latest)",
+          "details_url": "https://github.com/Grimblaz-and-Friends/tradecraft/actions/runs/36293856632/job/108548930241",
+          "head_sha": "4f12aa5efa0ae765cebd213f89eec7da754c3d6a",
+          "status": "completed",
+          "conclusion": "success",
+          "started_at": "2026-09-27T04:17:04Z",
+          "completed_at": "2026-09-27T04:20:33Z",
+          "app": {
+            "id": 15368,
+            "slug": "github-actions"
+          },
+          "check_suite": {
+            "id": 98279090995
+          }
+        },
+        {
+          "id": 108548930130,
+          "name": "ask-declaration",
+          "details_url": "https://github.com/Grimblaz-and-Friends/tradecraft/actions/runs/36293856632/job/108548930130",
+          "head_sha": "4f12aa5efa0ae765cebd213f89eec7da754c3d6a",
+          "status": "completed",
+          "conclusion": "success",
+          "started_at": "2026-09-27T04:17:04Z",
+          "completed_at": "2026-09-27T04:17:12Z",
+          "app": {
+            "id": 15368,
+            "slug": "github-actions"
+          },
+          "check_suite": {
+            "id": 98279090995
+          }
+        },
+        {
+          "id": 108548610111,
+          "name": "Change proof (required) / Change proof",
+          "details_url": "https://github.com/Grimblaz-and-Friends/tradecraft/actions/runs/36292658635/job/108548610111",
+          "head_sha": "4f12aa5efa0ae765cebd213f89eec7da754c3d6a",
+          "status": "completed",
+          "conclusion": "failure",
+          "started_at": "2026-09-27T04:14:46Z",
+          "completed_at": "2026-09-27T04:14:57Z",
+          "app": {
+            "id": 15368,
+            "slug": "github-actions"
+          },
+          "check_suite": {
+            "id": 98275970967
+          }
+        },
+        {
+          "id": 108548116684,
+          "name": "lint-and-test (windows-latest)",
+          "details_url": "https://github.com/Grimblaz-and-Friends/tradecraft/actions/runs/36293568589/job/108548116684",
+          "head_sha": "4f12aa5efa0ae765cebd213f89eec7da754c3d6a",
+          "status": "completed",
+          "conclusion": "success",
+          "started_at": "2026-09-27T04:11:09Z",
+          "completed_at": "2026-09-27T04:13:58Z",
+          "app": {
+            "id": 15368,
+            "slug": "github-actions"
+          },
+          "check_suite": {
+            "id": 98278359039
+          }
+        },
+        {
+          "id": 108548116656,
+          "name": "lint-and-test (ubuntu-latest)",
+          "details_url": "https://github.com/Grimblaz-and-Friends/tradecraft/actions/runs/36293568589/job/108548116656",
+          "head_sha": "4f12aa5efa0ae765cebd213f89eec7da754c3d6a",
+          "status": "completed",
+          "conclusion": "success",
+          "started_at": "2026-09-27T04:11:08Z",
+          "completed_at": "2026-09-27T04:11:55Z",
+          "app": {
+            "id": 15368,
+            "slug": "github-actions"
+          },
+          "check_suite": {
+            "id": 98278359039
+          }
+        },
+        {
+          "id": 108548116503,
+          "name": "ask-declaration",
+          "details_url": "https://github.com/Grimblaz-and-Friends/tradecraft/actions/runs/36293568589/job/108548116503",
+          "head_sha": "4f12aa5efa0ae765cebd213f89eec7da754c3d6a",
+          "status": "completed",
+          "conclusion": "success",
+          "started_at": "2026-09-27T04:11:08Z",
+          "completed_at": "2026-09-27T04:11:13Z",
+          "app": {
+            "id": 15368,
+            "slug": "github-actions"
+          },
+          "check_suite": {
+            "id": 98278359039
+          }
+        },
+        {
+          "id": 108547697600,
+          "name": "Change proof (required) / Change proof",
+          "details_url": "https://github.com/Grimblaz-and-Friends/tradecraft/actions/runs/36292658635/job/108547697600",
+          "head_sha": "4f12aa5efa0ae765cebd213f89eec7da754c3d6a",
+          "status": "completed",
+          "conclusion": "failure",
+          "started_at": "2026-09-27T04:08:06Z",
+          "completed_at": "2026-09-27T04:08:16Z",
+          "app": {
+            "id": 15368,
+            "slug": "github-actions"
+          },
+          "check_suite": {
+            "id": 98275970967
+          }
+        },
+        {
+          "id": 108547460071,
+          "name": "ask-declaration",
+          "details_url": "https://github.com/Grimblaz-and-Friends/tradecraft/actions/runs/36293336671/job/108547460071",
+          "head_sha": "4f12aa5efa0ae765cebd213f89eec7da754c3d6a",
+          "status": "completed",
+          "conclusion": "success",
+          "started_at": "2026-09-27T04:06:18Z",
+          "completed_at": "2026-09-27T04:06:24Z",
+          "app": {
+            "id": 15368,
+            "slug": "github-actions"
+          },
+          "check_suite": {
+            "id": 98277750021
+          }
+        },
+        {
+          "id": 108547460040,
+          "name": "lint-and-test (windows-latest)",
+          "details_url": "https://github.com/Grimblaz-and-Friends/tradecraft/actions/runs/36293336671/job/108547460040",
+          "head_sha": "4f12aa5efa0ae765cebd213f89eec7da754c3d6a",
+          "status": "completed",
+          "conclusion": "success",
+          "started_at": "2026-09-27T04:06:20Z",
+          "completed_at": "2026-09-27T04:09:50Z",
+          "app": {
+            "id": 15368,
+            "slug": "github-actions"
+          },
+          "check_suite": {
+            "id": 98277750021
+          }
+        },
+        {
+          "id": 108547459913,
+          "name": "lint-and-test (ubuntu-latest)",
+          "details_url": "https://github.com/Grimblaz-and-Friends/tradecraft/actions/runs/36293336671/job/108547459913",
+          "head_sha": "4f12aa5efa0ae765cebd213f89eec7da754c3d6a",
+          "status": "completed",
+          "conclusion": "success",
+          "started_at": "2026-09-27T04:06:19Z",
+          "completed_at": "2026-09-27T04:07:08Z",
+          "app": {
+            "id": 15368,
+            "slug": "github-actions"
+          },
+          "check_suite": {
+            "id": 98277750021
+          }
+        },
+        {
+          "id": 108547334634,
+          "name": "Greptile Review",
+          "details_url": "https://greptile.com/",
+          "head_sha": "4f12aa5efa0ae765cebd213f89eec7da754c3d6a",
+          "status": "completed",
+          "conclusion": "success",
+          "started_at": "2026-09-27T04:05:21Z",
+          "completed_at": "2026-09-27T04:06:48Z",
+          "app": {
+            "id": 867647,
+            "slug": "greptile-apps"
+          },
+          "check_suite": {
+            "id": 98275819120
+          }
+        },
+        {
+          "id": 108547254666,
+          "name": "Change proof (required) / Change proof",
+          "details_url": "https://github.com/Grimblaz-and-Friends/tradecraft/actions/runs/36292658635/job/108547254666",
+          "head_sha": "4f12aa5efa0ae765cebd213f89eec7da754c3d6a",
+          "status": "completed",
+          "conclusion": "failure",
+          "started_at": "2026-09-27T04:04:50Z",
+          "completed_at": "2026-09-27T04:04:53Z",
+          "app": {
+            "id": 15368,
+            "slug": "github-actions"
+          },
+          "check_suite": {
+            "id": 98275970967
+          }
+        },
+        {
+          "id": 108545707219,
+          "name": "lint-and-test (windows-latest)",
+          "details_url": "https://github.com/Grimblaz-and-Friends/tradecraft/actions/runs/36292703948/job/108545707219",
+          "head_sha": "4f12aa5efa0ae765cebd213f89eec7da754c3d6a",
+          "status": "completed",
+          "conclusion": "success",
+          "started_at": "2026-09-27T03:53:15Z",
+          "completed_at": "2026-09-27T03:57:03Z",
+          "app": {
+            "id": 15368,
+            "slug": "github-actions"
+          },
+          "check_suite": {
+            "id": 98276085518
+          }
+        },
+        {
+          "id": 108545707172,
+          "name": "lint-and-test (ubuntu-latest)",
+          "details_url": "https://github.com/Grimblaz-and-Friends/tradecraft/actions/runs/36292703948/job/108545707172",
+          "head_sha": "4f12aa5efa0ae765cebd213f89eec7da754c3d6a",
+          "status": "completed",
+          "conclusion": "success",
+          "started_at": "2026-09-27T03:53:15Z",
+          "completed_at": "2026-09-27T03:54:00Z",
+          "app": {
+            "id": 15368,
+            "slug": "github-actions"
+          },
+          "check_suite": {
+            "id": 98276085518
+          }
+        },
+        {
+          "id": 108545707111,
+          "name": "ask-declaration",
+          "details_url": "https://github.com/Grimblaz-and-Friends/tradecraft/actions/runs/36292703948/job/108545707111",
+          "head_sha": "4f12aa5efa0ae765cebd213f89eec7da754c3d6a",
+          "status": "completed",
+          "conclusion": "success",
+          "started_at": "2026-09-27T03:53:15Z",
+          "completed_at": "2026-09-27T03:53:21Z",
+          "app": {
+            "id": 15368,
+            "slug": "github-actions"
+          },
+          "check_suite": {
+            "id": 98276085518
+          }
+        },
+        {
+          "id": 108545582382,
+          "name": "Change proof (required) / Change proof",
+          "details_url": "https://github.com/Grimblaz-and-Friends/tradecraft/actions/runs/36292658635/job/108545582382",
+          "head_sha": "4f12aa5efa0ae765cebd213f89eec7da754c3d6a",
+          "status": "completed",
+          "conclusion": "failure",
+          "started_at": "2026-09-27T03:52:18Z",
+          "completed_at": "2026-09-27T03:52:22Z",
+          "app": {
+            "id": 15368,
+            "slug": "github-actions"
+          },
+          "check_suite": {
+            "id": 98275970967
+          }
+        },
+        {
+          "id": 108545580625,
+          "name": "lint-and-test (ubuntu-latest)",
+          "details_url": "https://github.com/Grimblaz-and-Friends/tradecraft/actions/runs/36292658009/job/108545580625",
+          "head_sha": "4f12aa5efa0ae765cebd213f89eec7da754c3d6a",
+          "status": "completed",
+          "conclusion": "success",
+          "started_at": "2026-09-27T03:52:17Z",
+          "completed_at": "2026-09-27T03:53:02Z",
+          "app": {
+            "id": 15368,
+            "slug": "github-actions"
+          },
+          "check_suite": {
+            "id": 98275969553
+          }
+        },
+        {
+          "id": 108545580623,
+          "name": "lint-and-test (windows-latest)",
+          "details_url": "https://github.com/Grimblaz-and-Friends/tradecraft/actions/runs/36292658009/job/108545580623",
+          "head_sha": "4f12aa5efa0ae765cebd213f89eec7da754c3d6a",
+          "status": "completed",
+          "conclusion": "success",
+          "started_at": "2026-09-27T03:52:17Z",
+          "completed_at": "2026-09-27T03:55:47Z",
+          "app": {
+            "id": 15368,
+            "slug": "github-actions"
+          },
+          "check_suite": {
+            "id": 98275969553
+          }
+        },
+        {
+          "id": 108545580487,
+          "name": "ask-declaration",
+          "details_url": "https://github.com/Grimblaz-and-Friends/tradecraft/actions/runs/36292658009/job/108545580487",
+          "head_sha": "4f12aa5efa0ae765cebd213f89eec7da754c3d6a",
+          "status": "completed",
+          "conclusion": "failure",
+          "started_at": "2026-09-27T03:52:17Z",
+          "completed_at": "2026-09-27T03:52:23Z",
+          "app": {
+            "id": 15368,
+            "slug": "github-actions"
+          },
+          "check_suite": {
+            "id": 98275969553
+          }
+        }
+      ]
+    },
+    "repos/Grimblaz-and-Friends/tradecraft/actions/runs/36292658009": {
+      "id": 36292658009,
+      "head_sha": "4f12aa5efa0ae765cebd213f89eec7da754c3d6a",
+      "workflow_id": 335259309,
+      "html_url": "https://github.com/Grimblaz-and-Friends/tradecraft/actions/runs/36292658009",
+      "check_suite_id": 98275969553,
+      "status": "completed",
+      "conclusion": "failure",
+      "run_attempt": 1,
+      "repository": {
+        "full_name": "Grimblaz-and-Friends/tradecraft"
+      },
+      "referenced_workflows": []
+    },
+    "repos/Grimblaz-and-Friends/tradecraft/actions/runs/36292658009/jobs?filter=all&per_page=100": {
+      "total_count": 3,
+      "jobs": [
+        {
+          "name": "ask-declaration",
+          "check_run_url": "https://api.github.com/repos/Grimblaz-and-Friends/tradecraft/check-runs/108545580487",
+          "run_attempt": 1
+        },
+        {
+          "name": "lint-and-test (windows-latest)",
+          "check_run_url": "https://api.github.com/repos/Grimblaz-and-Friends/tradecraft/check-runs/108545580623",
+          "run_attempt": 1
+        },
+        {
+          "name": "lint-and-test (ubuntu-latest)",
+          "check_run_url": "https://api.github.com/repos/Grimblaz-and-Friends/tradecraft/check-runs/108545580625",
+          "run_attempt": 1
+        }
+      ]
+    },
+    "repos/Grimblaz-and-Friends/tradecraft/actions/runs/36292658635": {
+      "id": 36292658635,
+      "head_sha": "4f12aa5efa0ae765cebd213f89eec7da754c3d6a",
+      "workflow_id": 363574484,
+      "html_url": "https://github.com/Grimblaz-and-Friends/tradecraft/actions/runs/36292658635",
+      "check_suite_id": 98275970967,
+      "status": "completed",
+      "conclusion": "failure",
+      "run_attempt": 5,
+      "repository": {
+        "full_name": "Grimblaz-and-Friends/tradecraft"
+      },
+      "referenced_workflows": [
+        {
+          "path": "Grimblaz-and-Friends/change-proof/.github/workflows/change-proof.yml@main",
+          "ref": "refs/heads/main",
+          "sha": "cb5b746f92457dc6075099db0f9d2d3c24341fdf"
+        }
+      ]
+    },
+    "repos/Grimblaz-and-Friends/tradecraft/actions/runs/36292658635/jobs?filter=all&per_page=100": {
+      "total_count": 5,
+      "jobs": [
+        {
+          "name": "Change proof (required) / Change proof",
+          "check_run_url": "https://api.github.com/repos/Grimblaz-and-Friends/tradecraft/check-runs/108545582382",
+          "run_attempt": 1
+        },
+        {
+          "name": "Change proof (required) / Change proof",
+          "check_run_url": "https://api.github.com/repos/Grimblaz-and-Friends/tradecraft/check-runs/108547254666",
+          "run_attempt": 2
+        },
+        {
+          "name": "Change proof (required) / Change proof",
+          "check_run_url": "https://api.github.com/repos/Grimblaz-and-Friends/tradecraft/check-runs/108547697600",
+          "run_attempt": 3
+        },
+        {
+          "name": "Change proof (required) / Change proof",
+          "check_run_url": "https://api.github.com/repos/Grimblaz-and-Friends/tradecraft/check-runs/108548610111",
+          "run_attempt": 4
+        },
+        {
+          "name": "Change proof (required) / Change proof",
+          "check_run_url": "https://api.github.com/repos/Grimblaz-and-Friends/tradecraft/check-runs/108549502051",
+          "run_attempt": 5
+        }
+      ]
+    },
+    "repos/Grimblaz-and-Friends/tradecraft/actions/runs/36292703948": {
+      "id": 36292703948,
+      "head_sha": "4f12aa5efa0ae765cebd213f89eec7da754c3d6a",
+      "workflow_id": 335259309,
+      "html_url": "https://github.com/Grimblaz-and-Friends/tradecraft/actions/runs/36292703948",
+      "check_suite_id": 98276085518,
+      "status": "completed",
+      "conclusion": "success",
+      "run_attempt": 1,
+      "repository": {
+        "full_name": "Grimblaz-and-Friends/tradecraft"
+      },
+      "referenced_workflows": []
+    },
+    "repos/Grimblaz-and-Friends/tradecraft/actions/runs/36292703948/jobs?filter=all&per_page=100": {
+      "total_count": 3,
+      "jobs": [
+        {
+          "name": "ask-declaration",
+          "check_run_url": "https://api.github.com/repos/Grimblaz-and-Friends/tradecraft/check-runs/108545707111",
+          "run_attempt": 1
+        },
+        {
+          "name": "lint-and-test (ubuntu-latest)",
+          "check_run_url": "https://api.github.com/repos/Grimblaz-and-Friends/tradecraft/check-runs/108545707172",
+          "run_attempt": 1
+        },
+        {
+          "name": "lint-and-test (windows-latest)",
+          "check_run_url": "https://api.github.com/repos/Grimblaz-and-Friends/tradecraft/check-runs/108545707219",
+          "run_attempt": 1
+        }
+      ]
+    },
+    "repos/Grimblaz-and-Friends/tradecraft/actions/runs/36293336671": {
+      "id": 36293336671,
+      "head_sha": "4f12aa5efa0ae765cebd213f89eec7da754c3d6a",
+      "workflow_id": 335259309,
+      "html_url": "https://github.com/Grimblaz-and-Friends/tradecraft/actions/runs/36293336671",
+      "check_suite_id": 98277750021,
+      "status": "completed",
+      "conclusion": "success",
+      "run_attempt": 1,
+      "repository": {
+        "full_name": "Grimblaz-and-Friends/tradecraft"
+      },
+      "referenced_workflows": []
+    },
+    "repos/Grimblaz-and-Friends/tradecraft/actions/runs/36293336671/jobs?filter=all&per_page=100": {
+      "total_count": 3,
+      "jobs": [
+        {
+          "name": "lint-and-test (ubuntu-latest)",
+          "check_run_url": "https://api.github.com/repos/Grimblaz-and-Friends/tradecraft/check-runs/108547459913",
+          "run_attempt": 1
+        },
+        {
+          "name": "lint-and-test (windows-latest)",
+          "check_run_url": "https://api.github.com/repos/Grimblaz-and-Friends/tradecraft/check-runs/108547460040",
+          "run_attempt": 1
+        },
+        {
+          "name": "ask-declaration",
+          "check_run_url": "https://api.github.com/repos/Grimblaz-and-Friends/tradecraft/check-runs/108547460071",
+          "run_attempt": 1
+        }
+      ]
+    },
+    "repos/Grimblaz-and-Friends/tradecraft/actions/runs/36293568589": {
+      "id": 36293568589,
+      "head_sha": "4f12aa5efa0ae765cebd213f89eec7da754c3d6a",
+      "workflow_id": 335259309,
+      "html_url": "https://github.com/Grimblaz-and-Friends/tradecraft/actions/runs/36293568589",
+      "check_suite_id": 98278359039,
+      "status": "completed",
+      "conclusion": "success",
+      "run_attempt": 1,
+      "repository": {
+        "full_name": "Grimblaz-and-Friends/tradecraft"
+      },
+      "referenced_workflows": []
+    },
+    "repos/Grimblaz-and-Friends/tradecraft/actions/runs/36293568589/jobs?filter=all&per_page=100": {
+      "total_count": 3,
+      "jobs": [
+        {
+          "name": "ask-declaration",
+          "check_run_url": "https://api.github.com/repos/Grimblaz-and-Friends/tradecraft/check-runs/108548116503",
+          "run_attempt": 1
+        },
+        {
+          "name": "lint-and-test (ubuntu-latest)",
+          "check_run_url": "https://api.github.com/repos/Grimblaz-and-Friends/tradecraft/check-runs/108548116656",
+          "run_attempt": 1
+        },
+        {
+          "name": "lint-and-test (windows-latest)",
+          "check_run_url": "https://api.github.com/repos/Grimblaz-and-Friends/tradecraft/check-runs/108548116684",
+          "run_attempt": 1
+        }
+      ]
+    },
+    "repos/Grimblaz-and-Friends/tradecraft/actions/runs/36293856632": {
+      "id": 36293856632,
+      "head_sha": "4f12aa5efa0ae765cebd213f89eec7da754c3d6a",
+      "workflow_id": 335259309,
+      "html_url": "https://github.com/Grimblaz-and-Friends/tradecraft/actions/runs/36293856632",
+      "check_suite_id": 98279090995,
+      "status": "completed",
+      "conclusion": "success",
+      "run_attempt": 1,
+      "repository": {
+        "full_name": "Grimblaz-and-Friends/tradecraft"
+      },
+      "referenced_workflows": []
+    },
+    "repos/Grimblaz-and-Friends/tradecraft/actions/runs/36293856632/jobs?filter=all&per_page=100": {
+      "total_count": 3,
+      "jobs": [
+        {
+          "name": "ask-declaration",
+          "check_run_url": "https://api.github.com/repos/Grimblaz-and-Friends/tradecraft/check-runs/108548930130",
+          "run_attempt": 1
+        },
+        {
+          "name": "lint-and-test (windows-latest)",
+          "check_run_url": "https://api.github.com/repos/Grimblaz-and-Friends/tradecraft/check-runs/108548930241",
+          "run_attempt": 1
+        },
+        {
+          "name": "lint-and-test (ubuntu-latest)",
+          "check_run_url": "https://api.github.com/repos/Grimblaz-and-Friends/tradecraft/check-runs/108548930259",
+          "run_attempt": 1
+        }
+      ]
+    }
   }
 }
