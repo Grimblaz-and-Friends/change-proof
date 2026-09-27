@@ -86,7 +86,13 @@ jobs:
                   "Ask your admin to upgrade for code reviews",
                   re.compile(r"\bask your admin to upgrade for code reviews\b", re.I),
               ),
-              ("Running", re.compile(r"^\|[^\n]*\brunning\b[^\n]*\|\s*$", re.I | re.M)),
+              (
+                  "Running",
+                  re.compile(
+                      r"^\|[^|\n]*\|[ \t]*(?:\*\*)?running(?:\*\*)?[ \t]*\|",
+                      re.I | re.M,
+                  ),
+              ),
           )
           PATH_DEPARTURES_LEAD_IN = "**Path departures:**"
           SETEXT_UNDERLINE = re.compile(r"^ {0,3}(?:=+|-+)[ \t]*$")
@@ -507,6 +513,12 @@ jobs:
                   raise ProofError(f"proof document {path} must be a string or null")
 
 
+          def _schema_enum(value: object, path: str, allowed: frozenset[str]) -> str:
+              if not isinstance(value, str) or value not in allowed:
+                  raise ProofError(f"proof document {path} has an unknown value")
+              return value
+
+
           def _schema_head(value: object, path: str) -> str:
               if not isinstance(value, str) or DOCUMENT_HEAD.fullmatch(value) is None:
                   raise ProofError(f"proof document {path} must be a full revision")
@@ -562,8 +574,7 @@ jobs:
               )
               declaration = _schema_object(value, path, fields)
               _schema_string(declaration["stage"], f"{path}.stage")
-              if declaration["status"] not in {"declared", "unverifiable"}:
-                  raise ProofError(f"proof document {path}.status has an unknown value")
+              _schema_enum(declaration["status"], f"{path}.status", frozenset({"declared", "unverifiable"}))
               for field in fields[2:]:
                   _schema_nullable_text(declaration[field], f"{path}.{field}")
               if declaration["status"] == "unverifiable" and (
@@ -617,12 +628,16 @@ jobs:
               )
               if not isinstance(use["required"], bool):
                   raise ProofError("proof document $.use.required must be a Boolean")
-              if use["classification"] not in {"required", "not-required"}:
-                  raise ProofError("proof document $.use.classification has an unknown value")
+              _schema_enum(
+                  use["classification"], "$.use.classification", frozenset({"required", "not-required"})
+              )
               if use["evidence_head"] is not None:
                   _schema_head(use["evidence_head"], "$.use.evidence_head")
-              if use["applicability"] not in {"current-head", "ancestor", "generated", "missing"}:
-                  raise ProofError("proof document $.use.applicability has an unknown value")
+              _schema_enum(
+                  use["applicability"],
+                  "$.use.applicability",
+                  frozenset({"current-head", "ancestor", "generated", "missing"}),
+              )
               if use["source"] is not None:
                   _validate_source(use["source"], "$.use.source")
               if not isinstance(use["intervening_commits"], list):
@@ -645,8 +660,11 @@ jobs:
                       item, f"$.reviewers[{index}]", ("login", "result", "source", "notices")
                   )
                   _schema_string(reviewer["login"], f"$.reviewers[{index}].login")
-                  if reviewer["result"] not in {"present", "missing", "notice-only"}:
-                      raise ProofError(f"proof document $.reviewers[{index}].result has an unknown value")
+                  _schema_enum(
+                      reviewer["result"],
+                      f"$.reviewers[{index}].result",
+                      frozenset({"present", "missing", "notice-only"}),
+                  )
                   if reviewer["source"] is not None:
                       _validate_source(reviewer["source"], f"$.reviewers[{index}].source")
                   if not isinstance(reviewer["notices"], list) or not all(
@@ -699,7 +717,9 @@ jobs:
               raise ProofError(f"proof document contains non-JSON numeric constant {value}")
 
 
-          def _proof_candidates(comments: list[dict[str, object]]) -> list[ProofCandidate]:
+          def _proof_candidates(
+              comments: list[dict[str, object]], authorized_authors: frozenset[str]
+          ) -> list[ProofCandidate]:
               candidates: list[ProofCandidate] = []
               for comment in comments:
                   body = str(comment.get("body") or "")
@@ -723,6 +743,10 @@ jobs:
                       ):
                           envelope_head = None
                           error = "proof envelope must carry exactly one full head attribute"
+                      elif author not in authorized_authors:
+                          # The envelope is enough to report unauthorized current-head noise. Never
+                          # parse an untrusted producer's potentially adversarial JSON body.
+                          pass
                       else:
                           fenced = JSON_FENCE.findall(body[envelope.end():])
                           if len(fenced) != 1:
@@ -735,7 +759,7 @@ jobs:
                                       parse_constant=_invalid_json_constant,
                                   )
                                   document = validate_proof_document(parsed)
-                              except (UnicodeError, ValueError, ProofError) as exc:
+                              except Exception as exc:
                                   error = str(exc) or type(exc).__name__
                       candidates.append(ProofCandidate(comment_id, author, envelope_head, document, error))
               return candidates
@@ -840,7 +864,12 @@ jobs:
               merge_base_sha = merge_base.get("sha") if isinstance(merge_base, dict) else None
               commits = _records(comparison.get("commits", []), endpoint)
               ahead_by = comparison.get("ahead_by")
-              if comparison.get("status") not in {"ahead", "identical"} or merge_base_sha != ancestor:
+              comparison_status = comparison.get("status")
+              if (
+                  not isinstance(comparison_status, str)
+                  or comparison_status not in {"ahead", "identical"}
+                  or merge_base_sha != ancestor
+              ):
                   return {
                       "applicable": False,
                       "reason": f"use evidence head {ancestor} is not an ancestor of current head {head}",
@@ -982,7 +1011,20 @@ jobs:
           def _safe_text(value: object) -> str:
               if value is None:
                   return "null"
-              return str(value).replace("\\", "\\\\").replace("\r", "\\r").replace("\n", "\\n")
+              escaped = str(value).replace("\\", "\\\\")
+              separators = {
+                  "\n": "\\n",
+                  "\r": "\\r",
+                  "\v": "\\v",
+                  "\f": "\\f",
+                  "\x1c": "\\x1c",
+                  "\x1d": "\\x1d",
+                  "\x1e": "\\x1e",
+                  "\x85": "\\x85",
+                  "\u2028": "\\u2028",
+                  "\u2029": "\\u2029",
+              }
+              return "".join(separators.get(character, character) for character in escaped)
 
 
           def _source_identity(value: object) -> str:
@@ -1022,26 +1064,6 @@ jobs:
               claimed_author = source.get("author")
               if isinstance(claimed_author, str) and claimed_author.lower() != _author(record):
                   return None, f"{kind} source {identity} author differs from the public record"
-              claimed_url = source.get("url")
-              actual_url = record.get("html_url")
-              if isinstance(claimed_url, str) and isinstance(actual_url, str) and claimed_url != actual_url:
-                  return None, f"{kind} source {identity} URL differs from the public record"
-              claimed_timestamp = source.get("timestamp")
-              actual_timestamp = record.get("created_at") or record.get("submitted_at")
-              if (
-                  isinstance(claimed_timestamp, str)
-                  and isinstance(actual_timestamp, str)
-                  and claimed_timestamp != actual_timestamp
-              ):
-                  return None, f"{kind} source {identity} timestamp differs from the public record"
-              claimed_revision = source.get("revision")
-              actual_revision = record.get("commit_id")
-              if (
-                  isinstance(claimed_revision, str)
-                  and isinstance(actual_revision, str)
-                  and claimed_revision != actual_revision
-              ):
-                  return None, f"{kind} source {identity} revision differs from the public record"
               return record, None
 
 
@@ -1049,11 +1071,15 @@ jobs:
               return marker.name == "floor" and marker.attributes == {"head": head, "status": "pass"}
 
 
-          def _actions_run_id(check_run: dict[str, object]) -> int | None:
+          def _actions_run_id(check_run: dict[str, object], repo: str) -> int | None:
               details_url = check_run.get("details_url")
               if not isinstance(details_url, str):
                   return None
-              match = re.search(r"/actions/runs/(\d+)(?:/|\Z)", details_url)
+              match = re.fullmatch(
+                  rf"https://github\.com/{re.escape(repo)}/actions/runs/(\d+)(?:/job/\d+)?/?",
+                  details_url,
+                  re.I,
+              )
               return int(match.group(1)) if match else None
 
 
@@ -1084,12 +1110,15 @@ jobs:
               references = run.get("referenced_workflows")
               if not isinstance(references, list):
                   return False
-              expected = "Grimblaz-and-Friends/change-proof/.github/workflows/change-proof.yml@"
+              expected = re.compile(
+                  r"Grimblaz-and-Friends/change-proof/\.github/workflows/change-proof\.yml@[^@\s]+\Z",
+                  re.I,
+              )
               for reference in references:
                   if not isinstance(reference, dict):
                       continue
                   path = reference.get("path") or reference.get("ref")
-                  if isinstance(path, str) and expected.lower() in path.lower():
+                  if isinstance(path, str) and expected.fullmatch(path):
                       return True
               return False
 
@@ -1130,7 +1159,7 @@ jobs:
                   app_object = app if isinstance(app, dict) else {}
                   app_id = app_object.get("id") if _is_integer(app_object.get("id")) else None
                   app_slug = app_object.get("slug") if isinstance(app_object.get("slug"), str) else None
-                  run_id = _actions_run_id(check_run)
+                  run_id = _actions_run_id(check_run, repo)
                   workflow_id: int | None = None
                   run: dict[str, object] | None = None
                   if run_id is not None:
@@ -1175,11 +1204,11 @@ jobs:
                               "make the Actions run expose one job record linked to that check before re-running",
                           ))
                           continue
-                      run_attempt = run.get("run_attempt") if run is not None else None
+                      job_attempt = associated[0].get("run_attempt")
                       is_current = (
                           current_run_id is not None
                           and run_id == current_run_id
-                          and (current_run_attempt is None or run_attempt == current_run_attempt)
+                          and (current_run_attempt is None or job_attempt == current_run_attempt)
                       )
                       if _is_proof_job(associated[0]) and (is_current or _run_references_gate(run or {})):
                           exclude = True
@@ -1233,11 +1262,28 @@ jobs:
               return None
 
 
+          def _same_intervening_records(expected: object, actual: object) -> bool:
+              if not isinstance(expected, list) or not isinstance(actual, list) or len(expected) != len(actual):
+                  return False
+              for supplied, fetched in zip(expected, actual):
+                  if not isinstance(supplied, dict) or not isinstance(fetched, dict):
+                      return False
+                  supplied_paths = supplied.get("paths")
+                  fetched_paths = fetched.get("paths")
+                  if (
+                      supplied.get("sha") != fetched.get("sha")
+                      or not isinstance(supplied_paths, list)
+                      or not isinstance(fetched_paths, list)
+                      or set(supplied_paths) != set(fetched_paths)
+                  ):
+                      return False
+              return True
+
+
           def _policy_rendering(
               document: dict[str, object],
               repo: str,
-              base_tip: str,
-              policy_bytes: dict[str, bytes],
+              policy_bytes: dict[tuple[str, str], bytes],
           ) -> tuple[list[str], list[str], list[str]]:
               verified: list[str] = []
               declared: list[str] = []
@@ -1256,15 +1302,15 @@ jobs:
                       f"path={_safe_text(source['path'])} revision={_safe_text(source['revision'])} "
                       f"sha256={_safe_text(source['sha256'])}"
                   )
-                  corresponds = (
-                      str(source["repository"]).lower() == repo.lower()
-                      and source["path"] == expected_path
-                      and source["revision"] == base_tip
-                  )
-                  if not corresponds:
+                  fetched_key = (str(source["path"]), str(source["revision"]))
+                  if (
+                      str(source["repository"]).lower() != repo.lower()
+                      or source["path"] != expected_path
+                      or fetched_key not in policy_bytes
+                  ):
                       declared.append(prefix + " (not among the gate's fetched policy bytes)")
                       continue
-                  actual_digest = hashlib.sha256(policy_bytes[expected_path]).hexdigest()
+                  actual_digest = hashlib.sha256(policy_bytes[fetched_key]).hexdigest()
                   if source["sha256"] == actual_digest:
                       verified.append(prefix)
                   else:
@@ -1307,16 +1353,13 @@ jobs:
               review_comments: list[dict[str, object]],
               transport,
               repo: str,
-              base_tip: str,
-              policy_bytes: dict[str, bytes],
+              policy_bytes: dict[tuple[str, str], bytes],
               current_run_id: int | None,
               current_run_attempt: int | None,
           ) -> tuple[list[Finding], list[str], list[str], list[str]]:
               failures: list[Finding] = []
               verified: list[str] = [f"selected proof-v1 comment #{comment_id}"]
-              policy_verified, declared, diagnostics = _policy_rendering(
-                  document, repo, base_tip, policy_bytes
-              )
+              policy_verified, declared, diagnostics = _policy_rendering(document, repo, policy_bytes)
               verified.extend(policy_verified)
               declared.extend(_declaration_lines(document))
               for item in document["diagnostics"]:
@@ -1347,6 +1390,7 @@ jobs:
                       "run the floor at the current head and recompose proof",
                   ))
               source = floor["source"]
+              floor_source_verified = False
               if not isinstance(source, dict):
                   failures.append(Finding(
                       "an authorized public floor source",
@@ -1369,6 +1413,7 @@ jobs:
                           "post the exact successful floor marker on its lawful source surface and recompose proof",
                       ))
                   else:
+                      floor_source_verified = True
                       verified.append(f"floor source {_safe_text(source['kind'])} #{_safe_text(source['id'])} is authorized and current-head")
 
               actual_checks, check_findings = _public_floor_checks(
@@ -1402,7 +1447,12 @@ jobs:
                       "recompose proof after collecting every current-head floor check",
                   ))
               for check in actual_checks:
-                  if check["status"] != "completed" or check["conclusion"] not in {"success", "neutral", "skipped"}:
+                  conclusion = check["conclusion"]
+                  if (
+                      check["status"] != "completed"
+                      or not isinstance(conclusion, str)
+                      or conclusion not in {"success", "neutral", "skipped"}
+                  ):
                       failures.append(Finding(
                           f"a completed acceptable result for floor check #{check['id']}: "
                           f"status={check['status']!r}, conclusion={check['conclusion']!r}",
@@ -1413,7 +1463,7 @@ jobs:
                           f"floor check #{check['id']} {_safe_text(check['name'])} completed with "
                           f"conclusion {_safe_text(check['conclusion'])}"
                       )
-              if not actual_checks and not check_findings:
+              if floor_source_verified and not actual_checks and not check_findings:
                   verified.append("no public floor checks are visible; the authorized floor attestation remains public")
 
               use = document["use"]
@@ -1457,12 +1507,25 @@ jobs:
                           else:
                               verified.append("trusted policy requires use and the public use source is current-head")
                       else:
-                          application = _ancestor_application(transport, repo, evidence_head, head, rules)
+                          try:
+                              application = _ancestor_application(
+                                  transport, repo, evidence_head, head, rules
+                              )
+                          except (OSError, UnicodeError, ValueError, ProofError) as exc:
+                              application = {
+                                  "applicable": False,
+                                  "reason": (
+                                      f"history from {evidence_head} could not be read: "
+                                      f"{str(exc) or type(exc).__name__}"
+                                  ),
+                              }
                           expected_records = application.get("intervening_records", [])
                           if (
                               use["applicability"] != "ancestor"
                               or not application.get("applicable")
-                              or use["intervening_commits"] != expected_records
+                              or not _same_intervening_records(
+                                  use["intervening_commits"], expected_records
+                              )
                           ):
                               failures.append(Finding(
                                   f"applicable complete ancestor-use history: {application.get('reason')}",
@@ -1496,9 +1559,19 @@ jobs:
               assert isinstance(reviewer_entries, list)
               reviewer_logins = [str(item["login"]).lower() for item in reviewer_entries if isinstance(item, dict)]
               duplicates = sorted({login for login in reviewer_logins if reviewer_logins.count(login) > 1})
-              if duplicates or set(reviewer_logins) != set(config.connected_reviewers):
+              missing_reviewers = sorted(set(config.connected_reviewers) - set(reviewer_logins))
+              extra_reviewers = sorted(set(reviewer_logins) - set(config.connected_reviewers))
+              if duplicates or missing_reviewers or extra_reviewers:
+                  details = []
+                  if missing_reviewers:
+                      details.append(f"missing: {', '.join(missing_reviewers)}")
+                  if duplicates:
+                      details.append(f"duplicated: {', '.join(duplicates)}")
+                  if extra_reviewers:
+                      details.append(f"extra: {', '.join(extra_reviewers)}")
                   failures.append(Finding(
-                      "exactly one proof entry for every trusted configured reviewer",
+                      "exactly one proof entry for every trusted configured reviewer; "
+                      + "; ".join(details),
                       "recompose proof from the base-tip reviewer configuration and complete public receipts",
                   ))
               for entry in reviewer_entries:
@@ -1516,7 +1589,12 @@ jobs:
                   record, source_error = _resolve_source(
                       source, repo, comments, work_comments, reviews, review_comments
                   )
-                  notice = _review_notice(str(record.get("body") or "")) if record is not None else None
+                  source_kind = str(source.get("kind") or "").lower()
+                  notice = (
+                      _review_notice(str(record.get("body") or ""))
+                      if record is not None and source_kind in {"review", "pull-request-comment"}
+                      else None
+                  )
                   if source_error is not None or record is None or _author(record) != login or notice is not None:
                       failures.append(Finding(
                           f"a valid completed public review receipt for {login}: "
@@ -1543,9 +1621,22 @@ jobs:
               for entry in disposition_entries:
                   assert isinstance(entry, dict)
                   by_thread.setdefault(int(entry["thread_id"]), []).append(entry)
-              if set(by_thread) != set(owed) or any(len(entries) != 1 for entries in by_thread.values()):
+              missing_threads = sorted(set(owed) - set(by_thread))
+              extra_threads = sorted(set(by_thread) - set(owed))
+              duplicate_threads = sorted(
+                  thread_id for thread_id, entries in by_thread.items() if len(entries) != 1
+              )
+              if missing_threads or extra_threads or duplicate_threads:
+                  details = []
+                  if missing_threads:
+                      details.append(f"missing: {', '.join(map(str, missing_threads))}")
+                  if duplicate_threads:
+                      details.append(f"duplicated: {', '.join(map(str, duplicate_threads))}")
+                  if extra_threads:
+                      details.append(f"extra: {', '.join(map(str, extra_threads))}")
                   failures.append(Finding(
-                      "exactly one proof disposition entry for every visible top-level reviewer thread",
+                      "exactly one proof disposition entry for every visible top-level reviewer thread; "
+                      + "; ".join(details),
                       "reply to every owed thread and recompose proof from the complete review-comment record",
                   ))
               for thread_id, thread in owed.items():
@@ -1662,10 +1753,6 @@ jobs:
                       for item in records:
                           if _author(item) != reviewer:
                               continue
-                          notice = _review_notice(str(item.get("body") or "")) if kind == "review" else None
-                          if notice is not None:
-                              notices.append(notice)
-                              continue
                           credit = _record_label(kind, item)
                           break
                       if credit is not None:
@@ -1682,10 +1769,10 @@ jobs:
                   if credit is not None:
                       verified.append(f"connected reviewer {reviewer} credited by {credit}")
                   elif notices:
-                              named = ", ".join(f"{notice!r}" for notice in dict.fromkeys(notices))
-                              failures.append(Finding(
-                                  f"connected reviewer run for {reviewer}; public notice(s) "
-                                  f"{named} do not count, so a review is still owed",
+                      named = ", ".join(f"{notice!r}" for notice in dict.fromkeys(notices))
+                      failures.append(Finding(
+                          f"connected reviewer run for {reviewer}; public notice(s) "
+                          f"{named} do not count, so a review is still owed",
                           f"have {reviewer} post a completed review, inline review comment, or "
                           "pull-request comment that is not a notice of not reviewing",
                       ))
@@ -1905,7 +1992,7 @@ jobs:
                           review_comments = _records(
                               github.get(review_comments_endpoint, paginate=True), review_comments_endpoint
                           )
-                          candidates = _proof_candidates(comments)
+                          candidates = _proof_candidates(comments, config.marker_producers)
                           authorized = [
                               candidate for candidate in candidates
                               if candidate.author in config.marker_producers
@@ -1957,22 +2044,27 @@ jobs:
                                       assert isinstance(identity, dict)
                                       work_issue = identity["issue"]
                                       work_comments = comments
+                                      work_comments_error: str | None = None
                                       if work_issue != number:
                                           work_comments_endpoint = (
                                               f"repos/{repo}/issues/{work_issue}/comments?per_page=100"
                                           )
-                                          work_comments = _records(
-                                              github.get(work_comments_endpoint, paginate=True),
-                                              work_comments_endpoint,
-                                          )
-                                      selected_records = (
-                                          base_policy_records if not absent_on_base else head_policy_records
-                                      )
-                                      policy_bytes = {
-                                          path: record[1]
-                                          for path, record in selected_records.items()
-                                          if record is not None
-                                      }
+                                          try:
+                                              work_comments = _records(
+                                                  github.get(work_comments_endpoint, paginate=True),
+                                                  work_comments_endpoint,
+                                              )
+                                          except (OSError, UnicodeError, ValueError, ProofError) as exc:
+                                              work_comments = []
+                                              work_comments_error = str(exc) or type(exc).__name__
+                                      policy_bytes: dict[tuple[str, str], bytes] = {}
+                                      for revision, records in (
+                                          (head, head_policy_records),
+                                          (base_tip, base_policy_records),
+                                      ):
+                                          for path, record in records.items():
+                                              if record is not None:
+                                                  policy_bytes[(path, revision)] = record[1]
                                       document_failures, document_verified, document_declared, document_diagnostics = evaluate_document(
                                           candidate.document,
                                           candidate.envelope_head or "",
@@ -1988,11 +2080,17 @@ jobs:
                                           review_comments,
                                           github,
                                           repo,
-                                          base_tip,
                                           policy_bytes,
                                           current_run_id,
                                           current_run_attempt,
                                       )
+                                      if work_comments_error is not None:
+                                          document_failures.insert(0, Finding(
+                                              f"readable work-issue comments for issue {work_issue}: "
+                                              f"{work_comments_error}",
+                                              "correct the named issue or its recorded source identity, then "
+                                              "recompose proof",
+                                          ))
                                       failures.extend(document_failures)
                                       verified.extend(document_verified)
                                       declared.extend(document_declared)
@@ -2033,8 +2131,8 @@ jobs:
                       for statement in diagnostics:
                           print(f"diagnostic: {statement}", file=destination)
                       for finding in failures:
-                          print(f"missing: {finding.missing}", file=destination)
-                          print(f"satisfy: {finding.satisfy}", file=destination)
+                          print(f"missing: {_safe_text(finding.missing)}", file=destination)
+                          print(f"satisfy: {_safe_text(finding.satisfy)}", file=destination)
                       return 1
                   print("change-proof: PASS", file=destination)
                   if evidence_path is not None:
@@ -2048,8 +2146,8 @@ jobs:
                   return 0
               except (OSError, UnicodeError, ValueError, ProofError) as exc:
                   print("change-proof: ERROR", file=destination)
-                  print(f"missing: a complete readable proof input: {exc}", file=destination)
-                  print("satisfy: correct the named input or grant the five documented read permissions", file=destination)
+                  print(f"missing: a complete readable proof input: {_safe_text(exc)}", file=destination)
+                  print("satisfy: correct the named GitHub data or retry the incomplete read", file=destination)
                   return 1
 
 
