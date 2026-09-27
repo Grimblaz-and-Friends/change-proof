@@ -10,6 +10,8 @@ Installation is availability, not adoption; this section is what makes the pract
 
 **The Steward is this lab's long-lived coordinating session.** Where the runtime provides session-to-session messaging, reach the Steward by that role name through that facility.
 
+**Practice defects go to the Steward.** A session that finds a defect in the practice, a rule, tool or gate of tradecraft failing, sends the Steward one message carrying the facts, where it happened, the evidence and the change it happened on, and does not file the practice issue itself; the Steward verifies, files, folds or declines it, and the owner buys at pickup.
+
 ## Code Review Rules
 
 Review pull requests only when they are marked ready; skip drafts. Post only P0/P1 findings a consumer would act on wrongly. Name the wrong action, not the wording. Where this repository's own convention contradicts a general rule, the convention wins and the comment says so. A deletion is as good a finding as an addition.

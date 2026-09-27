@@ -2,7 +2,6 @@
   "schema_version": 1,
   "product_repositories": [],
   "connected_reviewers": [
-    "greptile-apps[bot]",
     "coderabbitai[bot]",
     "chatgpt-codex-connector[bot]"
   ],
