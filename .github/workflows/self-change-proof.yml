@@ -11,4 +11,6 @@ jobs:
       contents: read
       issues: read
       pull-requests: read
+      checks: read
+      actions: read
     uses: Grimblaz-and-Friends/change-proof/.github/workflows/change-proof.yml@main

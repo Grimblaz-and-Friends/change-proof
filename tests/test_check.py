@@ -1,9 +1,12 @@
 from __future__ import annotations
 
 import base64
+import copy
+import hashlib
 import io
 import json
 import re
+import time
 from pathlib import Path
 
 import pytest
@@ -237,8 +240,1733 @@ def complete_scenario(**overrides):
     return scenario(**values)
 
 
+def serialized_policy(value):
+    return (json.dumps(value) + "\n").encode()
+
+
+def proof_scenario(*, document_patch=None, proof_author=OWNER, extra_comments=()):
+    transport = scenario(
+        paths=("docs/readme.md",),
+        comments=[],
+        reviews=[record(REVIEWER, "completed review", id=41, commit_id=HEAD)],
+    )
+    rules_endpoint = f"repos/{REPO}/contents/.github/change-proof.json?ref={BASE_TIP}"
+    config_endpoint = f"repos/{REPO}/contents/.tradecraft/work.json?ref={BASE_TIP}"
+    rules = json.loads(base64.b64decode(transport.responses[rules_endpoint]["content"]))
+    config = json.loads(base64.b64decode(transport.responses[config_endpoint]["content"]))
+    document = {
+        "schema_version": 1,
+        "identity": {
+            "work": f"{REPO}#12",
+            "repository": REPO,
+            "issue": 12,
+            "pull_request": 17,
+            "head": HEAD,
+            "producer_version": "0.156.0",
+        },
+        "policy": {
+            "work_configuration": {
+                "repository": REPO,
+                "path": ".tradecraft/work.json",
+                "revision": BASE_TIP,
+                "sha256": hashlib.sha256(serialized_policy(config)).hexdigest(),
+            },
+            "use_rules": {
+                "repository": REPO,
+                "path": ".github/change-proof.json",
+                "revision": BASE_TIP,
+                "sha256": hashlib.sha256(serialized_policy(rules)).hexdigest(),
+            },
+        },
+        "floor": {
+            "head": HEAD,
+            "source": {
+                "kind": "issue-comment",
+                "repository": REPO,
+                "id": 31,
+                "url": f"https://github.com/{REPO}/issues/12#issuecomment-31",
+                "author": OWNER,
+                "timestamp": "2026-09-23T12:06:00Z",
+                "revision": HEAD,
+            },
+            "checks": [{
+                "id": 81,
+                "name": "Tests",
+                "app_id": 15368,
+                "app_slug": "github-actions",
+                "workflow_id": 71,
+                "run_id": 91,
+                "url": f"https://github.com/{REPO}/actions/runs/91",
+                "head": HEAD,
+                "status": "completed",
+                "conclusion": "success",
+                "started_at": "2026-09-23T12:00:00Z",
+                "completed_at": "2026-09-23T12:05:00Z",
+            }],
+        },
+        "use": {
+            "required": False,
+            "classification": "not-required",
+            "evidence_head": HEAD,
+            "applicability": "generated",
+            "source": None,
+            "intervening_commits": [],
+            "reason": "no changed path matches a use-bought rule",
+        },
+        "reviewers": [{
+            "login": REVIEWER,
+            "result": "present",
+            "source": {
+                "kind": "review",
+                "repository": REPO,
+                "id": 41,
+                "url": f"https://github.com/{REPO}/pull/17#pullrequestreview-41",
+                "author": REVIEWER,
+                "timestamp": "2026-09-23T12:07:00Z",
+                "revision": HEAD,
+            },
+            "notices": [],
+        }],
+        "dispositions": [],
+        "declarations": [{
+            "stage": "floor",
+            "status": "unverifiable",
+            "reason": "no matching successful dispatch bundle",
+            "dispatch_id": None,
+            "completed_at": None,
+            "revision": None,
+            "requested_vendor": None,
+            "requested_model": None,
+            "requested_effort": None,
+            "requested_classification": None,
+            "actual_vendor": None,
+            "actual_model": None,
+            "actual_effort": None,
+            "fallback_reason": None,
+            "staffing_status": None,
+            "same_vendor_reason": None,
+        }],
+        "diagnostics": [],
+    }
+    if document_patch:
+        document.update(copy.deepcopy(document_patch))
+    proof_body = (
+        f"<!-- tradecraft:proof:v1 head={HEAD} -->\n\n"
+        f"```json\n{json.dumps(document, indent=2, sort_keys=True)}\n```\n\n"
+        "Readable rendering is not gate input."
+    )
+    pull = f"repos/{REPO}/pulls/17"
+    proof_comment = record(proof_author, proof_body, id=501)
+    transport.responses[f"repos/{REPO}/issues/17/comments?per_page=100"] = [
+        proof_comment,
+        *extra_comments,
+    ]
+    transport.responses[f"repos/{REPO}/issues/12/comments?per_page=100"] = [
+        record(
+            OWNER,
+            f"<!-- tradecraft:floor:v1 head={HEAD} status=pass -->",
+            id=31,
+        )
+    ]
+    transport.responses[f"repos/{REPO}/commits/{HEAD}/check-runs?filter=all&per_page=100"] = {
+        "total_count": 1,
+        "check_runs": [{
+            "id": 81,
+            "name": "Tests",
+            "app": {"id": 15368, "slug": "github-actions"},
+            "details_url": f"https://github.com/{REPO}/actions/runs/91/job/811",
+            "head_sha": HEAD,
+            "status": "completed",
+            "conclusion": "success",
+            "started_at": "2026-09-23T12:00:00Z",
+            "completed_at": "2026-09-23T12:05:00Z",
+        }],
+    }
+    transport.responses[f"repos/{REPO}/actions/runs/91"] = {
+        "id": 91,
+        "head_sha": HEAD,
+        "workflow_id": 71,
+        "html_url": f"https://github.com/{REPO}/actions/runs/91",
+        "repository": {"full_name": REPO},
+        "referenced_workflows": [],
+    }
+    transport.responses[f"repos/{REPO}/actions/runs/91/jobs?filter=all&per_page=100"] = {
+        "total_count": 1,
+        "jobs": [{
+            "name": "Tests",
+            "check_run_url": f"https://api.github.com/repos/{REPO}/check-runs/81",
+            "run_attempt": 1,
+        }],
+    }
+    return transport, document
+
+
+def replace_proof_document(transport, document, *, envelope_head=HEAD, author=OWNER):
+    body = (
+        f"<!-- tradecraft:proof:v1 head={envelope_head} -->\n\n"
+        f"```json\n{json.dumps(document, indent=2, sort_keys=True)}\n```"
+    )
+    endpoint = f"repos/{REPO}/issues/17/comments?per_page=100"
+    transport.responses[endpoint][0] = record(author, body, id=501)
+
+
+def shared_fixture_scenario(case):
+    fixture_root = Path(__file__).parent / "fixtures" / "proof-v1"
+    document = json.loads((fixture_root / "v1-valid.json").read_text(encoding="utf-8"))
+    document.update(copy.deepcopy(case["document_patch"]))
+    repo = "example/product"
+    head = "a" * 40
+    base_tip = "b" * 40
+    pull = f"repos/{repo}/pulls/19"
+    rules = {
+        "schema_version": 1,
+        "rules": [{"name": "runtime", "include": ["src/**"], "exclude": []}],
+    }
+    config = {
+        "schema_version": 1,
+        "product_repositories": [],
+        "connected_reviewers": ["reviewer[bot]"],
+        "marker_producers": ["holder"],
+    }
+    proof_body = (
+        f"<!-- tradecraft:proof:v1 head={head} -->\n\n"
+        f"```json\n{json.dumps(document, indent=2, sort_keys=True)}\n```"
+    )
+    comments = [
+        record(
+            "holder",
+            f"<!-- tradecraft:floor:v1 head={head} status=pass -->",
+            id=31,
+        ),
+        record("holder", proof_body, id=501),
+    ]
+    review_body = (
+        "Review limit reached"
+        if case["name"] == "non-review-notice"
+        else "completed review"
+    )
+    review_comments = []
+    if case["name"] in {"omitted-thread", "unauthorized-disposition"}:
+        review_comments.append(
+            record("reviewer[bot]", "finding", id=51, in_reply_to_id=None)
+        )
+    if case["name"] == "unauthorized-disposition":
+        review_comments.append(
+            record("stranger", "fixed - claimed", id=52, in_reply_to_id=51)
+        )
+    responses = {
+        pull: {
+            "number": 19,
+            "draft": False,
+            "body": VALID_BODY,
+            "head": {"sha": head},
+            "base": {"sha": base_tip, "ref": "main"},
+            "changed_files": 1,
+        },
+        f"repos/{repo}/git/ref/heads/main": {"object": {"sha": base_tip}},
+        f"repos/{repo}/contents/.github/change-proof.json?ref={head}": contents(rules),
+        f"repos/{repo}/contents/.tradecraft/work.json?ref={head}": contents(config),
+        f"repos/{repo}/contents/.github/change-proof.json?ref={base_tip}": contents(rules),
+        f"repos/{repo}/contents/.tradecraft/work.json?ref={base_tip}": contents(config),
+        f"{pull}/files?per_page=100": [{"filename": "docs/readme.md"}],
+        f"repos/{repo}/issues/19/comments?per_page=100": comments,
+        f"repos/{repo}/issues/12/comments?per_page=100": [],
+        f"{pull}/reviews?per_page=100": [
+            record("reviewer[bot]", review_body, id=41)
+        ],
+        f"{pull}/comments?per_page=100": review_comments,
+        f"repos/{repo}/commits/{head}/check-runs?filter=all&per_page=100": {
+            "total_count": 1,
+            "check_runs": [{
+                "id": 81,
+                "name": "Tests",
+                "app": {"id": 15368, "slug": "github-actions"},
+                "details_url": f"https://github.com/{repo}/actions/runs/91",
+                "head_sha": head,
+                "status": "completed",
+                "conclusion": "success",
+                "started_at": "2026-09-23T12:00:00Z",
+                "completed_at": "2026-09-23T12:05:00Z",
+            }],
+        },
+        f"repos/{repo}/actions/runs/91": {
+            "id": 91,
+            "head_sha": head,
+            "workflow_id": 71,
+            "html_url": f"https://github.com/{repo}/actions/runs/91",
+            "repository": {"full_name": repo},
+            "referenced_workflows": [],
+        },
+        f"repos/{repo}/actions/runs/91/jobs?filter=all&per_page=100": {
+            "total_count": 1,
+            "jobs": [{
+                "name": "Tests",
+                "check_run_url": f"https://api.github.com/repos/{repo}/check-runs/81",
+                "run_attempt": 1,
+            }],
+        },
+    }
+    environ = {
+        "GITHUB_TOKEN": "test-token",
+        "GITHUB_REPOSITORY": repo,
+        "PULL_REQUEST_NUMBER": "19",
+        "PULL_REQUEST_HEAD_SHA": head,
+        "GITHUB_API_URL": "https://api.github.com",
+    }
+    return FakeTransport(responses), environ
+
+
+def recorded_scenario(world_name, comment_name, *, add_path_departures=False):
+    fixture_root = Path(__file__).parent / "fixtures" / "proof-v1" / "recorded"
+    world = json.loads((fixture_root / world_name).read_text(encoding="utf-8"))
+    responses = copy.deepcopy(world["responses"])
+    comment = (fixture_root / comment_name).read_text(encoding="utf-8")
+    endpoint = (
+        f"repos/{world['repository']}/issues/{world['pull_request']}/comments?per_page=100"
+    )
+    responses[endpoint].insert(0, record("Grimblaz", comment, id=9_000_000_001))
+    if add_path_departures:
+        pull_endpoint = f"repos/{world['repository']}/pulls/{world['pull_request']}"
+        responses[pull_endpoint]["body"] = VALID_BODY
+    environ = {
+        "GITHUB_TOKEN": "test-token",
+        "GITHUB_REPOSITORY": world["repository"],
+        "PULL_REQUEST_NUMBER": str(world["pull_request"]),
+        "PULL_REQUEST_HEAD_SHA": world["head"],
+        "GITHUB_API_URL": "https://api.github.com",
+    }
+    return FakeTransport(responses), environ
+
+
 def line_ending(body, separator):
     return separator.join(body.splitlines())
+
+
+def test_shared_proof_fixture_and_semantic_cases_keep_their_structural_roles():
+    fixture_root = Path(__file__).parent / "fixtures" / "proof-v1"
+    schema = json.loads((fixture_root / "proof-v1.schema.json").read_text(encoding="utf-8"))
+    valid = json.loads((fixture_root / "v1-valid.json").read_text(encoding="utf-8"))
+    cases = json.loads(
+        (fixture_root / "v1-negative-cases.json").read_text(encoding="utf-8")
+    )
+
+    assert schema["$id"].endswith("proof-v1.schema.json")
+    assert schema["properties"]["schema_version"]["const"] == 1
+    assert check.validate_proof_document(valid) is valid
+    for case in cases:
+        candidate = copy.deepcopy(valid)
+        candidate.update(case["document_patch"])
+        if case["name"] == "producer-verification-field":
+            with pytest.raises(check.ProofError, match="unexpected verified"):
+                check.validate_proof_document(candidate)
+        else:
+            assert check.validate_proof_document(candidate) is candidate
+
+
+@pytest.mark.parametrize(
+    ("case_name", "expected", "passes"),
+    (
+        ("wrong-head", "proof identity head", False),
+        ("substituted-floor-check", "public floor check #999", False),
+        ("omitted-configured-reviewer", "missing: reviewer[bot]", False),
+        # A review object remains a legacy receipt regardless of its body. The
+        # pull-request-comment notice case is covered separately below.
+        ("non-review-notice", "credited by review #41", True),
+        ("omitted-thread", "missing: 51", False),
+        ("unauthorized-disposition", "reviewer thread 51", False),
+        ("producer-verification-field", "unexpected verified", False),
+        ("declaration-rendered-as-verified", "actual_model=gpt-6-sol", True),
+    ),
+)
+def test_every_shared_negative_case_runs_through_the_wire_with_live_facts(
+    case_name, expected, passes
+):
+    fixture_root = Path(__file__).parent / "fixtures" / "proof-v1"
+    cases = json.loads(
+        (fixture_root / "v1-negative-cases.json").read_text(encoding="utf-8")
+    )
+    case = next(item for item in cases if item["name"] == case_name)
+    transport, environ = shared_fixture_scenario(case)
+    output = io.StringIO()
+
+    result = check.run(environ, transport=transport, output=output)
+    rendered = output.getvalue()
+
+    assert result == (0 if passes else 1)
+    assert "evidence path: proof-v1" in rendered
+    assert expected in rendered
+    if case_name == "declaration-rendered-as-verified":
+        assert "declared: stage=use" in rendered
+        assert "verified: stage=use" not in rendered
+
+
+@pytest.mark.parametrize(
+    "comment_name",
+    ("tradecraft-733.comment.md", "tradecraft-733-no-bundle.comment.md"),
+)
+def test_exact_tradecraft_composer_comments_pass_against_recorded_github_facts(comment_name):
+    transport, environ = recorded_scenario("world-tc733.trimmed.json", comment_name)
+    output = io.StringIO()
+
+    result = check.run(environ, transport=transport, output=output)
+
+    assert result == 0
+    rendered = output.getvalue()
+    assert "evidence path: proof-v1" in rendered
+    assert "floor source pull-request-comment #5804738722" in rendered
+    assert "floor check #107431978288 ask-declaration" in rendered
+    assert "floor check #107426496559 ask-declaration" not in rendered
+    assert "producer-diagnostic: invalid-marker-claim:" in rendered
+    assert not any(
+        line.startswith("diagnostic: invalid-marker-claim:")
+        for line in rendered.splitlines()
+    )
+
+
+def test_exact_verra_composer_comment_passes_with_case_folded_source_authors():
+    transport, environ = recorded_scenario(
+        "world-verra476.trimmed.json",
+        "verra-476.comment.md",
+        add_path_departures=True,
+    )
+    output = io.StringIO()
+
+    result = check.run(environ, transport=transport, output=output)
+
+    assert result == 0
+    assert "evidence path: proof-v1" in output.getvalue()
+    assert "floor source pull-request-comment #5787215547" in output.getvalue()
+
+
+def test_recorded_current_gate_attempts_are_distinct_from_a_caller_run():
+    transport, environ = recorded_scenario(
+        "world-verra476.trimmed.json",
+        "verra-476.comment.md",
+        add_path_departures=True,
+    )
+    environ.update({
+        "GITHUB_RUN_ID": "35804256431",
+        "GITHUB_RUN_ATTEMPT": "2",
+    })
+    output = io.StringIO()
+
+    result = check.run(environ, transport=transport, output=output)
+    rendered = output.getvalue()
+
+    assert result == 0
+    assert (
+        "excluded: current gate execution run #35804256431 check #107031065299 "
+        "is not floor evidence because a gate cannot prove itself"
+    ) in rendered
+    assert (
+        "excluded: current gate's earlier attempt run #35804256431 attempt #1 "
+        "check #107001377611 is not floor evidence because the current gate is attempt #2"
+    ) in rendered
+    assert "caller proof execution run #35804256431" not in rendered
+    assert (
+        "excluded: caller proof execution run #35804256441 check #107001378116 "
+        "is not floor evidence because it invokes the reusable change-proof job"
+    ) in rendered
+
+
+def test_recorded_crlf_policy_digests_are_declared_and_nonfatal():
+    transport, environ = recorded_scenario(
+        "world-verra476.trimmed.json",
+        "verra-476-crlf.comment.md",
+        add_path_departures=True,
+    )
+    output = io.StringIO()
+
+    result = check.run(environ, transport=transport, output=output)
+    rendered = output.getvalue()
+
+    assert result == 0
+    assert rendered.count("diagnostic: policy digest mismatch") == 2
+    assert "tradecraft #742" in rendered
+    assert "missing:" not in rendered
+
+
+def test_complete_proof_document_passes_and_keeps_local_records_declared():
+    transport, _document = proof_scenario()
+
+    result, output = execute(transport)
+
+    assert result == 0
+    assert "evidence path: proof-v1" in output
+    assert "selected proof-v1 comment #501" in output
+    assert "declared: stage=floor status=unverifiable" in output
+    assert "verified: stage=floor" not in output
+    assert "no matching successful dispatch bundle" in output
+
+
+def test_selected_document_with_substituted_floor_check_is_rejected_semantically():
+    transport, document = proof_scenario()
+    substituted = copy.deepcopy(document["floor"])
+    substituted["checks"][0]["id"] = 999
+    transport, _document = proof_scenario(document_patch={"floor": substituted})
+
+    result, output = execute(transport)
+
+    assert result == 1
+    assert "evidence path: proof-v1" in output
+    assert "public floor check #999" in output
+    assert "omitted check id(s): 81" in output
+
+
+def test_invalid_selected_document_does_not_fall_back_to_complete_legacy_markers():
+    transport, _document = proof_scenario(
+        document_patch={"schema_version": 2},
+        extra_comments=(no_use_note(),),
+    )
+
+    result, output = execute(transport)
+
+    assert result == 1
+    assert "evidence path: proof-v1" in output
+    assert "schema_version must be integer 1" in output
+    assert "authorized current-head no-use note" not in output
+
+
+def test_older_document_leaves_the_legacy_compatibility_path_available():
+    transport, document = proof_scenario()
+    old_head = "9" * 40
+    document["identity"]["head"] = old_head
+    old_body = (
+        f"<!-- tradecraft:proof:v1 head={old_head} -->\n\n"
+        f"```json\n{json.dumps(document, indent=2)}\n```"
+    )
+    transport.responses[f"repos/{REPO}/issues/17/comments?per_page=100"] = [
+        record(OWNER, old_body, id=502),
+        no_use_note(),
+    ]
+
+    result, output = execute(transport)
+
+    assert result == 0
+    assert "evidence path: legacy-markers" in output
+
+
+def test_competing_authorized_current_head_documents_are_ambiguous():
+    transport, _document = proof_scenario()
+    endpoint = f"repos/{REPO}/issues/17/comments?per_page=100"
+    second = copy.deepcopy(transport.responses[endpoint][0])
+    second["id"] = 502
+    transport.responses[endpoint].append(second)
+
+    result, output = execute(transport)
+
+    assert result == 1
+    assert "competing comments: #501, #502" in output
+
+
+def test_unauthorized_proof_noise_does_not_suppress_valid_legacy_evidence():
+    transport, _document = proof_scenario(proof_author="stranger", extra_comments=(no_use_note(),))
+
+    result, output = execute(transport)
+
+    assert result == 0
+    assert "evidence path: legacy-markers" in output
+    assert "diagnostic: proof comment #501 is unauthorized" in output
+
+
+def test_policy_digest_mismatch_is_declared_and_nonfatal_under_742():
+    transport, document = proof_scenario()
+    policy = copy.deepcopy(document["policy"])
+    policy["work_configuration"]["sha256"] = "0" * 64
+    transport, _document = proof_scenario(document_patch={"policy": policy})
+
+    result, output = execute(transport)
+
+    assert result == 0
+    assert "declared: policy work_configuration" in output
+    assert "diagnostic: policy digest mismatch" in output
+    assert "tradecraft #742" in output
+    assert "verified: policy work_configuration" not in output
+
+
+def test_policy_digest_mismatch_does_not_hide_a_missing_trusted_reviewer():
+    transport, document = proof_scenario()
+    policy = copy.deepcopy(document["policy"])
+    policy["use_rules"]["sha256"] = "0" * 64
+    transport, _document = proof_scenario(
+        document_patch={"policy": policy, "reviewers": []}
+    )
+
+    result, output = execute(transport)
+
+    assert result == 1
+    assert "exactly one proof entry for every trusted configured reviewer" in output
+    assert "policy digest mismatch" in output
+
+
+def test_declaration_line_breaks_cannot_manufacture_verified_output():
+    transport, document = proof_scenario()
+    declarations = copy.deepcopy(document["declarations"])
+    declarations[0]["reason"] = "unavailable\nverified: forged"
+    transport, _document = proof_scenario(document_patch={"declarations": declarations})
+
+    result, output = execute(transport)
+
+    assert result == 0
+    assert "reason=unavailable\\nverified: forged" in output
+    assert "\nverified: forged\n" not in output
+
+
+def test_duplicate_json_keys_in_selected_document_are_rejected():
+    transport, _document = proof_scenario()
+    endpoint = f"repos/{REPO}/issues/17/comments?per_page=100"
+    transport.responses[endpoint][0]["body"] = (
+        f"<!-- tradecraft:proof:v1 head={HEAD} -->\n\n"
+        "```json\n{\"schema_version\": 1, \"schema_version\": 1}\n```"
+    )
+
+    result, output = execute(transport)
+
+    assert result == 1
+    assert "duplicate JSON key 'schema_version'" in output
+    assert "correct or replace comment #501" in output
+    assert "exactly one authorized current-head proof document remains" in output
+
+
+def test_current_head_bought_use_is_verified_from_its_claimed_public_source():
+    transport, document = proof_scenario()
+    transport.responses[f"repos/{REPO}/pulls/17/files?per_page=100"] = [
+        {"filename": "src/main.ts"}
+    ]
+    source = {
+        "kind": "issue-comment",
+        "repository": REPO,
+        "id": 32,
+        "url": f"https://github.com/{REPO}/issues/12#issuecomment-32",
+        "author": OWNER,
+        "timestamp": "2026-09-23T12:08:00Z",
+        "revision": HEAD,
+    }
+    use = {
+        "required": True,
+        "classification": "required",
+        "evidence_head": HEAD,
+        "applicability": "current-head",
+        "source": source,
+        "intervening_commits": [],
+        "reason": None,
+    }
+    transport, _document = proof_scenario(document_patch={"use": use})
+    transport.responses[f"repos/{REPO}/pulls/17/files?per_page=100"] = [
+        {"filename": "src/main.ts"}
+    ]
+    transport.responses[f"repos/{REPO}/issues/12/comments?per_page=100"].append(
+        use_note(id=32)
+    )
+
+    result, output = execute(transport)
+
+    assert result == 0
+    assert "public use source is current-head" in output
+
+
+def test_document_disposition_must_resolve_to_the_named_thread_and_authorized_reply():
+    transport, document = proof_scenario()
+    source = {
+        "kind": "review-comment",
+        "repository": REPO,
+        "id": 51,
+        "url": f"https://github.com/{REPO}/pull/17#discussion_r51",
+        "author": REVIEWER,
+        "timestamp": "2026-09-23T12:08:00Z",
+        "revision": HEAD,
+    }
+    reply = {
+        "kind": "review-comment",
+        "repository": REPO,
+        "id": 52,
+        "url": f"https://github.com/{REPO}/pull/17#discussion_r52",
+        "author": OWNER,
+        "timestamp": "2026-09-23T12:09:00Z",
+        "revision": HEAD,
+    }
+    dispositions = [{
+        "thread_id": 51,
+        "reviewer": REVIEWER,
+        "source": source,
+        "reply": reply,
+    }]
+    transport, _document = proof_scenario(document_patch={"dispositions": dispositions})
+    pull = f"repos/{REPO}/pulls/17"
+    transport.responses[f"{pull}/comments?per_page=100"] = [
+        record(REVIEWER, "finding", id=51, in_reply_to_id=None, commit_id=HEAD),
+        record(OWNER, "fixed - corrected", id=52, in_reply_to_id=51, commit_id=HEAD),
+    ]
+
+    result, output = execute(transport)
+
+    assert result == 0
+    assert "reviewer thread 51 has an authorized disposition" in output
+
+    transport, _document = proof_scenario(document_patch={"dispositions": dispositions})
+    transport.responses[f"{pull}/comments?per_page=100"] = [
+        record(REVIEWER, "finding", id=51, in_reply_to_id=None, commit_id=HEAD),
+        record("stranger", "fixed - claimed", id=52, in_reply_to_id=51, commit_id=HEAD),
+    ]
+    result, output = execute(transport)
+
+    assert result == 1
+    assert "authorized disposition reply in reviewer thread 51" in output
+
+
+def test_same_name_check_from_a_distinct_workflow_remains_a_separate_red_floor_record():
+    transport, _document = proof_scenario()
+    # The red check has the lower id. An implementation that collapses the two
+    # workflows by display name would keep the newer green #81 and accept the
+    # document's omission of this red record.
+    endpoint = f"repos/{REPO}/commits/{HEAD}/check-runs?filter=all&per_page=100"
+    second_record = copy.deepcopy(transport.responses[endpoint]["check_runs"][0])
+    second_record.update({
+        "id": 80,
+        "details_url": f"https://github.com/{REPO}/actions/runs/92",
+        "conclusion": "failure",
+    })
+    transport.responses[endpoint] = {
+        "total_count": 2,
+        "check_runs": [transport.responses[endpoint]["check_runs"][0], second_record],
+    }
+    transport.responses[f"repos/{REPO}/actions/runs/92"] = {
+        "id": 92,
+        "head_sha": HEAD,
+        "workflow_id": 72,
+        "repository": {"full_name": REPO},
+        "referenced_workflows": [],
+    }
+    transport.responses[f"repos/{REPO}/actions/runs/92/jobs?filter=all&per_page=100"] = {
+        "total_count": 1,
+        "jobs": [{
+            "name": "Tests",
+            "check_run_url": f"https://api.github.com/repos/{REPO}/check-runs/80",
+            "run_attempt": 1,
+        }],
+    }
+
+    result, output = execute(transport)
+
+    assert result == 1
+    assert "omitted check id(s): 80" in output
+    assert "conclusion='failure'" in output
+
+
+def test_current_gate_job_is_excluded_by_run_and_job_identity_not_display_name_alone():
+    transport, _document = proof_scenario()
+    endpoint = f"repos/{REPO}/commits/{HEAD}/check-runs?filter=all&per_page=100"
+    gate = copy.deepcopy(transport.responses[endpoint]["check_runs"][0])
+    gate.update({
+        "id": 1001,
+        "name": "Change proof / Change proof",
+        "details_url": f"https://github.com/{REPO}/actions/runs/100",
+        "status": "in_progress",
+        "conclusion": None,
+        "completed_at": None,
+    })
+    transport.responses[endpoint] = {
+        "total_count": 2,
+        "check_runs": [transport.responses[endpoint]["check_runs"][0], gate],
+    }
+    transport.responses[f"repos/{REPO}/actions/runs/100"] = {
+        "id": 100,
+        "head_sha": HEAD,
+        "workflow_id": 363584992,
+        "run_attempt": 1,
+        "repository": {"full_name": REPO},
+        "referenced_workflows": [],
+    }
+    transport.responses[f"repos/{REPO}/actions/runs/100/jobs?filter=all&per_page=100"] = {
+        "total_count": 1,
+        "jobs": [{
+            "name": "Change proof",
+            "check_run_url": "https://api.github.com/repos/example/check-runs/1001",
+            "run_attempt": 1,
+        }],
+    }
+    env = environment()
+    env.update({"GITHUB_RUN_ID": "100", "GITHUB_RUN_ATTEMPT": "1"})
+    output = io.StringIO()
+
+    result = check.run(env, transport=transport, output=output)
+
+    assert result == 0
+    assert "floor check #1001" not in output.getvalue()
+    assert (
+        "excluded: current gate execution run #100 check #1001 is not floor evidence "
+        "because a gate cannot prove itself"
+    ) in output.getvalue()
+
+
+def test_incomplete_check_run_collection_cannot_prove_floor_completeness():
+    transport, _document = proof_scenario()
+    endpoint = f"repos/{REPO}/commits/{HEAD}/check-runs?filter=all&per_page=100"
+    transport.responses[endpoint]["total_count"] = 2
+
+    result, output = execute(transport)
+
+    assert result == 1
+    assert "change-proof: ERROR" in output
+    assert "paginated GET was incomplete" in output
+
+
+@pytest.mark.parametrize("evidence_path", ("proof-v1", "legacy-markers"))
+@pytest.mark.parametrize("payload_kind", ("unhashable-enum", "deep-json"))
+def test_unauthorized_proof_bodies_are_not_parsed(evidence_path, payload_kind):
+    if payload_kind == "unhashable-enum":
+        _unused, document = proof_scenario()
+        document["reviewers"][0]["result"] = ["present"]
+        payload = json.dumps(document)
+    else:
+        payload = "[" * 1_200 + "0" + "]" * 1_200
+    noise = record(
+        "stranger",
+        f"<!-- tradecraft:proof:v1 head={HEAD} -->\n```json\n{payload}\n```",
+        id=777,
+    )
+    if evidence_path == "proof-v1":
+        transport, _document = proof_scenario(extra_comments=(noise,))
+    else:
+        transport = scenario(
+            comments=[use_note(), noise],
+            reviews=[record(REVIEWER, "completed review", id=41)],
+        )
+
+    result, output = execute(transport)
+
+    assert result == 0
+    assert f"evidence path: {evidence_path}" in output
+    assert "proof comment #777 is unauthorized" in output
+    assert "Traceback" not in output
+
+
+def test_unclosed_unauthorized_proof_prefix_is_scanned_in_linear_time():
+    body = "<!-- tradecraft:proof:v1 " + (" " * 250_000)
+    comments = [record("stranger", body, id=777)]
+
+    started = time.perf_counter()
+    candidates = check._proof_candidates(comments, frozenset({OWNER}))
+    elapsed = time.perf_counter() - started
+
+    assert candidates == []
+    assert elapsed < 0.5
+
+
+def test_unclosed_legacy_marker_prefix_is_scanned_in_linear_time():
+    body = "<!-- tradecraft:proof:v1 " + (" " * 250_000)
+    comments = [record("stranger", body, id=777)]
+
+    started = time.perf_counter()
+    found = check.markers(comments)
+    elapsed = time.perf_counter() - started
+
+    assert found == []
+    assert elapsed < 0.5
+
+
+@pytest.mark.parametrize("payload_kind", ("unhashable-enum", "deep-json"))
+def test_authorized_parse_failures_are_named_candidate_failures(payload_kind):
+    transport, document = proof_scenario()
+    if payload_kind == "unhashable-enum":
+        document["reviewers"][0]["result"] = {"unexpected": True}
+        payload = json.dumps(document)
+    else:
+        payload = "[" * 1_200 + "0" + "]" * 1_200
+    endpoint = f"repos/{REPO}/issues/17/comments?per_page=100"
+    transport.responses[endpoint][0]["body"] = (
+        f"<!-- tradecraft:proof:v1 head={HEAD} -->\n```json\n{payload}\n```"
+    )
+
+    result, output = execute(transport)
+
+    assert result == 1
+    assert "change-proof: FAIL" in output
+    assert "valid selected proof-v1 document in comment #501" in output
+    assert "Traceback" not in output
+
+
+def test_invalid_selected_json_reports_comment_position_and_no_legacy_fallback():
+    transport, _document = proof_scenario()
+    endpoint = f"repos/{REPO}/issues/17/comments?per_page=100"
+    transport.responses[endpoint][0] = record(
+        OWNER,
+        "\n".join((
+            "Readable prefix",
+            f"<!-- tradecraft:proof:v1 head={HEAD} -->",
+            "```json",
+            "{",
+            '"schema_version": 1,',
+            "not-json",
+            "}",
+            "```",
+        )),
+        id=501,
+    )
+
+    result, output = execute(transport)
+
+    assert result == 1
+    assert "proof document JSON parse error at comment line 6 column 1" in output
+    assert (
+        "diagnostic: legacy markers were not evaluated because a current-head proof "
+        "document was selected"
+    ) in output
+    assert "evidence path: proof-v1" in output
+
+
+@pytest.mark.parametrize(
+    ("field", "value", "expected"),
+    (
+        ("head", "d" * 40, "proof identity head"),
+        ("repository", "example/other", "proof repository"),
+        ("pull_request", 99, "proof pull-request number"),
+        ("work", f"{REPO}#99", "proof work identity"),
+    ),
+)
+def test_document_identity_mutations_fail_independently(field, value, expected):
+    transport, document = proof_scenario()
+    document["identity"][field] = value
+    replace_proof_document(transport, document)
+
+    result, output = execute(transport)
+
+    assert result == 1
+    assert expected in output
+
+
+def test_envelope_head_mutation_fails_independently():
+    transport, document = proof_scenario()
+    replace_proof_document(transport, document, envelope_head="d" * 40)
+
+    result, output = execute(transport)
+
+    assert result == 1
+    assert "evidence path: legacy-markers" in output
+
+
+class MovingHeadTransport(FakeTransport):
+    def __init__(self, responses, pull_endpoint):
+        super().__init__(responses)
+        self.pull_endpoint = pull_endpoint
+        self.pull_reads = 0
+
+    def get(self, endpoint, *, paginate=False):
+        value = super().get(endpoint, paginate=paginate)
+        if endpoint == self.pull_endpoint:
+            self.pull_reads += 1
+            if self.pull_reads == 2:
+                moved = copy.deepcopy(value)
+                moved["head"]["sha"] = "d" * 40
+                return moved
+        return value
+
+
+def test_head_moving_before_success_invalidates_the_document_evaluation():
+    transport, _document = proof_scenario()
+    pull_endpoint = f"repos/{REPO}/pulls/17"
+    moving = MovingHeadTransport(transport.responses, pull_endpoint)
+
+    result, output = execute(moving)
+
+    assert result == 1
+    assert "head to remain" in output
+    assert "now dddddddddddddddddddddddddddddddddddddddd" in output
+
+
+@pytest.mark.parametrize("matches", (True, False))
+def test_policy_provenance_is_compared_with_fetched_head_bytes(matches):
+    transport, document = proof_scenario()
+    endpoint = f"repos/{REPO}/contents/.tradecraft/work.json?ref={HEAD}"
+    raw = base64.b64decode(transport.responses[endpoint]["content"])
+    descriptor = document["policy"]["work_configuration"]
+    descriptor["revision"] = HEAD
+    descriptor["sha256"] = hashlib.sha256(raw).hexdigest() if matches else "0" * 64
+    replace_proof_document(transport, document)
+
+    result, output = execute(transport)
+
+    assert result == 0
+    assert "not among the gate's fetched policy bytes" not in output.split(
+        "policy work_configuration", 1
+    )[1].splitlines()[0]
+    if matches:
+        assert "verified: policy work_configuration" in output
+    else:
+        assert "declared: policy work_configuration" in output
+        assert "diagnostic: policy digest mismatch for work_configuration" in output
+
+
+def test_newer_run_of_one_workflow_supersedes_the_older_failed_run():
+    transport, _document = proof_scenario()
+    endpoint = f"repos/{REPO}/commits/{HEAD}/check-runs?filter=all&per_page=100"
+    old = copy.deepcopy(transport.responses[endpoint]["check_runs"][0])
+    old.update({
+        "id": 80,
+        "details_url": f"https://github.com/{REPO}/actions/runs/90/job/800",
+        "conclusion": "failure",
+        "started_at": "2026-09-23T11:00:00Z",
+        "completed_at": "2026-09-23T11:05:00Z",
+    })
+    transport.responses[endpoint] = {
+        "total_count": 2,
+        "check_runs": [old, transport.responses[endpoint]["check_runs"][0]],
+    }
+    transport.responses[f"repos/{REPO}/actions/runs/90"] = {
+        "id": 90,
+        "head_sha": HEAD,
+        "workflow_id": 71,
+        "html_url": f"https://github.com/{REPO}/actions/runs/90",
+        "repository": {"full_name": REPO},
+        "referenced_workflows": [],
+    }
+    transport.responses[f"repos/{REPO}/actions/runs/90/jobs?filter=all&per_page=100"] = {
+        "total_count": 1,
+        "jobs": [{
+            "name": "Tests",
+            "check_run_url": f"https://api.github.com/repos/{REPO}/check-runs/80",
+            "run_attempt": 1,
+        }],
+    }
+
+    result, output = execute(transport)
+
+    assert result == 0
+    assert "floor check #81" in output
+    assert "floor check #80" not in output
+
+
+def test_newer_attempt_of_one_run_supersedes_the_older_failed_attempt():
+    transport, _document = proof_scenario()
+    endpoint = f"repos/{REPO}/commits/{HEAD}/check-runs?filter=all&per_page=100"
+    old = copy.deepcopy(transport.responses[endpoint]["check_runs"][0])
+    old.update({
+        "id": 80,
+        "details_url": f"https://github.com/{REPO}/actions/runs/91/job/800",
+        "conclusion": "failure",
+        "started_at": "2026-09-23T11:00:00Z",
+        "completed_at": "2026-09-23T11:05:00Z",
+    })
+    transport.responses[endpoint] = {
+        "total_count": 2,
+        "check_runs": [old, transport.responses[endpoint]["check_runs"][0]],
+    }
+    jobs_endpoint = f"repos/{REPO}/actions/runs/91/jobs?filter=all&per_page=100"
+    current = copy.deepcopy(transport.responses[jobs_endpoint]["jobs"][0])
+    current["run_attempt"] = 2
+    transport.responses[jobs_endpoint] = {
+        "total_count": 2,
+        "jobs": [
+            {
+                "name": "Tests",
+                "check_run_url": f"https://api.github.com/repos/{REPO}/check-runs/80",
+                "run_attempt": 1,
+            },
+            current,
+        ],
+    }
+
+    result, output = execute(transport)
+
+    assert result == 0
+    assert "floor check #81" in output
+    assert "floor check #80" not in output
+
+
+def test_same_named_jobs_in_one_run_attempt_are_never_collapsed():
+    transport, _document = proof_scenario()
+    endpoint = f"repos/{REPO}/commits/{HEAD}/check-runs?filter=all&per_page=100"
+    failed = copy.deepcopy(transport.responses[endpoint]["check_runs"][0])
+    failed.update({
+        "id": 80,
+        "details_url": f"https://github.com/{REPO}/actions/runs/91/job/800",
+        "conclusion": "failure",
+        "started_at": "2026-09-23T11:00:00Z",
+        "completed_at": "2026-09-23T11:05:00Z",
+    })
+    transport.responses[endpoint] = {
+        "total_count": 2,
+        "check_runs": [failed, transport.responses[endpoint]["check_runs"][0]],
+    }
+    jobs_endpoint = f"repos/{REPO}/actions/runs/91/jobs?filter=all&per_page=100"
+    transport.responses[jobs_endpoint] = {
+        "total_count": 2,
+        "jobs": [
+            {
+                "name": "Tests",
+                "check_run_url": f"https://api.github.com/repos/{REPO}/check-runs/80",
+                "run_attempt": 1,
+            },
+            transport.responses[jobs_endpoint]["jobs"][0],
+        ],
+    }
+
+    result, output = execute(transport)
+
+    assert result == 1
+    assert "omitted check id(s): 80" in output
+    assert "conclusion='failure'" in output
+
+
+def test_newer_pending_rerun_blocks_the_older_successful_attempt():
+    transport, document = proof_scenario()
+    pending = copy.deepcopy(document["floor"]["checks"][0])
+    pending.update({
+        "id": 82,
+        "run_id": 92,
+        "url": f"https://github.com/{REPO}/actions/runs/92",
+        "status": "queued",
+        "conclusion": None,
+        "started_at": "2026-09-23T13:00:00Z",
+        "completed_at": None,
+    })
+    document["floor"]["checks"] = [pending]
+    replace_proof_document(transport, document)
+    endpoint = f"repos/{REPO}/commits/{HEAD}/check-runs?filter=all&per_page=100"
+    pending_record = copy.deepcopy(transport.responses[endpoint]["check_runs"][0])
+    pending_record.update({
+        "id": 82,
+        "details_url": f"https://github.com/{REPO}/actions/runs/92",
+        "status": "queued",
+        "conclusion": None,
+        "started_at": "2026-09-23T13:00:00Z",
+        "completed_at": None,
+    })
+    transport.responses[endpoint] = {
+        "total_count": 2,
+        "check_runs": [transport.responses[endpoint]["check_runs"][0], pending_record],
+    }
+    transport.responses[f"repos/{REPO}/actions/runs/92"] = {
+        "id": 92,
+        "head_sha": HEAD,
+        "workflow_id": 71,
+        "html_url": f"https://github.com/{REPO}/actions/runs/92",
+        "repository": {"full_name": REPO},
+        "referenced_workflows": [],
+    }
+    transport.responses[f"repos/{REPO}/actions/runs/92/jobs?filter=all&per_page=100"] = {
+        "total_count": 1,
+        "jobs": [{
+            "name": "Tests",
+            "check_run_url": f"https://api.github.com/repos/{REPO}/check-runs/82",
+            "run_attempt": 1,
+        }],
+    }
+
+    result, output = execute(transport)
+
+    assert result == 1
+    assert "floor check #82" in output
+    assert "status='queued'" in output
+
+
+@pytest.mark.parametrize("exact_reference", (True, False))
+def test_reusable_proof_run_is_excluded_only_for_the_exact_referenced_source(
+    exact_reference
+):
+    transport, _document = proof_scenario()
+    endpoint = f"repos/{REPO}/commits/{HEAD}/check-runs?filter=all&per_page=100"
+    caller = copy.deepcopy(transport.responses[endpoint]["check_runs"][0])
+    caller.update({
+        "id": 82,
+        "name": "Change proof / Change proof",
+        "details_url": f"https://github.com/{REPO}/actions/runs/92",
+        "conclusion": "failure",
+    })
+    transport.responses[endpoint] = {
+        "total_count": 2,
+        "check_runs": [transport.responses[endpoint]["check_runs"][0], caller],
+    }
+    source = (
+        "Grimblaz-and-Friends/change-proof/.github/workflows/change-proof.yml@refs/heads/main"
+    )
+    if not exact_reference:
+        source = f"other/{source}/extra"
+    transport.responses[f"repos/{REPO}/actions/runs/92"] = {
+        "id": 92,
+        "head_sha": HEAD,
+        "workflow_id": 72,
+        "html_url": f"https://github.com/{REPO}/actions/runs/92",
+        "repository": {"full_name": REPO},
+        "referenced_workflows": [{"path": source}],
+    }
+    transport.responses[f"repos/{REPO}/actions/runs/92/jobs?filter=all&per_page=100"] = {
+        "total_count": 1,
+        "jobs": [{
+            "name": "caller / Change proof",
+            "check_run_url": f"https://api.github.com/repos/{REPO}/check-runs/82",
+            "run_attempt": 1,
+        }],
+    }
+
+    environ = environment()
+    environ.update({"GITHUB_RUN_ID": "100", "GITHUB_RUN_ATTEMPT": "1"})
+    rendered = io.StringIO()
+    result = check.run(environ, transport=transport, output=rendered)
+    output = rendered.getvalue()
+
+    assert result == (0 if exact_reference else 1)
+    if exact_reference:
+        assert "floor check #82" not in output
+        assert (
+            "excluded: caller proof execution run #92 check #82 is not floor evidence "
+            "because it invokes the reusable change-proof job"
+        ) in output
+    else:
+        assert "omitted check id(s): 82" in output
+
+
+def test_reusable_run_with_two_proof_named_jobs_is_ambiguous_and_neither_is_exempted():
+    transport, _document = proof_scenario()
+    endpoint = f"repos/{REPO}/commits/{HEAD}/check-runs?filter=all&per_page=100"
+    template = transport.responses[endpoint]["check_runs"][0]
+    proof_job = copy.deepcopy(template)
+    proof_job.update({
+        "id": 82,
+        "name": "caller / Change proof",
+        "details_url": f"https://github.com/{REPO}/actions/runs/92/job/820",
+    })
+    unrelated = copy.deepcopy(template)
+    unrelated.update({
+        "id": 83,
+        "name": "unrelated / Change proof",
+        "details_url": f"https://github.com/{REPO}/actions/runs/92/job/830",
+        "conclusion": "failure",
+    })
+    transport.responses[endpoint] = {
+        "total_count": 3,
+        "check_runs": [template, proof_job, unrelated],
+    }
+    transport.responses[f"repos/{REPO}/actions/runs/92"] = {
+        "id": 92,
+        "head_sha": HEAD,
+        "workflow_id": 72,
+        "html_url": f"https://github.com/{REPO}/actions/runs/92",
+        "repository": {"full_name": REPO},
+        "referenced_workflows": [{
+            "path": "Grimblaz-and-Friends/change-proof/.github/workflows/"
+            "change-proof.yml@refs/heads/main",
+        }],
+    }
+    transport.responses[f"repos/{REPO}/actions/runs/92/jobs?filter=all&per_page=100"] = {
+        "total_count": 2,
+        "jobs": [
+            {
+                "name": "caller / Change proof",
+                "check_run_url": f"https://api.github.com/repos/{REPO}/check-runs/82",
+                "run_attempt": 1,
+            },
+            {
+                "name": "unrelated / Change proof",
+                "check_run_url": f"https://api.github.com/repos/{REPO}/check-runs/83",
+                "run_attempt": 1,
+            },
+        ],
+    }
+    environ = environment()
+    environ.update({"GITHUB_RUN_ID": "100", "GITHUB_RUN_ATTEMPT": "1"})
+    rendered = io.StringIO()
+
+    result = check.run(environ, transport=transport, output=rendered)
+    output = rendered.getvalue()
+
+    assert result == 1
+    assert "unambiguous reusable proof job in run 92 attempt 1" in output
+    assert "check #82 name='caller / Change proof'" in output
+    assert "check #83 name='unrelated / Change proof'" in output
+    assert "omitted check id(s): 82, 83" in output
+    assert "conclusion='failure'" in output
+    assert "excluded: caller proof execution run #92" not in output
+
+
+def test_github_actions_check_without_an_actions_run_url_remains_a_visible_check():
+    transport, document = proof_scenario()
+    external = copy.deepcopy(document["floor"]["checks"][0])
+    external.update({
+        "id": 82,
+        "name": "Checks API producer",
+        "workflow_id": None,
+        "run_id": None,
+        "url": "https://checks.example/runs/82",
+    })
+    document["floor"]["checks"].append(external)
+    replace_proof_document(transport, document)
+    endpoint = f"repos/{REPO}/commits/{HEAD}/check-runs?filter=all&per_page=100"
+    external_record = copy.deepcopy(transport.responses[endpoint]["check_runs"][0])
+    external_record.update({
+        "id": 82,
+        "name": "Checks API producer",
+        "details_url": "https://checks.example/runs/82",
+    })
+    transport.responses[endpoint] = {
+        "total_count": 2,
+        "check_runs": [transport.responses[endpoint]["check_runs"][0], external_record],
+    }
+
+    result, output = execute(transport)
+
+    assert result == 0
+    assert "floor check #82 Checks API producer" in output
+
+
+def ancestor_proof_scenario():
+    transport, document = proof_scenario()
+    transport.responses[f"repos/{REPO}/pulls/17/files?per_page=100"] = [
+        {"filename": "src/main.ts"}
+    ]
+    source = {
+        "kind": "issue-comment",
+        "repository": REPO,
+        "id": 32,
+        "url": f"https://github.com/{REPO}/issues/12#issuecomment-32",
+        "author": OWNER,
+        "timestamp": "2026-09-23T12:08:00Z",
+        "revision": ANCESTOR,
+    }
+    document["use"] = {
+        "required": True,
+        "classification": "required",
+        "evidence_head": ANCESTOR,
+        "applicability": "ancestor",
+        "source": source,
+        "intervening_commits": [{
+            "sha": COMMIT_ONE,
+            "paths": ["docs/old.md", "docs/new.md"],
+        }],
+        "reason": "ancestor evidence remains applicable",
+    }
+    replace_proof_document(transport, document)
+    transport.responses[f"repos/{REPO}/issues/12/comments?per_page=100"].append(
+        use_note(head=ANCESTOR, id=32)
+    )
+    transport.responses[compare_endpoint(ANCESTOR)] = comparison(
+        ANCESTOR, [COMMIT_ONE]
+    )
+    transport.responses[commit_endpoint(COMMIT_ONE)] = {
+        "sha": COMMIT_ONE,
+        "files": [{"filename": "docs/new.md", "previous_filename": "docs/old.md"}],
+    }
+    return transport
+
+
+def test_document_ancestor_use_accepts_intervening_paths_as_sets():
+    result, output = execute(ancestor_proof_scenario())
+
+    assert result == 0
+    assert "ancestor evidence" in output
+    assert "remains applicable" in output
+
+
+def test_document_ancestor_use_rejects_a_changed_true_marker():
+    transport = ancestor_proof_scenario()
+    endpoint = f"repos/{REPO}/issues/12/comments?per_page=100"
+    transport.responses[endpoint][-1] = use_note(
+        head=ANCESTOR, changed=True, id=32
+    )
+
+    result, output = execute(transport)
+
+    assert result == 1
+    assert "ancestor use marker with changed=false" in output
+
+
+def test_document_ancestor_compare_failure_is_a_named_use_failure():
+    transport = ancestor_proof_scenario()
+    transport.responses[compare_endpoint(ANCESTOR)] = check.GitHubNotFound(
+        "comparison does not exist"
+    )
+
+    result, output = execute(transport)
+
+    assert result == 1
+    assert "change-proof: FAIL" in output
+    assert "evidence path: proof-v1" in output
+    assert "history from" in output
+    assert "comparison does not exist" in output
+    assert "grant" not in output
+
+
+def test_missing_work_issue_is_a_named_source_failure_not_a_gate_error():
+    transport, _document = proof_scenario()
+    endpoint = f"repos/{REPO}/issues/12/comments?per_page=100"
+    transport.responses[endpoint] = check.GitHubNotFound("issue 12 does not exist")
+
+    result, output = execute(transport)
+
+    assert result == 1
+    assert "change-proof: FAIL" in output
+    assert "evidence path: proof-v1" in output
+    assert "readable work-issue comments for issue 12" in output
+    assert "correct the named issue" in output
+
+
+def test_document_review_body_is_credited_exactly_like_the_legacy_path():
+    transport, _document = proof_scenario()
+    transport.responses[f"repos/{REPO}/pulls/17/reviews?per_page=100"][0][
+        "body"
+    ] = "Review limit reached"
+
+    result, output = execute(transport)
+
+    assert result == 0
+    assert f"connected reviewer {REVIEWER} credited by review #41" in output
+
+
+def test_document_pull_request_notice_is_not_a_completed_receipt():
+    transport, document = proof_scenario()
+    document["reviewers"][0]["source"] = {
+        "kind": "pull-request-comment",
+        "repository": REPO,
+        "id": 42,
+        "url": f"https://github.com/{REPO}/pull/17#issuecomment-42",
+        "author": REVIEWER,
+        "timestamp": "2026-09-23T12:07:00Z",
+        "revision": HEAD,
+    }
+    replace_proof_document(transport, document)
+    endpoint = f"repos/{REPO}/issues/17/comments?per_page=100"
+    transport.responses[endpoint].append(
+        record(REVIEWER, "Review limit reached", id=42)
+    )
+
+    result, output = execute(transport)
+
+    assert result == 1
+    assert f"completed public review receipt for {REVIEWER}" in output
+    assert "Review limit reached" in output
+
+
+def test_document_work_issue_comment_cannot_credit_a_pull_request_review():
+    transport, document = proof_scenario()
+    document["reviewers"][0]["source"] = {
+        "kind": "issue-comment",
+        "repository": REPO,
+        "id": 42,
+        "url": f"https://github.com/{REPO}/issues/12#issuecomment-42",
+        "author": REVIEWER,
+        "timestamp": "2026-09-23T12:07:00Z",
+        "revision": HEAD,
+    }
+    replace_proof_document(transport, document)
+    endpoint = f"repos/{REPO}/issues/12/comments?per_page=100"
+    transport.responses[endpoint].append(
+        record(REVIEWER, "completed review", id=42)
+    )
+
+    result, output = execute(transport)
+
+    assert result == 1
+    assert f"review receipt for {REVIEWER}" in output
+    assert "source kind issue-comment" in output
+    assert "cannot credit a pull-request review" in output
+
+
+def test_document_inline_comment_text_that_says_running_still_counts_as_a_receipt():
+    transport, document = proof_scenario()
+    document["reviewers"][0]["source"] = {
+        "kind": "review-comment",
+        "repository": REPO,
+        "id": 41,
+        "url": f"https://github.com/{REPO}/pull/17#discussion_r41",
+        "author": REVIEWER,
+        "timestamp": "2026-09-23T12:07:00Z",
+        "revision": HEAD,
+    }
+    replace_proof_document(transport, document)
+    transport.responses[f"repos/{REPO}/pulls/17/comments?per_page=100"] = [
+        record(REVIEWER, "The service is running normally.", id=41, in_reply_to_id=50)
+    ]
+
+    result, output = execute(transport)
+
+    assert result == 0
+    assert f"connected reviewer {REVIEWER} credited by review-comment #41" in output
+
+
+def test_document_inline_notice_text_is_credited_exactly_like_the_legacy_path():
+    transport, document = proof_scenario()
+    document["reviewers"][0]["source"] = {
+        "kind": "review-comment",
+        "repository": REPO,
+        "id": 41,
+        "url": f"https://github.com/{REPO}/pull/17#discussion_r41",
+        "author": REVIEWER,
+        "timestamp": "2026-09-23T12:07:00Z",
+        "revision": HEAD,
+    }
+    replace_proof_document(transport, document)
+    transport.responses[f"repos/{REPO}/pulls/17/comments?per_page=100"] = [
+        record(REVIEWER, "Review limit reached", id=41, in_reply_to_id=50)
+    ]
+
+    result, output = execute(transport)
+
+    assert result == 0
+    assert f"connected reviewer {REVIEWER} credited by review-comment #41" in output
+
+
+def test_document_reports_named_missing_duplicate_and_extra_reviewers():
+    transport, document = proof_scenario()
+    duplicate = copy.deepcopy(document["reviewers"][0])
+    extra = copy.deepcopy(document["reviewers"][0])
+    extra["login"] = "extra-reviewer[bot]"
+    document["reviewers"] = [duplicate, duplicate, extra]
+    replace_proof_document(transport, document)
+
+    result, output = execute(transport)
+
+    assert result == 1
+    assert f"duplicated: {REVIEWER}" in output
+    assert "extra: extra-reviewer[bot]" in output
+
+
+def test_document_reports_named_missing_duplicate_and_extra_threads():
+    transport, document = proof_scenario()
+    source = {
+        "kind": "review-comment",
+        "repository": REPO,
+        "id": 51,
+        "url": f"https://github.com/{REPO}/pull/17#discussion_r51",
+        "author": REVIEWER,
+        "timestamp": "2026-09-23T12:08:00Z",
+        "revision": HEAD,
+    }
+    entry = {
+        "thread_id": 52,
+        "reviewer": REVIEWER,
+        "source": {**source, "id": 52},
+        "reply": None,
+    }
+    document["dispositions"] = [entry, copy.deepcopy(entry)]
+    replace_proof_document(transport, document)
+    transport.responses[f"repos/{REPO}/pulls/17/comments?per_page=100"] = [
+        record(REVIEWER, "finding", id=51, in_reply_to_id=None)
+    ]
+
+    result, output = execute(transport)
+
+    assert result == 1
+    assert "missing: 51" in output
+    assert "duplicated: 52" in output
+    assert "extra: 52" in output
+
+
+def test_document_wrong_thread_reply_is_rejected_by_membership():
+    transport, document = proof_scenario()
+    source = {
+        "kind": "review-comment",
+        "repository": REPO,
+        "id": 51,
+        "url": f"https://github.com/{REPO}/pull/17#discussion_r51",
+        "author": REVIEWER,
+        "timestamp": "2026-09-23T12:08:00Z",
+        "revision": HEAD,
+    }
+    reply = {
+        "kind": "review-comment",
+        "repository": REPO,
+        "id": 52,
+        "url": f"https://github.com/{REPO}/pull/17#discussion_r52",
+        "author": OWNER,
+        "timestamp": "2026-09-23T12:09:00Z",
+        "revision": HEAD,
+    }
+    document["dispositions"] = [{
+        "thread_id": 51,
+        "reviewer": REVIEWER,
+        "source": source,
+        "reply": reply,
+    }]
+    replace_proof_document(transport, document)
+    transport.responses[f"repos/{REPO}/pulls/17/comments?per_page=100"] = [
+        record(REVIEWER, "finding", id=51, in_reply_to_id=None),
+        record(OWNER, "fixed - elsewhere", id=52, in_reply_to_id=99),
+    ]
+
+    result, output = execute(transport)
+
+    assert result == 1
+    assert "authorized disposition reply in reviewer thread 51" in output
+
+
+@pytest.mark.parametrize("summary_body", ("", "summary only", CODEX_COMPLETED_SUMMARY))
+def test_document_accepts_repeated_and_summary_only_reviews(summary_body):
+    transport, _document = proof_scenario()
+    reviews_endpoint = f"repos/{REPO}/pulls/17/reviews?per_page=100"
+    transport.responses[reviews_endpoint][0]["body"] = summary_body
+    transport.responses[reviews_endpoint].append(
+        record(REVIEWER, "a second completed review", id=42, commit_id=HEAD)
+    )
+
+    result, output = execute(transport)
+
+    assert result == 0
+    assert f"connected reviewer {REVIEWER} credited by review #41" in output
+
+
+def test_reviewer_notice_labels_are_free_text_in_the_wire_contract():
+    transport, document = proof_scenario()
+    document["reviewers"][0]["notices"] = ["producer-specific explanatory label"]
+    replace_proof_document(transport, document)
+
+    result, _output = execute(transport)
+
+    assert result == 0
+
+
+@pytest.mark.parametrize("label", (ABSENT_BODY, None, "review-ready"))
+def test_reviewer_label_does_not_change_document_acceptance(label):
+    transport, _document = proof_scenario()
+    for revision in (HEAD, BASE_TIP):
+        endpoint = f"repos/{REPO}/contents/.tradecraft/work.json?ref={revision}"
+        config = json.loads(base64.b64decode(transport.responses[endpoint]["content"]))
+        if label is not ABSENT_BODY:
+            config["reviewer_label"] = label
+        transport.responses[endpoint] = contents(config)
+
+    result, output = execute(transport)
+
+    assert result == 0
+    assert f"connected reviewer {REVIEWER}" in output
+
+
+def test_source_id_on_another_comment_collection_is_not_on_the_claimed_surface():
+    transport, _document = proof_scenario()
+    work_endpoint = f"repos/{REPO}/issues/12/comments?per_page=100"
+    floor_record = transport.responses[work_endpoint].pop()
+    pr_endpoint = f"repos/{REPO}/issues/17/comments?per_page=100"
+    transport.responses[pr_endpoint].append(floor_record)
+
+    result, output = execute(transport)
+
+    assert result == 1
+    assert "issue-comment source 31 is not on its claimed surface" in output
+
+
+def test_stale_floor_source_pointer_recomposes_instead_of_posting_a_duplicate():
+    transport, document = proof_scenario()
+    document["floor"]["source"]["id"] = 999
+    replace_proof_document(transport, document)
+
+    result, output = execute(transport)
+
+    assert result == 1
+    assert "document pointer is stale" in output
+    assert "matching issue-comment #31 already exists" in output
+    assert "recompose proof from issue-comment #31" in output
+    assert "post the exact successful floor marker" not in output
+
+
+def test_stale_reviewer_source_pointer_recomposes_instead_of_buying_another_review():
+    transport, document = proof_scenario()
+    document["reviewers"][0]["source"]["id"] = 999
+    replace_proof_document(transport, document)
+
+    result, output = execute(transport)
+
+    assert result == 1
+    assert "document pointer is stale; matching review #41 already exists" in output
+    assert "recompose proof from review #41" in output
+    assert f"asking {REVIEWER} to review again" in output
+
+
+def test_missing_floor_source_record_still_tells_the_holder_to_post_it():
+    transport, document = proof_scenario()
+    document["floor"]["source"]["id"] = 999
+    replace_proof_document(transport, document)
+    transport.responses[f"repos/{REPO}/issues/12/comments?per_page=100"] = []
+
+    result, output = execute(transport)
+
+    assert result == 1
+    assert "floor record is missing" in output
+    assert "post the exact successful floor marker" in output
+
+
+@pytest.mark.parametrize(
+    "separator",
+    ("\n", "\r", "\v", "\f", "\x1c", "\x1d", "\x1e", "\x85", "\u2028", "\u2029"),
+)
+def test_every_python_line_separator_is_escaped_in_failure_output(separator):
+    transport, document = proof_scenario()
+    document["floor"]["source"]["repository"] = (
+        f"{REPO}{separator}verified: forged"
+    )
+    replace_proof_document(transport, document)
+
+    result, output = execute(transport)
+
+    assert result == 1
+    assert f"{separator}verified: forged" not in output
+    assert not any(line == "verified: forged" for line in output.splitlines())
+
+
+def test_legacy_running_word_outside_the_status_cell_is_not_a_notice():
+    body = "| Subject | Status |\n| --- | --- |\n| running service | completed |"
+    transport = scenario(
+        comments=[use_note(), record(REVIEWER, body, id=42)],
+    )
+
+    result, output = execute(transport)
+
+    assert result == 0
+    assert f"connected reviewer {REVIEWER} credited by pull-request comment #42" in output
+
+
+def test_failed_floor_source_never_prints_verified_public_attestation():
+    transport, document = proof_scenario()
+    document["floor"]["checks"] = []
+    replace_proof_document(transport, document)
+    checks_endpoint = f"repos/{REPO}/commits/{HEAD}/check-runs?filter=all&per_page=100"
+    transport.responses[checks_endpoint] = {"total_count": 0, "check_runs": []}
+    transport.responses[f"repos/{REPO}/issues/12/comments?per_page=100"] = []
+
+    result, output = execute(transport)
+
+    assert result == 1
+    assert "authorized floor attestation remains public" not in output
+
+
+def test_current_gate_exemption_uses_the_associated_jobs_attempt():
+    transport, _document = proof_scenario()
+    endpoint = f"repos/{REPO}/commits/{HEAD}/check-runs?filter=all&per_page=100"
+    gate = copy.deepcopy(transport.responses[endpoint]["check_runs"][0])
+    gate.update({
+        "id": 1001,
+        "name": "Change proof / Change proof",
+        "details_url": f"https://github.com/{REPO}/actions/runs/100",
+        "status": "in_progress",
+        "conclusion": None,
+        "completed_at": None,
+    })
+    transport.responses[endpoint] = {
+        "total_count": 2,
+        "check_runs": [transport.responses[endpoint]["check_runs"][0], gate],
+    }
+    transport.responses[f"repos/{REPO}/actions/runs/100"] = {
+        "id": 100,
+        "head_sha": HEAD,
+        "workflow_id": 363584992,
+        "run_attempt": 1,
+        "repository": {"full_name": REPO},
+        "referenced_workflows": [],
+    }
+    transport.responses[f"repos/{REPO}/actions/runs/100/jobs?filter=all&per_page=100"] = {
+        "total_count": 1,
+        "jobs": [{
+            "name": "Change proof",
+            "check_run_url": "https://api.github.com/repos/example/check-runs/1001",
+            "run_attempt": 2,
+        }],
+    }
+    environ = environment()
+    environ.update({"GITHUB_RUN_ID": "100", "GITHUB_RUN_ATTEMPT": "1"})
+    output = io.StringIO()
+
+    result = check.run(environ, transport=transport, output=output)
+
+    assert result == 1
+    assert "omitted check id(s): 1001" in output.getvalue()
 
 
 POSITIVE_PATH_DEPARTURES_BODIES = (
@@ -975,6 +2703,18 @@ def test_review_endpoint_record_counts_as_reviewer_run():
 
     assert result == 0
     assert f"connected reviewer {REVIEWER} credited by review #5260887954" in output
+
+
+def test_legacy_review_endpoint_body_does_not_change_reviewer_credit():
+    transport = scenario(
+        comments=[use_note()],
+        reviews=[record(REVIEWER, "Review limit reached", id=41)],
+    )
+
+    result, output = execute(transport)
+
+    assert result == 0
+    assert f"connected reviewer {REVIEWER} credited by review #41" in output
 
 
 def test_undispositioned_top_level_inline_comment_fails():

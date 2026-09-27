@@ -1,0 +1,877 @@
+{
+  "base_tip": "d057fdfdd158f7dca29ad410f00f009a630ae02d",
+  "head": "08f14b094614858c15a85a5347ed9eb82e4c227c",
+  "provenance": "Real GitHub REST GET responses recorded for Grimblaz-and-Friends/Organizations-of-Verra pull request #476; field-trimmed from fixtures20/world-verra476.json.",
+  "pull_request": 476,
+  "repository": "Grimblaz-and-Friends/Organizations-of-Verra",
+  "responses": {
+    "repos/Grimblaz-and-Friends/Organizations-of-Verra/actions/runs/35804255927": {
+      "check_suite_id": 96946845352,
+      "head_sha": "08f14b094614858c15a85a5347ed9eb82e4c227c",
+      "html_url": "https://github.com/Grimblaz-and-Friends/Organizations-of-Verra/actions/runs/35804255927",
+      "id": 35804255927,
+      "referenced_workflows": [],
+      "repository": {
+        "full_name": "Grimblaz-and-Friends/Organizations-of-Verra"
+      },
+      "run_attempt": 1,
+      "workflow_id": 227323064
+    },
+    "repos/Grimblaz-and-Friends/Organizations-of-Verra/actions/runs/35804255927/jobs?filter=all&per_page=100": {
+      "jobs": [
+        {
+          "check_run_url": "https://api.github.com/repos/Grimblaz-and-Friends/Organizations-of-Verra/check-runs/107001377377",
+          "name": "e2e",
+          "run_attempt": 1
+        }
+      ],
+      "total_count": 1
+    },
+    "repos/Grimblaz-and-Friends/Organizations-of-Verra/actions/runs/35804256431": {
+      "check_suite_id": 96946846507,
+      "head_sha": "08f14b094614858c15a85a5347ed9eb82e4c227c",
+      "html_url": "https://github.com/Grimblaz-and-Friends/Organizations-of-Verra/actions/runs/35804256431",
+      "id": 35804256431,
+      "referenced_workflows": [
+        {
+          "path": "Grimblaz-and-Friends/change-proof/.github/workflows/change-proof.yml@main",
+          "ref": "refs/heads/main",
+          "sha": "53cb7b210689f996eae6c97d648f7bd25d6a4086"
+        }
+      ],
+      "repository": {
+        "full_name": "Grimblaz-and-Friends/Organizations-of-Verra"
+      },
+      "run_attempt": 2,
+      "workflow_id": 363066762
+    },
+    "repos/Grimblaz-and-Friends/Organizations-of-Verra/actions/runs/35804256431/jobs?filter=all&per_page=100": {
+      "jobs": [
+        {
+          "check_run_url": "https://api.github.com/repos/Grimblaz-and-Friends/Organizations-of-Verra/check-runs/107001377611",
+          "name": "Change proof (required) / Change proof",
+          "run_attempt": 1
+        },
+        {
+          "check_run_url": "https://api.github.com/repos/Grimblaz-and-Friends/Organizations-of-Verra/check-runs/107031065299",
+          "name": "Change proof (required) / Change proof",
+          "run_attempt": 2
+        }
+      ],
+      "total_count": 2
+    },
+    "repos/Grimblaz-and-Friends/Organizations-of-Verra/actions/runs/35804256441": {
+      "check_suite_id": 96946846530,
+      "head_sha": "08f14b094614858c15a85a5347ed9eb82e4c227c",
+      "html_url": "https://github.com/Grimblaz-and-Friends/Organizations-of-Verra/actions/runs/35804256441",
+      "id": 35804256441,
+      "referenced_workflows": [
+        {
+          "path": "Grimblaz-and-Friends/change-proof/.github/workflows/change-proof.yml@main",
+          "ref": "refs/heads/main",
+          "sha": "53cb7b210689f996eae6c97d648f7bd25d6a4086"
+        }
+      ],
+      "repository": {
+        "full_name": "Grimblaz-and-Friends/Organizations-of-Verra"
+      },
+      "run_attempt": 1,
+      "workflow_id": 362707222
+    },
+    "repos/Grimblaz-and-Friends/Organizations-of-Verra/actions/runs/35804256441/jobs?filter=all&per_page=100": {
+      "jobs": [
+        {
+          "check_run_url": "https://api.github.com/repos/Grimblaz-and-Friends/Organizations-of-Verra/check-runs/107001378116",
+          "name": "Change proof / Change proof",
+          "run_attempt": 1
+        }
+      ],
+      "total_count": 1
+    },
+    "repos/Grimblaz-and-Friends/Organizations-of-Verra/actions/runs/35805900974": {
+      "check_suite_id": 96951353667,
+      "head_sha": "08f14b094614858c15a85a5347ed9eb82e4c227c",
+      "html_url": "https://github.com/Grimblaz-and-Friends/Organizations-of-Verra/actions/runs/35805900974",
+      "id": 35805900974,
+      "referenced_workflows": [],
+      "repository": {
+        "full_name": "Grimblaz-and-Friends/Organizations-of-Verra"
+      },
+      "run_attempt": 1,
+      "workflow_id": 209490963
+    },
+    "repos/Grimblaz-and-Friends/Organizations-of-Verra/actions/runs/35805900974/jobs?filter=all&per_page=100": {
+      "jobs": [
+        {
+          "check_run_url": "https://api.github.com/repos/Grimblaz-and-Friends/Organizations-of-Verra/check-runs/107006560625",
+          "name": "Detect changes",
+          "run_attempt": 1
+        },
+        {
+          "check_run_url": "https://api.github.com/repos/Grimblaz-and-Friends/Organizations-of-Verra/check-runs/107006591696",
+          "name": "CI skip notice",
+          "run_attempt": 1
+        },
+        {
+          "check_run_url": "https://api.github.com/repos/Grimblaz-and-Friends/Organizations-of-Verra/check-runs/107006591697",
+          "name": "fast-checks",
+          "run_attempt": 1
+        },
+        {
+          "check_run_url": "https://api.github.com/repos/Grimblaz-and-Friends/Organizations-of-Verra/check-runs/107006591741",
+          "name": "tests",
+          "run_attempt": 1
+        },
+        {
+          "check_run_url": "https://api.github.com/repos/Grimblaz-and-Friends/Organizations-of-Verra/check-runs/107006591742",
+          "name": "Residue gate",
+          "run_attempt": 1
+        },
+        {
+          "check_run_url": "https://api.github.com/repos/Grimblaz-and-Friends/Organizations-of-Verra/check-runs/107007816307",
+          "name": "build",
+          "run_attempt": 1
+        }
+      ],
+      "total_count": 6
+    },
+    "repos/Grimblaz-and-Friends/Organizations-of-Verra/actions/runs/35805901025": {
+      "check_suite_id": 96951353750,
+      "head_sha": "08f14b094614858c15a85a5347ed9eb82e4c227c",
+      "html_url": "https://github.com/Grimblaz-and-Friends/Organizations-of-Verra/actions/runs/35805901025",
+      "id": 35805901025,
+      "referenced_workflows": [],
+      "repository": {
+        "full_name": "Grimblaz-and-Friends/Organizations-of-Verra"
+      },
+      "run_attempt": 1,
+      "workflow_id": 227323064
+    },
+    "repos/Grimblaz-and-Friends/Organizations-of-Verra/actions/runs/35805901025/jobs?filter=all&per_page=100": {
+      "jobs": [
+        {
+          "check_run_url": "https://api.github.com/repos/Grimblaz-and-Friends/Organizations-of-Verra/check-runs/107006560553",
+          "name": "e2e",
+          "run_attempt": 1
+        }
+      ],
+      "total_count": 1
+    },
+    "repos/Grimblaz-and-Friends/Organizations-of-Verra/actions/runs/35805901402": {
+      "check_suite_id": 96951354836,
+      "head_sha": "08f14b094614858c15a85a5347ed9eb82e4c227c",
+      "html_url": "https://github.com/Grimblaz-and-Friends/Organizations-of-Verra/actions/runs/35805901402",
+      "id": 35805901402,
+      "referenced_workflows": [
+        {
+          "path": "Grimblaz-and-Friends/change-proof/.github/workflows/change-proof.yml@main",
+          "ref": "refs/heads/main",
+          "sha": "53cb7b210689f996eae6c97d648f7bd25d6a4086"
+        }
+      ],
+      "repository": {
+        "full_name": "Grimblaz-and-Friends/Organizations-of-Verra"
+      },
+      "run_attempt": 3,
+      "workflow_id": 362707222
+    },
+    "repos/Grimblaz-and-Friends/Organizations-of-Verra/actions/runs/35805901402/jobs?filter=all&per_page=100": {
+      "jobs": [
+        {
+          "check_run_url": "https://api.github.com/repos/Grimblaz-and-Friends/Organizations-of-Verra/check-runs/107006561842",
+          "name": "Change proof / Change proof",
+          "run_attempt": 1
+        },
+        {
+          "check_run_url": "https://api.github.com/repos/Grimblaz-and-Friends/Organizations-of-Verra/check-runs/107021283068",
+          "name": "Change proof / Change proof",
+          "run_attempt": 2
+        },
+        {
+          "check_run_url": "https://api.github.com/repos/Grimblaz-and-Friends/Organizations-of-Verra/check-runs/107030886460",
+          "name": "Change proof / Change proof",
+          "run_attempt": 3
+        }
+      ],
+      "total_count": 3
+    },
+    "repos/Grimblaz-and-Friends/Organizations-of-Verra/commits/08f14b094614858c15a85a5347ed9eb82e4c227c/check-runs?filter=all&per_page=100": {
+      "check_runs": [
+        {
+          "app": {
+            "id": 15368,
+            "slug": "github-actions"
+          },
+          "check_suite": {
+            "id": 96946846507
+          },
+          "completed_at": "2026-09-23T03:19:30Z",
+          "conclusion": "success",
+          "details_url": "https://github.com/Grimblaz-and-Friends/Organizations-of-Verra/actions/runs/35804256431/job/107031065299",
+          "head_sha": "08f14b094614858c15a85a5347ed9eb82e4c227c",
+          "id": 107031065299,
+          "name": "Change proof (required) / Change proof",
+          "started_at": "2026-09-23T03:19:22Z",
+          "status": "completed"
+        },
+        {
+          "app": {
+            "id": 15368,
+            "slug": "github-actions"
+          },
+          "check_suite": {
+            "id": 96951354836
+          },
+          "completed_at": "2026-09-23T03:18:36Z",
+          "conclusion": "success",
+          "details_url": "https://github.com/Grimblaz-and-Friends/Organizations-of-Verra/actions/runs/35805901402/job/107030886460",
+          "head_sha": "08f14b094614858c15a85a5347ed9eb82e4c227c",
+          "id": 107030886460,
+          "name": "Change proof / Change proof",
+          "started_at": "2026-09-23T03:18:29Z",
+          "status": "completed"
+        },
+        {
+          "app": {
+            "id": 867647,
+            "slug": "greptile-apps"
+          },
+          "check_suite": {
+            "id": 96946795045
+          },
+          "completed_at": "2026-09-23T02:34:23Z",
+          "conclusion": "success",
+          "details_url": "https://greptile.com/",
+          "head_sha": "08f14b094614858c15a85a5347ed9eb82e4c227c",
+          "id": 107021398559,
+          "name": "Greptile Review",
+          "started_at": "2026-09-23T02:31:35Z",
+          "status": "completed"
+        },
+        {
+          "app": {
+            "id": 15368,
+            "slug": "github-actions"
+          },
+          "check_suite": {
+            "id": 96951354836
+          },
+          "completed_at": "2026-09-23T02:31:13Z",
+          "conclusion": "failure",
+          "details_url": "https://github.com/Grimblaz-and-Friends/Organizations-of-Verra/actions/runs/35805901402/job/107021283068",
+          "head_sha": "08f14b094614858c15a85a5347ed9eb82e4c227c",
+          "id": 107021283068,
+          "name": "Change proof / Change proof",
+          "started_at": "2026-09-23T02:31:04Z",
+          "status": "completed"
+        },
+        {
+          "app": {
+            "id": 15368,
+            "slug": "github-actions"
+          },
+          "check_suite": {
+            "id": 96951353667
+          },
+          "completed_at": "2026-09-23T01:27:29Z",
+          "conclusion": "success",
+          "details_url": "https://github.com/Grimblaz-and-Friends/Organizations-of-Verra/actions/runs/35805900974/job/107007816307",
+          "head_sha": "08f14b094614858c15a85a5347ed9eb82e4c227c",
+          "id": 107007816307,
+          "name": "build",
+          "started_at": "2026-09-23T01:26:40Z",
+          "status": "completed"
+        },
+        {
+          "app": {
+            "id": 15368,
+            "slug": "github-actions"
+          },
+          "check_suite": {
+            "id": 96951353667
+          },
+          "completed_at": "2026-09-23T01:21:12Z",
+          "conclusion": "success",
+          "details_url": "https://github.com/Grimblaz-and-Friends/Organizations-of-Verra/actions/runs/35805900974/job/107006591742",
+          "head_sha": "08f14b094614858c15a85a5347ed9eb82e4c227c",
+          "id": 107006591742,
+          "name": "Residue gate",
+          "started_at": "2026-09-23T01:20:52Z",
+          "status": "completed"
+        },
+        {
+          "app": {
+            "id": 15368,
+            "slug": "github-actions"
+          },
+          "check_suite": {
+            "id": 96951353667
+          },
+          "completed_at": "2026-09-23T01:26:37Z",
+          "conclusion": "success",
+          "details_url": "https://github.com/Grimblaz-and-Friends/Organizations-of-Verra/actions/runs/35805900974/job/107006591741",
+          "head_sha": "08f14b094614858c15a85a5347ed9eb82e4c227c",
+          "id": 107006591741,
+          "name": "tests",
+          "started_at": "2026-09-23T01:20:53Z",
+          "status": "completed"
+        },
+        {
+          "app": {
+            "id": 15368,
+            "slug": "github-actions"
+          },
+          "check_suite": {
+            "id": 96951353667
+          },
+          "completed_at": "2026-09-23T01:21:44Z",
+          "conclusion": "success",
+          "details_url": "https://github.com/Grimblaz-and-Friends/Organizations-of-Verra/actions/runs/35805900974/job/107006591697",
+          "head_sha": "08f14b094614858c15a85a5347ed9eb82e4c227c",
+          "id": 107006591697,
+          "name": "fast-checks",
+          "started_at": "2026-09-23T01:20:52Z",
+          "status": "completed"
+        },
+        {
+          "app": {
+            "id": 15368,
+            "slug": "github-actions"
+          },
+          "check_suite": {
+            "id": 96951353667
+          },
+          "completed_at": "2026-09-23T01:20:56Z",
+          "conclusion": "success",
+          "details_url": "https://github.com/Grimblaz-and-Friends/Organizations-of-Verra/actions/runs/35805900974/job/107006591696",
+          "head_sha": "08f14b094614858c15a85a5347ed9eb82e4c227c",
+          "id": 107006591696,
+          "name": "CI skip notice",
+          "started_at": "2026-09-23T01:20:53Z",
+          "status": "completed"
+        },
+        {
+          "app": {
+            "id": 15368,
+            "slug": "github-actions"
+          },
+          "check_suite": {
+            "id": 96951354836
+          },
+          "completed_at": "2026-09-23T01:20:51Z",
+          "conclusion": "failure",
+          "details_url": "https://github.com/Grimblaz-and-Friends/Organizations-of-Verra/actions/runs/35805901402/job/107006561842",
+          "head_sha": "08f14b094614858c15a85a5347ed9eb82e4c227c",
+          "id": 107006561842,
+          "name": "Change proof / Change proof",
+          "started_at": "2026-09-23T01:20:44Z",
+          "status": "completed"
+        },
+        {
+          "app": {
+            "id": 15368,
+            "slug": "github-actions"
+          },
+          "check_suite": {
+            "id": 96951353667
+          },
+          "completed_at": "2026-09-23T01:20:50Z",
+          "conclusion": "success",
+          "details_url": "https://github.com/Grimblaz-and-Friends/Organizations-of-Verra/actions/runs/35805900974/job/107006560625",
+          "head_sha": "08f14b094614858c15a85a5347ed9eb82e4c227c",
+          "id": 107006560625,
+          "name": "Detect changes",
+          "started_at": "2026-09-23T01:20:45Z",
+          "status": "completed"
+        },
+        {
+          "app": {
+            "id": 15368,
+            "slug": "github-actions"
+          },
+          "check_suite": {
+            "id": 96951353750
+          },
+          "completed_at": "2026-09-23T01:24:32Z",
+          "conclusion": "success",
+          "details_url": "https://github.com/Grimblaz-and-Friends/Organizations-of-Verra/actions/runs/35805901025/job/107006560553",
+          "head_sha": "08f14b094614858c15a85a5347ed9eb82e4c227c",
+          "id": 107006560553,
+          "name": "e2e",
+          "started_at": "2026-09-23T01:20:44Z",
+          "status": "completed"
+        },
+        {
+          "app": {
+            "id": 15368,
+            "slug": "github-actions"
+          },
+          "check_suite": {
+            "id": 96946846530
+          },
+          "completed_at": "2026-09-23T00:57:21Z",
+          "conclusion": "failure",
+          "details_url": "https://github.com/Grimblaz-and-Friends/Organizations-of-Verra/actions/runs/35804256441/job/107001378116",
+          "head_sha": "08f14b094614858c15a85a5347ed9eb82e4c227c",
+          "id": 107001378116,
+          "name": "Change proof / Change proof",
+          "started_at": "2026-09-23T00:57:16Z",
+          "status": "completed"
+        },
+        {
+          "app": {
+            "id": 15368,
+            "slug": "github-actions"
+          },
+          "check_suite": {
+            "id": 96946846507
+          },
+          "completed_at": "2026-09-23T00:57:21Z",
+          "conclusion": "failure",
+          "details_url": "https://github.com/Grimblaz-and-Friends/Organizations-of-Verra/actions/runs/35804256431/job/107001377611",
+          "head_sha": "08f14b094614858c15a85a5347ed9eb82e4c227c",
+          "id": 107001377611,
+          "name": "Change proof (required) / Change proof",
+          "started_at": "2026-09-23T00:57:15Z",
+          "status": "completed"
+        },
+        {
+          "app": {
+            "id": 15368,
+            "slug": "github-actions"
+          },
+          "check_suite": {
+            "id": 96946845352
+          },
+          "completed_at": "2026-09-23T00:57:13Z",
+          "conclusion": "skipped",
+          "details_url": "https://github.com/Grimblaz-and-Friends/Organizations-of-Verra/actions/runs/35804255927/job/107001377377",
+          "head_sha": "08f14b094614858c15a85a5347ed9eb82e4c227c",
+          "id": 107001377377,
+          "name": "e2e",
+          "started_at": "2026-09-23T00:57:13Z",
+          "status": "completed"
+        }
+      ],
+      "total_count": 15
+    },
+    "repos/Grimblaz-and-Friends/Organizations-of-Verra/contents/.github/change-proof.json?ref=08f14b094614858c15a85a5347ed9eb82e4c227c": {
+      "content": "ewogICJzY2hlbWFfdmVyc2lvbiI6IDEsCiAgInJ1bGVzIjogWwogICAgewog\nICAgICAibmFtZSI6ICJydW50aW1lLW9yLXVzZXItc3VyZmFjZSIsCiAgICAg\nICJpbmNsdWRlIjogWwogICAgICAgICJzcmMvKioiLAogICAgICAgICJwdWJs\naWMvKioiLAogICAgICAgICJpbmRleC5odG1sIiwKICAgICAgICAicGFja2Fn\nZS5qc29uIiwKICAgICAgICAicGFja2FnZS1sb2NrLmpzb24iLAogICAgICAg\nICJ2aXRlLmNvbmZpZy50cyIsCiAgICAgICAgInRhaWx3aW5kLmNvbmZpZy5q\ncyIsCiAgICAgICAgInBvc3Rjc3MuY29uZmlnLmpzIgogICAgICBdLAogICAg\nICAiZXhjbHVkZSI6IFsKICAgICAgICAiKiovKi50ZXN0LnRzIiwKICAgICAg\nICAiKiovKi50ZXN0LnRzeCIsCiAgICAgICAgIioqLyoudGVzdC0qLnRzIiwK\nICAgICAgICAic3JjL3Rlc3QvKioiLAogICAgICAgICJlMmUvKioiLAogICAg\nICAgICJyZXBvcnRzLyoqIiwKICAgICAgICAiRG9jdW1lbnRzLyoqIiwKICAg\nICAgICAiKiovKi5tZCIsCiAgICAgICAgIi5naXRodWIvd29ya2Zsb3dzLyoq\nIiwKICAgICAgICAiLmdpdGh1Yi9zY3JpcHRzLyoqIiwKICAgICAgICAic2Ny\naXB0cy8qKiIKICAgICAgXQogICAgfQogIF0KfQo=\n",
+      "encoding": "base64"
+    },
+    "repos/Grimblaz-and-Friends/Organizations-of-Verra/contents/.github/change-proof.json?ref=d057fdfdd158f7dca29ad410f00f009a630ae02d": {
+      "content": "ewogICJzY2hlbWFfdmVyc2lvbiI6IDEsCiAgInJ1bGVzIjogWwogICAgewog\nICAgICAibmFtZSI6ICJydW50aW1lLW9yLXVzZXItc3VyZmFjZSIsCiAgICAg\nICJpbmNsdWRlIjogWwogICAgICAgICJzcmMvKioiLAogICAgICAgICJwdWJs\naWMvKioiLAogICAgICAgICJpbmRleC5odG1sIiwKICAgICAgICAicGFja2Fn\nZS5qc29uIiwKICAgICAgICAicGFja2FnZS1sb2NrLmpzb24iLAogICAgICAg\nICJ2aXRlLmNvbmZpZy50cyIsCiAgICAgICAgInRhaWx3aW5kLmNvbmZpZy5q\ncyIsCiAgICAgICAgInBvc3Rjc3MuY29uZmlnLmpzIgogICAgICBdLAogICAg\nICAiZXhjbHVkZSI6IFsKICAgICAgICAiKiovKi50ZXN0LnRzIiwKICAgICAg\nICAiKiovKi50ZXN0LnRzeCIsCiAgICAgICAgIioqLyoudGVzdC0qLnRzIiwK\nICAgICAgICAic3JjL3Rlc3QvKioiLAogICAgICAgICJlMmUvKioiLAogICAg\nICAgICJyZXBvcnRzLyoqIiwKICAgICAgICAiRG9jdW1lbnRzLyoqIiwKICAg\nICAgICAiKiovKi5tZCIsCiAgICAgICAgIi5naXRodWIvd29ya2Zsb3dzLyoq\nIiwKICAgICAgICAiLmdpdGh1Yi9zY3JpcHRzLyoqIiwKICAgICAgICAic2Ny\naXB0cy8qKiIKICAgICAgXQogICAgfQogIF0KfQo=\n",
+      "encoding": "base64"
+    },
+    "repos/Grimblaz-and-Friends/Organizations-of-Verra/contents/.tradecraft/work.json?ref=08f14b094614858c15a85a5347ed9eb82e4c227c": {
+      "content": "ewogICJzY2hlbWFfdmVyc2lvbiI6IDEsCiAgInByb2R1Y3RfcmVwb3NpdG9y\naWVzIjogW10sCiAgImNvbm5lY3RlZF9yZXZpZXdlcnMiOiBbCiAgICAiZ3Jl\ncHRpbGUtYXBwc1tib3RdIiwKICAgICJjaGF0Z3B0LWNvZGV4LWNvbm5lY3Rv\ncltib3RdIgogIF0sCiAgIm1hcmtlcl9wcm9kdWNlcnMiOiBbIkdyaW1ibGF6\nIl0KfQo=\n",
+      "encoding": "base64"
+    },
+    "repos/Grimblaz-and-Friends/Organizations-of-Verra/contents/.tradecraft/work.json?ref=d057fdfdd158f7dca29ad410f00f009a630ae02d": {
+      "content": "ewogICJzY2hlbWFfdmVyc2lvbiI6IDEsCiAgInByb2R1Y3RfcmVwb3NpdG9y\naWVzIjogW10sCiAgImNvbm5lY3RlZF9yZXZpZXdlcnMiOiBbCiAgICAiZ3Jl\ncHRpbGUtYXBwc1tib3RdIiwKICAgICJjaGF0Z3B0LWNvZGV4LWNvbm5lY3Rv\ncltib3RdIgogIF0sCiAgIm1hcmtlcl9wcm9kdWNlcnMiOiBbIkdyaW1ibGF6\nIl0KfQo=\n",
+      "encoding": "base64"
+    },
+    "repos/Grimblaz-and-Friends/Organizations-of-Verra/git/ref/heads/main": {
+      "object": {
+        "sha": "d057fdfdd158f7dca29ad410f00f009a630ae02d"
+      }
+    },
+    "repos/Grimblaz-and-Friends/Organizations-of-Verra/issues/471/comments?per_page=100": [],
+    "repos/Grimblaz-and-Friends/Organizations-of-Verra/issues/476/comments?per_page=100": [
+      {
+        "body": "<!-- tradecraft:floor:v1 head=08f14b094614858c15a85a5347ed9eb82e4c227c status=pass -->\n\n## Floor stage return \u2014 pass\n\nFloor passed on `tradecraft/471-6ef588616b1b` at head `08f14b094614858c15a85a5347ed9eb82e4c227c`.\n\n- Focused unit proof: 9 files, 112 tests passed.\n- Focused integration proof: 2 files, 3 tests passed.\n- **Full coverage suite: 438 files, 6,208 passed, 1 skipped.**\n- **Full integration suite: 27 files, 206 passed, 3 todo.**\n- Type-check, lint, architecture validation, dependency audit, residue gate, production build and changed-document Markdown lint all passed.\n- Reference index regenerated with 109 entries and no diff.\n- `git diff --check` passed; worktree clean.\n\n**Boundary checks, each an acceptance criterion rather than a general check:**\n\n- `src/test/factories.ts` and the skill catalog have **no diff** (A7, A8).\n- Reciprocal seam references are present (A14) \u2014 worth noting for reviewers that `npm run validate:architecture` inspects neither `@see` nor `.ref.yml`, so this one was confirmed by reading rather than by the script.\n- The excluded `pressure.test.ts:222` comment is **unchanged** (A12).\n\n**One environment note from the run.** The first sandboxed `npm run validate` could not reach the nested worktree's shared root dependencies; the identical command was re-run with host access and passed completely. That is a sandbox-reach artefact of building in a worktree nested under the holder's own worktree, not a property of the change.\n\nStill owed before this leaves draft: the bought browser use at `:5174`, and runs from both connected reviewers.\n\n\ud83e\udd16 Generated with [Claude Code](https://claude.com/claude-code)\n",
+        "created_at": "2026-09-23T01:08:00Z",
+        "html_url": "https://github.com/Grimblaz-and-Friends/Organizations-of-Verra/pull/476#issuecomment-5787215547",
+        "id": 5787215547,
+        "user": {
+          "login": "Grimblaz"
+        }
+      },
+      {
+        "body": "<!-- tradecraft:use:v1 head=08f14b094614858c15a85a5347ed9eb82e4c227c status=pass changed=false staffing_status=qualified -->\n\n## Consumer session note \u2014 browser use at `:5174`\n\nRun by the holder against a dev server started from the **implementation worktree** at `08f14b09`, so the app served the changed code rather than the holder's checkout. Three full combats to resolution, plus one baseline on `main`.\n\n### What was run\n\n| Run | Tree | Mission (seed `1790126063879`) | Party | Outcome |\n|---|---|---|---|---|\n| 1 | `08f14b09` | Dire Wolf Den LVL 21, 2 enemies | Commander Aria | **Victory, turn 86** |\n| 2 | `main` @ `7ed37375` | identical | identical | **Victory, turn 202** |\n| 3 | `08f14b09` | Necromancer Tower LVL 19, 3 enemies | Aria + Lyra + Elena | **Victory, turn 106** |\n\n### What it shows\n\n- **No regression.** Run 2 is a like-for-like baseline on `main` with the same mission seed, mission and party. Both resolve in Victory; neither stalls.\n- **Zero `insufficient resources` skips in any run.** That is the log line the defect produces, and it never appeared.\n- **The enemy `action had no effect` skips are pre-existing, not from this change.** Run 1 logged 42 and run 3 logged 18 \u2014 but the `main` baseline logged 33 of the identical line, with enemies at full resources (`STAM 350/350`, `MANA 50/50`). The line has two pre-existing sources on `main`, `SimulationActionProcessor.ts:287` (null result) and `:290` (`entries.length === 0`); the full-resource readouts point at the second. **Not this change's, and not fixed by it.**\n\n### What it could not show, stated plainly\n\n**No combatant ever became exhausted, so the browser use never reached the path this change repairs.** Two mechanisms prevent it in ordinary play:\n\n- **Regeneration outpaces consumption inside a fight.** After 202 turns, Commander Aria finished at `STAM 1065/1070`. In run 3 the low-level members finished at `110/120` and `100/100`. Stamina never trends toward zero.\n- **A depleted member cannot be redeployed the same day.** After run 3 the hub showed `READY` fall from 6 to 3, so consecutive missions cannot stack depletion either.\n\nSo A15 \u2014 *an exhausted member attacking rather than idling* \u2014 **is not demonstrated by this use**, and I am not claiming it is. That criterion rests on `SimulationActionProcessor.emergencyFallback.integration.test.ts`, which drives the zero-resource state directly and asserts real damage plus combat-log output for a party member (A4) and an enemy (A5). The use confirms the change is live in the running app and harms nothing; it does not independently confirm the repair.\n\n### A finding for the owner, beyond this change\n\n**The emergency fallback is close to unreachable in normal play.** That is not an argument against the fix \u2014 a guarantee that only matters in the rare case is still a guarantee, and the code comment asserting turn-skipping as intended was wrong regardless. But it does bear on two things the issue raised: the balance risk of restoring a free attack is smaller than the brief assumed, and the \"duller fight rather than a broken one\" counter-argument in #471's own *Against* section was closer to right than it looked. If exhaustion is meant to be a real pressure in this game, the regeneration rates are the lever, and that is a separate design question.\n\n`changed=false`: the use surfaced no behaviour or instruction requiring a rebuild.\n\n\ud83e\udd16 Generated with [Claude Code](https://claude.com/claude-code)\n",
+        "created_at": "2026-09-23T01:20:23Z",
+        "html_url": "https://github.com/Grimblaz-and-Friends/Organizations-of-Verra/pull/476#issuecomment-5787327005",
+        "id": 5787327005,
+        "user": {
+          "login": "Grimblaz"
+        }
+      },
+      {
+        "body": "<!-- codex-pull-request-review-summary -->\n\n## Codex Review Summary\n\nThis comment shows the latest Codex review activity on this pull request.\n\n| Review | Status | Commit | Review trigger |\n| --- | --- | --- | --- |\n| \ud83d\udcdd **Code Review** | \u2705 **Completed** <relative-time datetime=\"2026-09-23T01:21:57.948014Z\">2026-09-23T01:21:57.948014Z</relative-time> | `08f14b0` | Draft marked ready |\n\n\n\n<details> <summary>\u2139\ufe0f About Codex in GitHub</summary>\n<br/>\n\n[Your team has set up Codex to review pull requests in this repo](https://chatgpt.com/codex/cloud/settings/general). Reviews are triggered when you\n- Open a pull request for review\n- Mark a draft as ready\n- Comment \"@codex review\" or \"@codex security review\".\n\nCodex reacts with \ud83d\udc40 while any review is running, comments if it has suggestions, and reacts with \ud83d\udc4d once all reviews finish with no findings.\n\n</details>",
+        "created_at": "2026-09-23T01:20:47Z",
+        "html_url": "https://github.com/Grimblaz-and-Friends/Organizations-of-Verra/pull/476#issuecomment-5787330070",
+        "id": 5787330070,
+        "user": {
+          "login": "chatgpt-codex-connector[bot]"
+        }
+      }
+    ],
+    "repos/Grimblaz-and-Friends/Organizations-of-Verra/pulls/476": {
+      "base": {
+        "label": "Grimblaz-and-Friends:main",
+        "ref": "main",
+        "repo": {
+          "allow_forking": false,
+          "archive_url": "https://api.github.com/repos/Grimblaz-and-Friends/Organizations-of-Verra/{archive_format}{/ref}",
+          "archived": false,
+          "assignees_url": "https://api.github.com/repos/Grimblaz-and-Friends/Organizations-of-Verra/assignees{/user}",
+          "blobs_url": "https://api.github.com/repos/Grimblaz-and-Friends/Organizations-of-Verra/git/blobs{/sha}",
+          "branches_url": "https://api.github.com/repos/Grimblaz-and-Friends/Organizations-of-Verra/branches{/branch}",
+          "clone_url": "https://github.com/Grimblaz-and-Friends/Organizations-of-Verra.git",
+          "collaborators_url": "https://api.github.com/repos/Grimblaz-and-Friends/Organizations-of-Verra/collaborators{/collaborator}",
+          "comments_url": "https://api.github.com/repos/Grimblaz-and-Friends/Organizations-of-Verra/comments{/number}",
+          "commits_url": "https://api.github.com/repos/Grimblaz-and-Friends/Organizations-of-Verra/commits{/sha}",
+          "compare_url": "https://api.github.com/repos/Grimblaz-and-Friends/Organizations-of-Verra/compare/{base}...{head}",
+          "contents_url": "https://api.github.com/repos/Grimblaz-and-Friends/Organizations-of-Verra/contents/{+path}",
+          "contributors_url": "https://api.github.com/repos/Grimblaz-and-Friends/Organizations-of-Verra/contributors",
+          "created_at": "2025-10-25T01:15:17Z",
+          "default_branch": "main",
+          "deployments_url": "https://api.github.com/repos/Grimblaz-and-Friends/Organizations-of-Verra/deployments",
+          "description": null,
+          "disabled": false,
+          "downloads_url": "https://api.github.com/repos/Grimblaz-and-Friends/Organizations-of-Verra/downloads",
+          "events_url": "https://api.github.com/repos/Grimblaz-and-Friends/Organizations-of-Verra/events",
+          "fork": false,
+          "forks": 0,
+          "forks_count": 0,
+          "forks_url": "https://api.github.com/repos/Grimblaz-and-Friends/Organizations-of-Verra/forks",
+          "full_name": "Grimblaz-and-Friends/Organizations-of-Verra",
+          "git_commits_url": "https://api.github.com/repos/Grimblaz-and-Friends/Organizations-of-Verra/git/commits{/sha}",
+          "git_refs_url": "https://api.github.com/repos/Grimblaz-and-Friends/Organizations-of-Verra/git/refs{/sha}",
+          "git_tags_url": "https://api.github.com/repos/Grimblaz-and-Friends/Organizations-of-Verra/git/tags{/sha}",
+          "git_url": "git://github.com/Grimblaz-and-Friends/Organizations-of-Verra.git",
+          "has_discussions": false,
+          "has_downloads": false,
+          "has_issues": true,
+          "has_pages": false,
+          "has_projects": true,
+          "has_pull_requests": true,
+          "has_wiki": true,
+          "homepage": null,
+          "hooks_url": "https://api.github.com/repos/Grimblaz-and-Friends/Organizations-of-Verra/hooks",
+          "html_url": "https://github.com/Grimblaz-and-Friends/Organizations-of-Verra",
+          "id": 1082909583,
+          "is_template": false,
+          "issue_comment_url": "https://api.github.com/repos/Grimblaz-and-Friends/Organizations-of-Verra/issues/comments{/number}",
+          "issue_events_url": "https://api.github.com/repos/Grimblaz-and-Friends/Organizations-of-Verra/issues/events{/number}",
+          "issues_url": "https://api.github.com/repos/Grimblaz-and-Friends/Organizations-of-Verra/issues{/number}",
+          "keys_url": "https://api.github.com/repos/Grimblaz-and-Friends/Organizations-of-Verra/keys{/key_id}",
+          "labels_url": "https://api.github.com/repos/Grimblaz-and-Friends/Organizations-of-Verra/labels{/name}",
+          "language": "TypeScript",
+          "languages_url": "https://api.github.com/repos/Grimblaz-and-Friends/Organizations-of-Verra/languages",
+          "license": null,
+          "merges_url": "https://api.github.com/repos/Grimblaz-and-Friends/Organizations-of-Verra/merges",
+          "milestones_url": "https://api.github.com/repos/Grimblaz-and-Friends/Organizations-of-Verra/milestones{/number}",
+          "mirror_url": null,
+          "name": "Organizations-of-Verra",
+          "node_id": "R_kgDOQIvjjw",
+          "notifications_url": "https://api.github.com/repos/Grimblaz-and-Friends/Organizations-of-Verra/notifications{?since,all,participating}",
+          "open_issues": 44,
+          "open_issues_count": 44,
+          "owner": {
+            "avatar_url": "https://avatars.githubusercontent.com/u/189761389?v=4",
+            "events_url": "https://api.github.com/users/Grimblaz-and-Friends/events{/privacy}",
+            "followers_url": "https://api.github.com/users/Grimblaz-and-Friends/followers",
+            "following_url": "https://api.github.com/users/Grimblaz-and-Friends/following{/other_user}",
+            "gists_url": "https://api.github.com/users/Grimblaz-and-Friends/gists{/gist_id}",
+            "gravatar_id": "",
+            "html_url": "https://github.com/Grimblaz-and-Friends",
+            "id": 189761389,
+            "login": "Grimblaz-and-Friends",
+            "node_id": "O_kgDOC0-HbQ",
+            "organizations_url": "https://api.github.com/users/Grimblaz-and-Friends/orgs",
+            "received_events_url": "https://api.github.com/users/Grimblaz-and-Friends/received_events",
+            "repos_url": "https://api.github.com/users/Grimblaz-and-Friends/repos",
+            "site_admin": false,
+            "starred_url": "https://api.github.com/users/Grimblaz-and-Friends/starred{/owner}{/repo}",
+            "subscriptions_url": "https://api.github.com/users/Grimblaz-and-Friends/subscriptions",
+            "type": "Organization",
+            "url": "https://api.github.com/users/Grimblaz-and-Friends",
+            "user_view_type": "public"
+          },
+          "private": true,
+          "pull_request_creation_policy": "all",
+          "pulls_url": "https://api.github.com/repos/Grimblaz-and-Friends/Organizations-of-Verra/pulls{/number}",
+          "pushed_at": "2026-09-23T05:12:02Z",
+          "releases_url": "https://api.github.com/repos/Grimblaz-and-Friends/Organizations-of-Verra/releases{/id}",
+          "size": 10432,
+          "ssh_url": "git@github.com:Grimblaz-and-Friends/Organizations-of-Verra.git",
+          "stargazers_count": 0,
+          "stargazers_url": "https://api.github.com/repos/Grimblaz-and-Friends/Organizations-of-Verra/stargazers",
+          "statuses_url": "https://api.github.com/repos/Grimblaz-and-Friends/Organizations-of-Verra/statuses/{sha}",
+          "subscribers_url": "https://api.github.com/repos/Grimblaz-and-Friends/Organizations-of-Verra/subscribers",
+          "subscription_url": "https://api.github.com/repos/Grimblaz-and-Friends/Organizations-of-Verra/subscription",
+          "svn_url": "https://github.com/Grimblaz-and-Friends/Organizations-of-Verra",
+          "tags_url": "https://api.github.com/repos/Grimblaz-and-Friends/Organizations-of-Verra/tags",
+          "teams_url": "https://api.github.com/repos/Grimblaz-and-Friends/Organizations-of-Verra/teams",
+          "topics": [],
+          "trees_url": "https://api.github.com/repos/Grimblaz-and-Friends/Organizations-of-Verra/git/trees{/sha}",
+          "updated_at": "2026-09-23T05:12:04Z",
+          "url": "https://api.github.com/repos/Grimblaz-and-Friends/Organizations-of-Verra",
+          "visibility": "private",
+          "watchers": 0,
+          "watchers_count": 0,
+          "web_commit_signoff_required": false
+        },
+        "sha": "7ed3737582ed1a248575a59dc836d9bfc67bd1ea",
+        "user": {
+          "avatar_url": "https://avatars.githubusercontent.com/u/189761389?v=4",
+          "events_url": "https://api.github.com/users/Grimblaz-and-Friends/events{/privacy}",
+          "followers_url": "https://api.github.com/users/Grimblaz-and-Friends/followers",
+          "following_url": "https://api.github.com/users/Grimblaz-and-Friends/following{/other_user}",
+          "gists_url": "https://api.github.com/users/Grimblaz-and-Friends/gists{/gist_id}",
+          "gravatar_id": "",
+          "html_url": "https://github.com/Grimblaz-and-Friends",
+          "id": 189761389,
+          "login": "Grimblaz-and-Friends",
+          "node_id": "O_kgDOC0-HbQ",
+          "organizations_url": "https://api.github.com/users/Grimblaz-and-Friends/orgs",
+          "received_events_url": "https://api.github.com/users/Grimblaz-and-Friends/received_events",
+          "repos_url": "https://api.github.com/users/Grimblaz-and-Friends/repos",
+          "site_admin": false,
+          "starred_url": "https://api.github.com/users/Grimblaz-and-Friends/starred{/owner}{/repo}",
+          "subscriptions_url": "https://api.github.com/users/Grimblaz-and-Friends/subscriptions",
+          "type": "Organization",
+          "url": "https://api.github.com/users/Grimblaz-and-Friends",
+          "user_view_type": "public"
+        }
+      },
+      "body": "Closes #471.\r\n\r\nAn exhausted combatant currently does nothing on its turn. `getFallbackAttackSkill()` hands out `weapon-mastery`, the actor cannot pay its five stamina, and execution returns `null` \u2014 so a winnable fight can grind to the 50-turn stalemate cap, which is the outcome #303 was filed to eliminate. The regression guard that should have caught this passes, because it asserts `enemyDefeated || noDamageTurns >= 50` and a totally paralysed party satisfies the second arm.\r\n\r\nThis makes the emergency handout free, and carries that emergency identity through to the deduction so it actually takes effect.\r\n\r\n## Why it is not a one-line change\r\n\r\nThe handout's costs are discarded before they reach the deduction. `AIAction` carries only `skillId`; `SimulationActionProcessor` re-resolves from that id and `CombatSkillCoordinator` deducts against `SKILLS[skillId]` \u2014 the catalog definition. Zeroing the handout alone makes *selection* report an affordable skill while execution still returns `null`.\r\n\r\nThere is also a **second, independent `weapon-mastery` fallback** at `SimulationActionProcessor.ts:27-35`, with two call sites (party and enemy), that never passes through the handout at all.\r\n\r\nSo an `isEmergencyFallback` marker is set inside `getFallbackAttackSkill()`, copied off the carried `EquippedSkill` by each of the four offensive action constructors, produced independently by the resolver for unknown ids, and honoured at the deduction only. Effects, damage, targeting and log identity continue to come from the canonical catalog definition.\r\n\r\nThe marker is **never inferred from the `weapon-mastery` id**: the gate is `options?.isEmergencyFallback === true && skillId === 'weapon-mastery'`. Ordinary equipped or directly executed mastery still costs five stamina. That is the single largest risk in this change and it has a dedicated test.\r\n\r\nApplied symmetrically to party members and enemies: `SkillSelector` is shared by both factions, and the Tier 2 rule is written about combatants.\r\n\r\n## Also in scope\r\n\r\n- **The #303 guard is rebuilt** around `selectBestSkill`. The old one hard-coded `executeSkillEffects(actor, 'basic-attack', \u2026)`, so with `basic-attack` deleted from the catalog in #341 every call was a silent no-op \u2014 it never exercised the selection path at all. The new guard fails if the five-stamina handout is restored.\r\n- **Seven prose sites corrected.** Two were flatly false rather than stale: `skillEffectPressureIntegration.test.ts:367` claimed `basic-attack` is in the catalog (it is not), and `SimulationActionProcessor.test.ts:44-46` claimed a basic-attack fallback where the real one is `weapon-mastery`. `pressure.test.ts:222` is accurate and is deliberately left byte-for-byte unchanged.\r\n- **A Tier 2 home for the rule.** Its only prior home was a `CHANGELOG.md` entry outside the three documentation tiers.\r\n- **A seam document and sidecar**, with reciprocal `@see` references, per the repository's cross-subsystem seam rule.\r\n\r\n## Deliberately out of scope\r\n\r\n- **#305**'s stalemate-counter accuracy and tick ordering \u2014 a different cause in a different file.\r\n- **`src/test/factories.ts:194`**, whose default `activeSkills` fabricates the non-catalogued `'basic-attack'` at 48 sites across 22 files. Repairing it \u2014 or reinstating `basic-attack` in the catalog \u2014 would move this issue's own subject underneath it. It is the next lever, and it is untouched here.\r\n- **General unknown-skill-id hardening.** An unresolvable id has two silent behaviours \u2014 `null` at `CombatSkillCoordinator.ts:67-68` and substitution to `weapon-mastery` at `SimulationActionProcessor.ts:34`. That is the systemic cause behind this defect and it wants its own issue and its own pricing.\r\n\r\n## Proof\r\n\r\n- Builder: 112 focused unit tests, 3 focused integration tests including real damage and combat-log output for both factions.\r\n- Holder, at this tree: `npm run type-check` and `npm run validate:architecture` pass, plus the full `npm run validate`.\r\n- Reviewers, note: `npm run validate:architecture` inspects neither `@see` nor `.ref.yml` \u2014 the seam references must be checked by reading.\r\n\r\n\r\n## Vertical Slice Rule \u2014 explicit owner-approved exception\r\n\r\nThis change touches runtime combat behaviour, so it is **not** exempt under the rule's own carve-out, and it ships **no new UI component**. The owner has approved an explicit exception, recorded here so the override is auditable rather than assumed.\r\n\r\n**Grounds.** The affirmed brief expected the existing combat log to render the behaviour and a browser use at `:5174` to show an exhausted member attacking instead of idling. The use was run and could not demonstrate it: **no combatant reaches exhaustion in ordinary play.** Across three full combats and a like-for-like `main` baseline at the same mission seed there were zero `insufficient resources` skips \u2014 Commander Aria finished 202 turns at `STAM 1065/1070`, and low-level members at `110/120` and `100/100`. Regeneration outpaces consumption within a fight, and a depleted member cannot be redeployed the same day (`READY` fell 6 \u2192 3 after one mission).\r\n\r\nA combat-log label such as `used Weapon Mastery (emergency)` would therefore ship a string that never renders \u2014 satisfying the rule's letter while leaving the change exactly as unvalidated. The behaviour rests instead on `SimulationActionProcessor.emergencyFallback.integration.test.ts`, which drives the zero-resource state directly and asserts real damage and combat-log output for a party member and an enemy, unmocked.\r\n\r\nThat exhaustion is unreachable is a property of the regeneration rates rather than of this change. The owner has deferred it to a later balance pass.\r\n\r\nRaised as a P2 by greptile; dispositioned `declined -` on the inline thread with the same reasoning.\r\n\r\n## Path\r\n\r\nConvergence ran before any code was written: the brief was put three times and amended twice, the first artifact pass disproved the brief's own premise, and the first cold seat returned `would not` on eight points before the second returned `would`. Full record on #471.\r\n\r\nTwo departures worth stating: the cold seat was reached via the named `cold-seat` stage rather than the ordinary entrance, because a `would-not` verdict is an absorbing state in `lib/work.py:478-489` and the ordinary flow can never produce a newer verdict. And `tradecraft:persist-changes` loaded from plugin 0.150.0 while the entrance ran on 0.149.0.\r\n\r\n\ud83e\udd16 Generated with [Claude Code](https://claude.com/claude-code)\r\n",
+      "changed_files": 22,
+      "draft": false,
+      "head": {
+        "label": "Grimblaz-and-Friends:tradecraft/471-6ef588616b1b",
+        "ref": "tradecraft/471-6ef588616b1b",
+        "repo": {
+          "allow_forking": false,
+          "archive_url": "https://api.github.com/repos/Grimblaz-and-Friends/Organizations-of-Verra/{archive_format}{/ref}",
+          "archived": false,
+          "assignees_url": "https://api.github.com/repos/Grimblaz-and-Friends/Organizations-of-Verra/assignees{/user}",
+          "blobs_url": "https://api.github.com/repos/Grimblaz-and-Friends/Organizations-of-Verra/git/blobs{/sha}",
+          "branches_url": "https://api.github.com/repos/Grimblaz-and-Friends/Organizations-of-Verra/branches{/branch}",
+          "clone_url": "https://github.com/Grimblaz-and-Friends/Organizations-of-Verra.git",
+          "collaborators_url": "https://api.github.com/repos/Grimblaz-and-Friends/Organizations-of-Verra/collaborators{/collaborator}",
+          "comments_url": "https://api.github.com/repos/Grimblaz-and-Friends/Organizations-of-Verra/comments{/number}",
+          "commits_url": "https://api.github.com/repos/Grimblaz-and-Friends/Organizations-of-Verra/commits{/sha}",
+          "compare_url": "https://api.github.com/repos/Grimblaz-and-Friends/Organizations-of-Verra/compare/{base}...{head}",
+          "contents_url": "https://api.github.com/repos/Grimblaz-and-Friends/Organizations-of-Verra/contents/{+path}",
+          "contributors_url": "https://api.github.com/repos/Grimblaz-and-Friends/Organizations-of-Verra/contributors",
+          "created_at": "2025-10-25T01:15:17Z",
+          "default_branch": "main",
+          "deployments_url": "https://api.github.com/repos/Grimblaz-and-Friends/Organizations-of-Verra/deployments",
+          "description": null,
+          "disabled": false,
+          "downloads_url": "https://api.github.com/repos/Grimblaz-and-Friends/Organizations-of-Verra/downloads",
+          "events_url": "https://api.github.com/repos/Grimblaz-and-Friends/Organizations-of-Verra/events",
+          "fork": false,
+          "forks": 0,
+          "forks_count": 0,
+          "forks_url": "https://api.github.com/repos/Grimblaz-and-Friends/Organizations-of-Verra/forks",
+          "full_name": "Grimblaz-and-Friends/Organizations-of-Verra",
+          "git_commits_url": "https://api.github.com/repos/Grimblaz-and-Friends/Organizations-of-Verra/git/commits{/sha}",
+          "git_refs_url": "https://api.github.com/repos/Grimblaz-and-Friends/Organizations-of-Verra/git/refs{/sha}",
+          "git_tags_url": "https://api.github.com/repos/Grimblaz-and-Friends/Organizations-of-Verra/git/tags{/sha}",
+          "git_url": "git://github.com/Grimblaz-and-Friends/Organizations-of-Verra.git",
+          "has_discussions": false,
+          "has_downloads": false,
+          "has_issues": true,
+          "has_pages": false,
+          "has_projects": true,
+          "has_pull_requests": true,
+          "has_wiki": true,
+          "homepage": null,
+          "hooks_url": "https://api.github.com/repos/Grimblaz-and-Friends/Organizations-of-Verra/hooks",
+          "html_url": "https://github.com/Grimblaz-and-Friends/Organizations-of-Verra",
+          "id": 1082909583,
+          "is_template": false,
+          "issue_comment_url": "https://api.github.com/repos/Grimblaz-and-Friends/Organizations-of-Verra/issues/comments{/number}",
+          "issue_events_url": "https://api.github.com/repos/Grimblaz-and-Friends/Organizations-of-Verra/issues/events{/number}",
+          "issues_url": "https://api.github.com/repos/Grimblaz-and-Friends/Organizations-of-Verra/issues{/number}",
+          "keys_url": "https://api.github.com/repos/Grimblaz-and-Friends/Organizations-of-Verra/keys{/key_id}",
+          "labels_url": "https://api.github.com/repos/Grimblaz-and-Friends/Organizations-of-Verra/labels{/name}",
+          "language": "TypeScript",
+          "languages_url": "https://api.github.com/repos/Grimblaz-and-Friends/Organizations-of-Verra/languages",
+          "license": null,
+          "merges_url": "https://api.github.com/repos/Grimblaz-and-Friends/Organizations-of-Verra/merges",
+          "milestones_url": "https://api.github.com/repos/Grimblaz-and-Friends/Organizations-of-Verra/milestones{/number}",
+          "mirror_url": null,
+          "name": "Organizations-of-Verra",
+          "node_id": "R_kgDOQIvjjw",
+          "notifications_url": "https://api.github.com/repos/Grimblaz-and-Friends/Organizations-of-Verra/notifications{?since,all,participating}",
+          "open_issues": 44,
+          "open_issues_count": 44,
+          "owner": {
+            "avatar_url": "https://avatars.githubusercontent.com/u/189761389?v=4",
+            "events_url": "https://api.github.com/users/Grimblaz-and-Friends/events{/privacy}",
+            "followers_url": "https://api.github.com/users/Grimblaz-and-Friends/followers",
+            "following_url": "https://api.github.com/users/Grimblaz-and-Friends/following{/other_user}",
+            "gists_url": "https://api.github.com/users/Grimblaz-and-Friends/gists{/gist_id}",
+            "gravatar_id": "",
+            "html_url": "https://github.com/Grimblaz-and-Friends",
+            "id": 189761389,
+            "login": "Grimblaz-and-Friends",
+            "node_id": "O_kgDOC0-HbQ",
+            "organizations_url": "https://api.github.com/users/Grimblaz-and-Friends/orgs",
+            "received_events_url": "https://api.github.com/users/Grimblaz-and-Friends/received_events",
+            "repos_url": "https://api.github.com/users/Grimblaz-and-Friends/repos",
+            "site_admin": false,
+            "starred_url": "https://api.github.com/users/Grimblaz-and-Friends/starred{/owner}{/repo}",
+            "subscriptions_url": "https://api.github.com/users/Grimblaz-and-Friends/subscriptions",
+            "type": "Organization",
+            "url": "https://api.github.com/users/Grimblaz-and-Friends",
+            "user_view_type": "public"
+          },
+          "private": true,
+          "pull_request_creation_policy": "all",
+          "pulls_url": "https://api.github.com/repos/Grimblaz-and-Friends/Organizations-of-Verra/pulls{/number}",
+          "pushed_at": "2026-09-23T05:12:02Z",
+          "releases_url": "https://api.github.com/repos/Grimblaz-and-Friends/Organizations-of-Verra/releases{/id}",
+          "size": 10432,
+          "ssh_url": "git@github.com:Grimblaz-and-Friends/Organizations-of-Verra.git",
+          "stargazers_count": 0,
+          "stargazers_url": "https://api.github.com/repos/Grimblaz-and-Friends/Organizations-of-Verra/stargazers",
+          "statuses_url": "https://api.github.com/repos/Grimblaz-and-Friends/Organizations-of-Verra/statuses/{sha}",
+          "subscribers_url": "https://api.github.com/repos/Grimblaz-and-Friends/Organizations-of-Verra/subscribers",
+          "subscription_url": "https://api.github.com/repos/Grimblaz-and-Friends/Organizations-of-Verra/subscription",
+          "svn_url": "https://github.com/Grimblaz-and-Friends/Organizations-of-Verra",
+          "tags_url": "https://api.github.com/repos/Grimblaz-and-Friends/Organizations-of-Verra/tags",
+          "teams_url": "https://api.github.com/repos/Grimblaz-and-Friends/Organizations-of-Verra/teams",
+          "topics": [],
+          "trees_url": "https://api.github.com/repos/Grimblaz-and-Friends/Organizations-of-Verra/git/trees{/sha}",
+          "updated_at": "2026-09-23T05:12:04Z",
+          "url": "https://api.github.com/repos/Grimblaz-and-Friends/Organizations-of-Verra",
+          "visibility": "private",
+          "watchers": 0,
+          "watchers_count": 0,
+          "web_commit_signoff_required": false
+        },
+        "sha": "08f14b094614858c15a85a5347ed9eb82e4c227c",
+        "user": {
+          "avatar_url": "https://avatars.githubusercontent.com/u/189761389?v=4",
+          "events_url": "https://api.github.com/users/Grimblaz-and-Friends/events{/privacy}",
+          "followers_url": "https://api.github.com/users/Grimblaz-and-Friends/followers",
+          "following_url": "https://api.github.com/users/Grimblaz-and-Friends/following{/other_user}",
+          "gists_url": "https://api.github.com/users/Grimblaz-and-Friends/gists{/gist_id}",
+          "gravatar_id": "",
+          "html_url": "https://github.com/Grimblaz-and-Friends",
+          "id": 189761389,
+          "login": "Grimblaz-and-Friends",
+          "node_id": "O_kgDOC0-HbQ",
+          "organizations_url": "https://api.github.com/users/Grimblaz-and-Friends/orgs",
+          "received_events_url": "https://api.github.com/users/Grimblaz-and-Friends/received_events",
+          "repos_url": "https://api.github.com/users/Grimblaz-and-Friends/repos",
+          "site_admin": false,
+          "starred_url": "https://api.github.com/users/Grimblaz-and-Friends/starred{/owner}{/repo}",
+          "subscriptions_url": "https://api.github.com/users/Grimblaz-and-Friends/subscriptions",
+          "type": "Organization",
+          "url": "https://api.github.com/users/Grimblaz-and-Friends",
+          "user_view_type": "public"
+        }
+      },
+      "number": 476
+    },
+    "repos/Grimblaz-and-Friends/Organizations-of-Verra/pulls/476/comments?per_page=100": [
+      {
+        "body": "<a href=\"#\"><img alt=\"P2\" src=\"https://greptile-static-assets.s3.amazonaws.com/badges/p2.svg?v=9\" align=\"top\"></a> **Runtime Slice Lacks UI**\n\nThis introduces a zero-resource emergency attack and changes its runtime selection, resolution, and resource deduction without adding a UI component. The repository requires every runtime feature to include UI so it can be validated end to end; only changes that do not affect runtime behavior are exempt. This requirement must be satisfied before merging, either with an appropriate UI surface or an explicit repository-approved exception.\n\n**Context Used:** AGENTS.md ([source](https://github.com/grimblaz-and-friends/organizations-of-verra/blob/main/AGENTS.md))\n\nNote: If this suggestion doesn't match your team's coding style, reply to this and let me know. I'll remember it for next time!",
+        "commit_id": "08f14b094614858c15a85a5347ed9eb82e4c227c",
+        "created_at": "2026-09-23T02:34:18Z",
+        "html_url": "https://github.com/Grimblaz-and-Friends/Organizations-of-Verra/pull/476#discussion_r4078509524",
+        "id": 4078509524,
+        "user": {
+          "login": "greptile-apps[bot]"
+        }
+      },
+      {
+        "body": "declined - the owner has approved an explicit exception to the Vertical Slice Rule for this change, which is the second remedy this finding itself names. Recorded here so the override is auditable rather than assumed, as `AGENTS.md` requires.\n\n**The finding is correct on the doctrine and correct that end-to-end visual validation did not happen.** This change touches runtime combat behaviour, so it is not exempt, and the affirmed brief said as much: it claimed no new UI component was needed because the existing combat log renders the behaviour and a browser use at `:5174` would show an exhausted member attacking instead of idling. That use was run and **could not demonstrate it**.\n\n**Why a UI surface would not fix it.** No combatant reaches exhaustion in ordinary play. Across three full combats and a like-for-like `main` baseline at the same mission seed, there were **zero** `insufficient resources` skips; Commander Aria finished 202 turns at `STAM 1065/1070`, and low-level members finished at `110/120` and `100/100`. Regeneration outpaces consumption inside a fight, and a depleted member cannot be redeployed the same day \u2014 the hub's `READY` count fell 6 \u2192 3 after one mission. Adding a combat-log label such as `used Weapon Mastery (emergency)` would therefore ship a string that never renders. It would satisfy the rule's letter while leaving the change exactly as unvalidated, which is ceremony rather than proof.\n\n**What the behaviour rests on instead.** `SimulationActionProcessor.emergencyFallback.integration.test.ts` drives the zero-resource state directly and asserts real damage plus combat-log output for a party member and for an enemy, unmocked. `CombatantDecisionPipeline.emergencyFallback.test.ts` covers marker transport through all four offensive action constructors. The negative control is equally explicit: ordinary `weapon-mastery` still consumes its catalogued five stamina, and the deduction gate is `options?.isEmergencyFallback === true && skillId === 'weapon-mastery'` \u2014 never the skill id alone.\n\n**What the browser use did establish**, and why it was still worth running: no regression against `main` on an identical seeded scenario, and confirmation that the enemy `action had no effect` skips visible in the log are **pre-existing** \u2014 the `main` baseline logs the same line with enemies at full resources, from `SimulationActionProcessor.ts:287` and `:290`.\n\n**The underlying cause is out of scope by the owner's decision.** That exhaustion is unreachable is a balance property of the regeneration rates, not of this change. The owner has ruled it deferred to a later balance pass rather than filed now.\n\nFull record, including the use session note and its limits, is on #471 and in this pull request's own comments.\n",
+        "commit_id": "08f14b094614858c15a85a5347ed9eb82e4c227c",
+        "created_at": "2026-09-23T03:17:52Z",
+        "html_url": "https://github.com/Grimblaz-and-Friends/Organizations-of-Verra/pull/476#discussion_r4078741203",
+        "id": 4078741203,
+        "in_reply_to_id": 4078509524,
+        "user": {
+          "login": "Grimblaz"
+        }
+      }
+    ],
+    "repos/Grimblaz-and-Friends/Organizations-of-Verra/pulls/476/files?per_page=100": [
+      {
+        "filename": "Documents/GameDesign/CombatSystem/AITactics.md"
+      },
+      {
+        "filename": "Documents/GameDesign/CombatSystem/EmergencyAttackFallbackSeam.md"
+      },
+      {
+        "filename": "Documents/GameDesign/CombatSystem/EmergencyAttackFallbackSeam.md.ref.yml"
+      },
+      {
+        "filename": "Documents/INDEX.md"
+      },
+      {
+        "filename": "src/core/models/AIAction.ts"
+      },
+      {
+        "filename": "src/core/models/EquippedSkill.ts"
+      },
+      {
+        "filename": "src/core/systems/AIDecisionSystem.enemies.test.ts"
+      },
+      {
+        "filename": "src/core/systems/AIDecisionSystem.pressure.test.ts"
+      },
+      {
+        "filename": "src/core/systems/CombatSkillCoordinator.test.ts"
+      },
+      {
+        "filename": "src/core/systems/CombatSkillCoordinator.ts"
+      },
+      {
+        "filename": "src/core/systems/CombatSystem.issue303.integration.test.ts"
+      },
+      {
+        "filename": "src/core/systems/CombatantDecisionPipeline.emergencyFallback.test.ts"
+      },
+      {
+        "filename": "src/core/systems/CombatantDecisionPipeline.test.ts"
+      },
+      {
+        "filename": "src/core/systems/CombatantDecisionPipeline.ts"
+      },
+      {
+        "filename": "src/core/systems/SimulationActionProcessor.emergencyFallback.integration.test.ts"
+      },
+      {
+        "filename": "src/core/systems/SimulationActionProcessor.enemyActions.test.ts"
+      },
+      {
+        "filename": "src/core/systems/SimulationActionProcessor.test.ts"
+      },
+      {
+        "filename": "src/core/systems/SimulationActionProcessor.ts"
+      },
+      {
+        "filename": "src/core/systems/SkillEffectExecutor.types.ts"
+      },
+      {
+        "filename": "src/core/systems/SkillSelector.test.ts"
+      },
+      {
+        "filename": "src/core/systems/SkillSelector.ts"
+      },
+      {
+        "filename": "src/core/systems/skillEffectPressureIntegration.test.ts"
+      }
+    ],
+    "repos/Grimblaz-and-Friends/Organizations-of-Verra/pulls/476/reviews?per_page=100": [
+      {
+        "body": "",
+        "commit_id": "08f14b094614858c15a85a5347ed9eb82e4c227c",
+        "html_url": "https://github.com/Grimblaz-and-Friends/Organizations-of-Verra/pull/476#pullrequestreview-5286241977",
+        "id": 5286241977,
+        "submitted_at": "2026-09-23T02:34:19Z",
+        "user": {
+          "login": "greptile-apps[bot]"
+        }
+      }
+    ]
+  }
+}
