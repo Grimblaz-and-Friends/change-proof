@@ -3594,6 +3594,58 @@ def test_disposition_requires_balanced_markdown_wrapper(disposition, passes):
 
 
 @pytest.mark.parametrize(
+    ("disposition", "passes"),
+    [
+        ("**fixed** - addressed", True),
+        ("__declined__ - not a defect", True),
+        ("*yours* - in the release report", True),
+        ("`duplicate` of the earlier comment", True),
+        ("**fixing** this", False),
+        ("*fixed*ness", False),
+        ("**fixed in** #12", False),
+        ("_sustained_ - fixed", False),
+    ],
+)
+def test_disposition_reads_formatted_opening_word(disposition, passes):
+    inline = record(REVIEWER, "finding", id=41, in_reply_to_id=None)
+    reply = record(OWNER, disposition, id=42, in_reply_to_id=41)
+    result, output = execute(
+        scenario(comments=[use_note()], review_comments=[inline, reply])
+    )
+
+    assert result == (0 if passes else 1)
+    expected = (
+        "marker-producer disposition"
+        if passes
+        else "top-level inline comment(s): 41"
+    )
+    assert expected in output
+
+
+@pytest.mark.parametrize(
+    ("body", "passes"),
+    [
+        ("\n\nFixed\nDetails.", True),
+        ("\n\nThanks\nFixed", False),
+    ],
+)
+def test_disposition_reads_first_non_blank_line(body, passes):
+    inline = record(REVIEWER, "finding", id=41, in_reply_to_id=None)
+    reply = record(OWNER, body, id=42, in_reply_to_id=41)
+    result, output = execute(
+        scenario(comments=[use_note()], review_comments=[inline, reply])
+    )
+
+    assert result == (0 if passes else 1)
+    expected = (
+        "marker-producer disposition"
+        if passes
+        else "top-level inline comment(s): 41"
+    )
+    assert expected in output
+
+
+@pytest.mark.parametrize(
     "reply",
     [
         record("stranger", "fixed", id=42, in_reply_to_id=41),

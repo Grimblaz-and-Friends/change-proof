@@ -151,9 +151,9 @@ Use: not required — REASON
 
 A current-head `use` marker when the paths do not buy use is a false claim and fails even if other evidence is complete.
 
-Every top-level inline comment from a connected reviewer needs a reply by a marker producer whose first line begins with one of the closed dispositions: `fixed`; `fixed — nothing else found it`; `fixed in #<N>`; `yours — in the release report`; `declined — <why it earns no end>`; `duplicate of <the earlier comment>`; `lapsed — <the rule we do not run>`.
+Every top-level inline comment from a connected reviewer needs a reply by a marker producer whose first non-blank line begins with one of the closed dispositions: `fixed`; `fixed — nothing else found it`; `fixed in #<N>`; `yours — in the release report`; `declined — <why it earns no end>`; `duplicate of <the earlier comment>`; `lapsed — <the rule we do not run>`.
 
-The checker ignores leading whitespace and one balanced Markdown inline wrapper—backticks, asterisks or underscores—before reading a disposition or the `Use: not required` line.
+The checker ignores leading blank lines and whitespace and one balanced Markdown inline wrapper—backticks, asterisks or underscores—around the whole line or its opening disposition word. It also ignores one balanced whole-line wrapper when reading the `Use: not required` line.
 
 The checker returns exit `0` only when it has evaluated the pull request head's evidence and that evidence satisfies this contract; a result that does not evaluate the evidence is not a pass.
 
