@@ -1,0 +1,27 @@
+change-proof: FAIL
+evidence path: proof-v1
+verified: base branch main tip resolved to commit 6789582047cf306607573ecaff25ba1a4eda379d
+verified: pull request body has a **Path departures:** paragraph
+verified: pull request changes policy and was judged by the base branch tip policy
+verified: selected proof-v1 comment #5852491047
+verified: policy work_configuration repository=Grimblaz-and-Friends/tradecraft path=.tradecraft/work.json revision=6789582047cf306607573ecaff25ba1a4eda379d sha256=943da02760b23218e4fb0cef77e50f66eebe7bf19ef096f5cd48bdf2deafa506
+verified: proof identity matches Grimblaz-and-Friends/tradecraft pull request #767 at 4f12aa5efa0ae765cebd213f89eec7da754c3d6a
+verified: floor source pull-request-comment #5852487982 is authorized and current-head
+verified: floor check #108547334634 Greptile Review completed with conclusion success
+verified: floor check #108548930130 ask-declaration completed with conclusion success
+verified: floor check #108548930241 lint-and-test (windows-latest) completed with conclusion success
+verified: floor check #108548930259 lint-and-test (ubuntu-latest) completed with conclusion success
+verified: connected reviewer chatgpt-codex-connector[bot] credited by pull-request-comment #5852495163
+verified: connected reviewer coderabbitai[bot] credited by pull-request-comment #5852424198
+verified: connected reviewer greptile-apps[bot] credited by pull-request-comment #5852502444
+verified: every top-level inline reviewer comment has a marker-producer disposition
+declared: policy use_rules repository=Grimblaz-and-Friends/tradecraft path=lib/use-rules.json revision=6789582047cf306607573ecaff25ba1a4eda379d sha256=11f48690d4ff8b19e31b632380e025413b32b2a0ac9de543f2b9e51a7b0907ee (not among the gate's fetched policy bytes)
+declared: stage=floor status=declared reason=null dispatch_id=df04228909514016a085a61b524b822c completed_at=2026-09-27T04:03:54.129544+00:00 revision=4f12aa5efa0ae765cebd213f89eec7da754c3d6a requested_vendor=codex requested_model=gpt-5.6-sol requested_effort=xhigh requested_classification=null actual_vendor=codex actual_model=null actual_effort=null fallback_reason=null staffing_status=qualified same_vendor_reason=null
+diagnostic: legacy markers were not evaluated because a current-head proof document was selected
+excluded: current gate execution run #36292658635 check #108549502051 is not floor evidence because a gate cannot prove itself
+excluded: current gate's earlier attempt run #36292658635 attempt #4 check #108548610111 is not floor evidence because the current gate is attempt #5
+excluded: current gate's earlier attempt run #36292658635 attempt #3 check #108547697600 is not floor evidence because the current gate is attempt #5
+excluded: current gate's earlier attempt run #36292658635 attempt #2 check #108547254666 is not floor evidence because the current gate is attempt #5
+excluded: current gate's earlier attempt run #36292658635 attempt #1 check #108545582382 is not floor evidence because the current gate is attempt #5
+missing: a current-head generated no-use record matching trusted policy
+satisfy: recompose proof under the base-tip use rules with a nonempty generated reason

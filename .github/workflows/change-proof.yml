@@ -49,6 +49,19 @@ jobs:
 
           MARKER = re.compile(r"<!--\s*+tradecraft:([a-z-]+):v1(?:\s++([^>]*))?-->", re.I)
           ATTRIBUTE = re.compile(r"([a-z_]+)=([^\s]+)", re.I)
+          REVIEW_RISK_LINE = re.compile(
+              r"^Review risk:\s*(ordinary|elevated|critical)\s*$", re.I | re.M
+          )
+          REVIEW_LANE_LINE = re.compile(
+              r"^Review lane:\s*(connected|mechanical|routine-panel|substantial-panel)\s*$",
+              re.I | re.M,
+          )
+          LAWFUL_REVIEW_PAIRS = frozenset({
+              ("ordinary", "connected"),
+              ("ordinary", "mechanical"),
+              ("elevated", "routine-panel"),
+              ("critical", "substantial-panel"),
+          })
           REPOSITORY_NAME = re.compile(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+\Z")
           GITHUB_LOGIN = re.compile(r"[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?(?:\[bot\])?\Z")
           SLUG = re.compile(r"[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*\Z")
@@ -1118,6 +1131,166 @@ jobs:
               return record, None
 
 
+          def _has_exact_affirmed_brief(body: str) -> bool:
+              return any(
+                  match.group(1).lower() == "affirmed-brief"
+                  and not (match.group(2) or "").strip()
+                  for match in MARKER.finditer(body)
+              )
+
+
+          def _affirmed_review_pair(body: str) -> tuple[tuple[str, str] | None, str | None]:
+              risks = [value.lower() for value in REVIEW_RISK_LINE.findall(body)]
+              lanes = [value.lower() for value in REVIEW_LANE_LINE.findall(body)]
+              if len(risks) != 1 or len(lanes) != 1:
+                  details = []
+                  if len(risks) != 1:
+                      details.append(f"recognized Review risk lines={len(risks)}")
+                  if len(lanes) != 1:
+                      details.append(f"recognized Review lane lines={len(lanes)}")
+                  return None, ", ".join(details)
+              pair = risks[0], lanes[0]
+              if pair not in LAWFUL_REVIEW_PAIRS:
+                  return None, f"unlawful review pair {pair[0]} / {pair[1]}"
+              return pair, None
+
+
+          def _latest_authorized_affirmed_brief(
+              work_comments: list[dict[str, object]], marker_producers: frozenset[str]
+          ) -> dict[str, object] | None:
+              candidates = [
+                  record
+                  for record in work_comments
+                  if _author(record) in marker_producers
+                  and _has_exact_affirmed_brief(str(record.get("body") or ""))
+              ]
+              return candidates[-1] if candidates else None
+
+
+          def _lane_recomposition(
+              bought: bool,
+              latest_id: str,
+              pair: tuple[str, str] | None,
+              pair_error: str | None,
+          ) -> str:
+              if pair_error is not None:
+                  return (
+                      f"correct the latest authorized affirmed-brief issue-comment #{latest_id} "
+                      "and recompose proof; do not choose an older source"
+                  )
+              if pair != ("ordinary", "mechanical"):
+                  if bought:
+                      return (
+                          f"run the use owed by affirmed-brief issue-comment #{latest_id}, then "
+                          "recompose proof from that use record"
+                      )
+                  return (
+                      "recompose proof as an ordinary policy-based no-use record with no source"
+                  )
+              return (
+                  "recompose proof from latest authorized affirmed-brief issue-comment "
+                  f"#{latest_id}"
+              )
+
+
+          def _mechanical_lane_source(
+              source: dict[str, object],
+              repo: str,
+              issue: int,
+              number: int,
+              bought: bool,
+              config: WorkConfig,
+              comments: list[dict[str, object]],
+              work_comments: list[dict[str, object]],
+              reviews: list[dict[str, object]],
+              review_comments: list[dict[str, object]],
+          ) -> tuple[Finding | None, str | None]:
+              source_id = _source_identity(source.get("id")) or "without an id"
+              expected_work = f"{repo}#{issue}"
+              source_kind = str(source.get("kind") or "").lower()
+              if source_kind != "issue-comment":
+                  return Finding(
+                      f"an affirmed-brief source on {expected_work}: source #{source_id} uses wrong "
+                      f"surface {_safe_text(source.get('kind'))}; expected issue-comment",
+                      "point the proof use source at the work issue's latest authorized "
+                      "affirmed-brief issue-comment and recompose proof",
+                  ), None
+              if issue == number:
+                  return Finding(
+                      f"a work-issue affirmed source distinct from pull request #{number}: "
+                      f"issue-comment source #{source_id} is misplaced on the pull-request surface",
+                      "name the actual work issue and recompose proof from its latest authorized "
+                      "affirmed-brief record",
+                  ), None
+              if str(source.get("repository") or "").lower() != repo.lower():
+                  return Finding(
+                      f"an affirmed-brief source in {repo}: issue-comment source #{source_id} names "
+                      f"repository {_safe_text(source.get('repository'))}",
+                      "point the proof use source at the evaluated repository's work issue and "
+                      "recompose proof",
+                  ), None
+
+              record, source_error = _resolve_source(
+                  source, repo, comments, work_comments, reviews, review_comments
+              )
+              if source_error is not None or record is None:
+                  return Finding(
+                      f"affirmed-brief issue-comment source #{source_id} on {expected_work}: "
+                      f"{source_error or 'public record is missing'}",
+                      "point the proof use source at a comment on the named work issue and recompose proof",
+                  ), None
+              author = _author(record)
+              if author not in config.marker_producers:
+                  return Finding(
+                      f"an authorized affirmed-brief source: issue-comment #{source_id} author "
+                      f"{_safe_text(author)} is not a configured marker producer",
+                      "have a configured marker producer record the affirmed brief on the work issue "
+                      "and recompose proof",
+                  ), None
+              if not _has_exact_affirmed_brief(str(record.get("body") or "")):
+                  return Finding(
+                      f"an exact attribute-free tradecraft:affirmed-brief:v1 marker in "
+                      f"issue-comment #{source_id}",
+                      "correct the latest authorized affirmed-brief record and recompose proof",
+                  ), None
+
+              latest = _latest_authorized_affirmed_brief(work_comments, config.marker_producers)
+              if latest is None:
+                  return Finding(
+                      f"a latest authorized affirmed-brief record on {expected_work}",
+                      "record the affirmed brief on the work issue and recompose proof",
+                  ), None
+              latest_id = _source_identity(latest.get("id")) or "without an id"
+              pair, pair_error = _affirmed_review_pair(str(latest.get("body") or ""))
+              if source_id != latest_id:
+                  pair_detail = (
+                      f"; latest review pair is invalid: {pair_error}"
+                      if pair_error is not None
+                      else f"; latest review pair is {pair[0]} / {pair[1]}"
+                      if pair is not None
+                      else ""
+                  )
+                  return Finding(
+                      f"the use source to be the latest authorized affirmed brief: issue-comment "
+                      f"#{source_id} is superseded by issue-comment #{latest_id}{pair_detail}",
+                      _lane_recomposition(bought, latest_id, pair, pair_error),
+                  ), None
+              if pair_error is not None:
+                  return Finding(
+                      f"one lawful review pair in latest affirmed-brief issue-comment #{latest_id}: "
+                      f"{pair_error}",
+                      _lane_recomposition(bought, latest_id, pair, pair_error),
+                  ), None
+              if pair != ("ordinary", "mechanical"):
+                  assert pair is not None
+                  return Finding(
+                      f"an ordinary / mechanical review pair in latest affirmed-brief issue-comment "
+                      f"#{latest_id}; found {pair[0]} / {pair[1]}",
+                      _lane_recomposition(bought, latest_id, pair, pair_error),
+                  ), None
+              return None, source_id
+
+
           def _missing_source_pointer(
               source: dict[str, object],
               repo: str,
@@ -1654,13 +1827,56 @@ jobs:
               use = document["use"]
               assert isinstance(use, dict)
               bought = use_required(paths, rules)
-              if bought:
+              use_source = use["source"]
+              sourced_generated = (
+                  isinstance(use_source, dict) and use["applicability"] == "generated"
+              )
+              if sourced_generated:
+                  valid_carrier = (
+                      use["required"] is False
+                      and use["classification"] == "not-required"
+                      and use["evidence_head"] == head
+                      and use["applicability"] == "generated"
+                      and use["intervening_commits"] == []
+                      and isinstance(use["reason"], str)
+                      and bool(use["reason"])
+                  )
+                  if not valid_carrier:
+                      failures.append(Finding(
+                          "a current-head generated no-use carrier for an owner-affirmed mechanical lane",
+                          "recompose proof from the latest authorized affirmed-brief record",
+                      ))
+                  else:
+                      identity_issue = identity["issue"]
+                      assert isinstance(identity_issue, int) and not isinstance(identity_issue, bool)
+                      lane_finding, affirmed_id = _mechanical_lane_source(
+                          use_source,
+                          repo,
+                          identity_issue,
+                          number,
+                          bought,
+                          config,
+                          comments,
+                          work_comments,
+                          reviews,
+                          review_comments,
+                      )
+                      if lane_finding is not None:
+                          failures.append(lane_finding)
+                      else:
+                          assert affirmed_id is not None
+                          path_result = "require" if bought else "not require"
+                          verified.append(
+                              f"owner-affirmed mechanical lane in {repo}#{identity_issue} "
+                              f"issue-comment #{affirmed_id} exempts use; changed paths would "
+                              f"otherwise {path_result} use"
+                          )
+              elif bought:
                   if use["required"] is not True or use["classification"] != "required":
                       failures.append(Finding(
                           "a proof use classification matching trusted policy: required",
                           "recompose proof under the base-tip use rules",
                       ))
-                  use_source = use["source"]
                   evidence_head = use["evidence_head"]
                   if not isinstance(use_source, dict) or not isinstance(evidence_head, str):
                       failures.append(Finding(
