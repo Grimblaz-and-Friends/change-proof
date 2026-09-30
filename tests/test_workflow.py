@@ -68,6 +68,7 @@ def test_self_policy_files_load_and_classify_repository_paths():
         {
             "coderabbitai[bot]",
             "chatgpt-codex-connector[bot]",
+            "github-actions[bot]",
         }
     )
     assert work.marker_producers == frozenset({"grimblaz"})
