@@ -35,6 +35,7 @@ jobs:
 
           import base64
           from dataclasses import dataclass
+          from datetime import datetime, timezone
           import fnmatch
           import hashlib
           import json
@@ -1407,13 +1408,25 @@ jobs:
               return f"check #{check_id} name={name!r}"
 
 
+          def _start_instant(value: object) -> datetime | None:
+              if not isinstance(value, str):
+                  return None
+              try:
+                  instant = datetime.fromisoformat(value)
+                  if instant.tzinfo is None:
+                      return None
+                  return instant.astimezone(timezone.utc)
+              except (ValueError, OverflowError):
+                  return None
+
+
           def _public_floor_checks(
               transport,
               repo: str,
               head: str,
               current_run_id: int | None,
               current_run_attempt: int | None,
-          ) -> tuple[list[dict[str, object]], list[Finding], list[str]]:
+          ) -> tuple[list[dict[str, object]], list[Finding], list[str], list[str]]:
               endpoint = f"repos/{repo}/commits/{head}/check-runs?filter=all&per_page=100"
               check_runs = _paginated_objects(transport.get(endpoint, paginate=True), endpoint, "check_runs")
               run_cache: dict[int, dict[str, object]] = {}
@@ -1430,6 +1443,9 @@ jobs:
                   app_object = app if isinstance(app, dict) else {}
                   app_id = app_object.get("id") if _is_integer(app_object.get("id")) else None
                   app_slug = app_object.get("slug") if isinstance(app_object.get("slug"), str) else None
+                  check_suite = check_run.get("check_suite")
+                  suite_object = check_suite if isinstance(check_suite, dict) else {}
+                  check_suite_id = suite_object.get("id") if _is_integer(suite_object.get("id")) else None
                   run_id = _actions_run_id(check_run, repo)
                   workflow_id: int | None = None
                   run: dict[str, object] | None = None
@@ -1446,8 +1462,6 @@ jobs:
                           raise ProofError(f"Actions run {run_id} belongs to another repository")
                       if run.get("head_sha") != head:
                           raise ProofError(f"Actions run {run_id} belongs to another head")
-                      check_suite = check_run.get("check_suite")
-                      check_suite_id = check_suite.get("id") if isinstance(check_suite, dict) else None
                       run_suite_id = run.get("check_suite_id")
                       if (
                           _is_integer(check_suite_id)
@@ -1546,6 +1560,8 @@ jobs:
                       "name": check_run.get("name"),
                       "app_id": app_id,
                       "app_slug": app_slug,
+                      "check_suite_id": check_suite_id,
+                      "is_actions": run_id is not None or app_slug == "github-actions",
                       "workflow_id": workflow_id,
                       "run_id": run_id,
                       "run_attempt": job_attempt,
@@ -1558,6 +1574,7 @@ jobs:
                       "status": check_run.get("status"),
                       "conclusion": check_run.get("conclusion"),
                       "started_at": check_run.get("started_at"),
+                      "start_instant": _start_instant(check_run.get("started_at")),
                       "completed_at": check_run.get("completed_at"),
                   })
 
@@ -1565,12 +1582,26 @@ jobs:
               rerun_families: dict[
                   tuple[object, object, object], list[dict[str, object]]
               ] = {}
+              third_party_families: dict[
+                  tuple[int, int, str], list[dict[str, object]]
+              ] = {}
               for check in candidates:
                   if (
                       not _is_integer(check["workflow_id"])
                       or not _is_integer(check["run_id"])
                       or not _is_integer(check["run_attempt"])
                   ):
+                      if (
+                          not check["is_actions"]
+                          and _is_integer(check["app_id"])
+                          and _is_integer(check["check_suite_id"])
+                          and isinstance(check["name"], str)
+                          and isinstance(check["start_instant"], datetime)
+                          and check["head"] == head
+                      ):
+                          family = (check["app_id"], check["check_suite_id"], check["name"])
+                          third_party_families.setdefault(family, []).append(check)
+                          continue
                       latest.append(check)
                       continue
                   family = (check["app_id"], check["workflow_id"], check["name"])
@@ -1581,7 +1612,19 @@ jobs:
                       execution = (int(check["run_id"]), int(check["run_attempt"]))
                       executions.setdefault(execution, []).append(check)
                   latest.extend(executions[max(executions)])
-              return sorted(latest, key=lambda item: int(item["id"])), findings, excluded
+              superseded_ids: list[tuple[int, int]] = []
+              for family_checks in third_party_families.values():
+                  winner = max(family_checks, key=lambda item: (item["start_instant"], item["id"]))
+                  latest.append(winner)
+                  superseded_ids.extend(
+                      (int(check["id"]), int(winner["id"]))
+                      for check in family_checks if check is not winner
+                  )
+              superseded = [
+                  f"check #{old_id} replaced by check #{winner_id}"
+                  for old_id, winner_id in sorted(superseded_ids)
+              ]
+              return sorted(latest, key=lambda item: int(item["id"])), findings, excluded, superseded
 
 
           def _check_difference(expected: dict[str, object], actual: dict[str, object]) -> str | None:
@@ -1688,7 +1731,7 @@ jobs:
               policy_bytes: dict[tuple[str, str], bytes],
               current_run_id: int | None,
               current_run_attempt: int | None,
-          ) -> tuple[list[Finding], list[str], list[str], list[str], list[str], list[str]]:
+          ) -> tuple[list[Finding], list[str], list[str], list[str], list[str], list[str], list[str]]:
               failures: list[Finding] = []
               verified: list[str] = [f"selected proof-v1 comment #{comment_id}"]
               policy_verified, declared, diagnostics = _policy_rendering(document, repo, policy_bytes)
@@ -1790,7 +1833,7 @@ jobs:
                       floor_source_verified = True
                       verified.append(f"floor source {_safe_text(source['kind'])} #{_safe_text(source['id'])} is authorized and current-head")
 
-              actual_checks, check_findings, excluded = _public_floor_checks(
+              actual_checks, check_findings, excluded, superseded = _public_floor_checks(
                   transport, repo, head, current_run_id, current_run_attempt
               )
               failures.extend(check_findings)
@@ -2187,7 +2230,7 @@ jobs:
                       verified.append(f"reviewer thread {thread_id} has an authorized disposition")
               if not owed:
                   verified.append("every top-level inline reviewer comment has a marker-producer disposition")
-              return failures, verified, declared, diagnostics, producer_diagnostics, excluded
+              return failures, verified, declared, diagnostics, producer_diagnostics, excluded, superseded
 
 
           def evaluate(
@@ -2472,6 +2515,7 @@ jobs:
                   diagnostics: list[str] = []
                   producer_diagnostics: list[str] = []
                   excluded: list[str] = []
+                  superseded: list[str] = []
                   evidence_path: str | None = None
                   if selected_policy is not None:
                       rules = load_use_rules(selected_policy[".github/change-proof.json"])
@@ -2593,6 +2637,7 @@ jobs:
                                           document_diagnostics,
                                           document_producer_diagnostics,
                                           document_excluded,
+                                          document_superseded,
                                       ) = evaluate_document(
                                           candidate.document,
                                           candidate.envelope_head or "",
@@ -2625,6 +2670,7 @@ jobs:
                                       diagnostics.extend(document_diagnostics)
                                       producer_diagnostics.extend(document_producer_diagnostics)
                                       excluded.extend(document_excluded)
+                                      superseded.extend(document_superseded)
                           else:
                               evidence_path = "legacy-markers"
                               evidence_failures, evidence_verified = evaluate(
@@ -2664,6 +2710,8 @@ jobs:
                           print(f"diagnostic: {statement}", file=destination)
                       for statement in excluded:
                           print(f"excluded: {statement}", file=destination)
+                      for statement in superseded:
+                          print(f"superseded: {statement}", file=destination)
                       for finding in failures:
                           print(f"missing: {_safe_text(finding.missing)}", file=destination)
                           print(f"satisfy: {_safe_text(finding.satisfy)}", file=destination)
@@ -2681,6 +2729,8 @@ jobs:
                       print(f"diagnostic: {statement}", file=destination)
                   for statement in excluded:
                       print(f"excluded: {statement}", file=destination)
+                  for statement in superseded:
+                      print(f"superseded: {statement}", file=destination)
                   return 0
               except (OSError, UnicodeError, ValueError, ProofError) as exc:
                   print("change-proof: ERROR", file=destination)

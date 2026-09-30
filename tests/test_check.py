@@ -2323,6 +2323,328 @@ def test_github_actions_check_without_an_actions_run_url_remains_a_visible_check
     assert "floor check #82 Checks API producer" in output
 
 
+def third_party_record(check_id, *, started_at="2026-09-23T12:00:00Z", **changes):
+    record = {
+        "id": check_id,
+        "name": "Cloudflare Pages",
+        "app": {"id": 121, "slug": "cloudflare-pages"},
+        "check_suite": {"id": 99285750577},
+        "details_url": f"https://checks.example/runs/{check_id}",
+        "head_sha": HEAD,
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": started_at,
+        "completed_at": "2026-09-23T13:05:00Z",
+    }
+    record.update(changes)
+    return record
+
+
+def third_party_proof_check(record):
+    app = record.get("app")
+    app = app if isinstance(app, dict) else {}
+    return {
+        "id": record["id"],
+        "name": record.get("name"),
+        "app_id": app.get("id"),
+        "app_slug": app.get("slug"),
+        "workflow_id": None,
+        "run_id": None,
+        "url": record.get("details_url"),
+        "head": record.get("head_sha"),
+        "status": record.get("status"),
+        "conclusion": record.get("conclusion"),
+        "started_at": record.get("started_at"),
+        "completed_at": record.get("completed_at"),
+    }
+
+
+def add_third_party_floor(transport, document, records, supplied):
+    endpoint = f"repos/{REPO}/commits/{HEAD}/check-runs?filter=all&per_page=100"
+    checks = transport.responses[endpoint]["check_runs"] + records
+    transport.responses[endpoint] = {"total_count": len(checks), "check_runs": checks}
+    document["floor"]["checks"].extend(third_party_proof_check(item) for item in supplied)
+    replace_proof_document(transport, document)
+
+
+@pytest.mark.parametrize("status,conclusion", [
+    ("in_progress", None), ("queued", None), ("completed", "failure"),
+    ("completed", "success"), ("completed", "neutral"), ("completed", "skipped"),
+])
+@pytest.mark.parametrize("external_ids", [None, ("old-build", "new-build")])
+def test_third_party_new_success_supersedes_every_older_state(status, conclusion, external_ids):
+    transport, document = proof_scenario()
+    old = third_party_record(80, status=status, conclusion=conclusion)
+    new = third_party_record(82, started_at="2026-09-23T13:00:00Z")
+    # Slugs, completion times and external ids do not establish the family or winner.
+    old["app"]["slug"] = "previous-display-slug"
+    old["completed_at"] = "2026-09-23T14:00:00Z" if status == "completed" else None
+    if external_ids:
+        old["external_id"], new["external_id"] = external_ids
+    add_third_party_floor(transport, document, [old, new], [new])
+
+    result, output = execute(transport)
+
+    assert result == 0, output
+    assert "verified: floor check #82 Cloudflare Pages completed with conclusion success" in output
+    assert "floor check #80" not in output
+    assert output.splitlines().count("superseded: check #80 replaced by check #82") == 1
+
+
+@pytest.mark.parametrize("status,conclusion", [("completed", "failure"), ("in_progress", None)])
+@pytest.mark.parametrize("old_id,new_id,old_start,new_start", [
+    (80, 82, "2026-09-23T12:00:00Z", "2026-09-23T13:00:00Z"),
+    (82, 80, "2026-09-23T12:00:00Z", "2026-09-23T13:00:00Z"),
+    (80, 82, "2026-09-23T13:00:00Z", "2026-09-23T13:00:00Z"),
+    (80, 82, "2026-09-23T13:00:00Z", "2026-09-23T15:00:00+02:00"),
+    (82, 80, "2026-09-23T14:00:00+02:00", "2026-09-23T12:30:00Z"),
+])
+@pytest.mark.parametrize("reverse,paginated", [(False, False), (True, False), (False, True), (True, True)])
+def test_third_party_selected_failure_or_pending_blocks_release(
+    status, conclusion, old_id, new_id, old_start, new_start, reverse, paginated,
+):
+    transport, document = proof_scenario()
+    old = third_party_record(old_id, started_at=old_start)
+    new = third_party_record(new_id, started_at=new_start, status=status, conclusion=conclusion,
+                             completed_at=None if conclusion is None else "2026-09-23T13:05:00Z")
+    add_third_party_floor(transport, document, [old, new], [new])
+    endpoint = f"repos/{REPO}/commits/{HEAD}/check-runs?filter=all&per_page=100"
+    checks = transport.responses[endpoint]["check_runs"]
+    if reverse:
+        checks.reverse()
+    if paginated:
+        transport.responses[endpoint] = [
+            {"total_count": len(checks), "check_runs": [item]} for item in checks
+        ]
+
+    result, output = execute(transport)
+
+    assert result == 1
+    assert f"a completed acceptable result for floor check #{new_id}" in output
+    assert f"superseded: check #{old_id} replaced by check #{new_id}" in output
+    assert "omitted check id(s)" not in output
+    document["floor"]["checks"][-1] = third_party_proof_check(old)
+    replace_proof_document(transport, document)
+
+    result, output = execute(transport)
+
+    assert result == 1
+    assert f"omitted check id(s): {new_id}" in output
+    assert f"public floor check #{old_id} named by the proof document" in output
+    assert f"a completed acceptable result for floor check #{new_id}" in output
+
+
+@pytest.mark.parametrize("dimension", ["app", "suite", "name", "name-case", "head", "old-head"])
+def test_third_party_supersession_stays_inside_each_group_and_head(dimension):
+    transport, document = proof_scenario()
+    old = third_party_record(80, conclusion="failure")
+    new = third_party_record(82, started_at="2026-09-23T13:00:00Z")
+    if dimension == "app":
+        new["app"]["id"] += 1
+    elif dimension == "suite":
+        new["check_suite"]["id"] += 1
+    elif dimension == "name":
+        new["name"] = "Cloudflare Deploy"
+    elif dimension == "name-case":
+        new["name"] = old["name"].lower()
+    elif dimension == "head":
+        new["head_sha"] = ANCESTOR
+    else:
+        old["head_sha"] = ANCESTOR
+    add_third_party_floor(transport, document, [old, new], [new])
+
+    result, output = execute(transport)
+
+    assert result == 1
+    assert "omitted check id(s): 80" in output
+    assert "a completed acceptable result for floor check #80" in output
+    assert "superseded:" not in output
+
+
+@pytest.mark.parametrize("field,value", [
+    ("app", None), ("app", []), ("app", "invalid"), ("app", {}),
+    ("app", {"id": None}), ("app", {"id": True}), ("app", {"id": "121"}),
+    ("app", {"id": 121.0}),
+    ("check_suite", None), ("check_suite", []), ("check_suite", "invalid"),
+    ("check_suite", {}), ("check_suite", {"id": None}),
+    ("check_suite", {"id": True}), ("check_suite", {"id": "99285750577"}),
+    ("check_suite", {"id": 99285750577.0}),
+    ("started_at", None), ("started_at", ""), ("started_at", "invalid"),
+    ("started_at", "2026-09-23T12:00:00"), ("started_at", "2026-09-23"),
+    ("started_at", []), ("started_at", {}), ("started_at", 123), ("started_at", False),
+    ("started_at", "0001-01-01T00:00:00+01:00"),
+    ("name", None), ("name", []), ("name", {}), ("name", 123),
+])
+@pytest.mark.parametrize("incomplete_side", [0, 1])
+def test_ineligible_third_party_record_neither_supersedes_nor_is_superseded(
+    field, value, incomplete_side,
+):
+    transport, document = proof_scenario()
+    records = [third_party_record(80), third_party_record(82, started_at="2026-09-23T13:00:00Z")]
+    incomplete = records[incomplete_side]
+    if value is None:
+        incomplete.pop(field)
+    else:
+        incomplete[field] = value
+    add_third_party_floor(transport, document, records, [records[1 - incomplete_side]])
+
+    result, output = execute(transport)
+
+    assert result == 1
+    assert f"omitted check id(s): {incomplete['id']}" in output
+    assert "superseded:" not in output
+    assert "change-proof: ERROR" not in output
+
+
+@pytest.mark.parametrize("field", ["app", "check_suite", "started_at"])
+def test_two_third_party_records_missing_the_same_identity_remain_independent(field):
+    transport, document = proof_scenario()
+    old = third_party_record(80, conclusion="failure")
+    new = third_party_record(82, started_at="2026-09-23T13:00:00Z")
+    old.pop(field)
+    new.pop(field)
+    add_third_party_floor(transport, document, [old, new], [new])
+
+    result, output = execute(transport)
+
+    assert result == 1
+    assert "omitted check id(s): 80" in output
+    assert "a completed acceptable result for floor check #80" in output
+    assert "superseded:" not in output
+
+
+def test_two_third_party_records_without_string_names_remain_independent():
+    transport, document = proof_scenario()
+    old = third_party_record(80, name=None, conclusion="failure")
+    new = third_party_record(82, name=None, started_at="2026-09-23T13:00:00Z")
+    add_third_party_floor(transport, document, [old, new], [])
+
+    result, output = execute(transport)
+
+    assert result == 1
+    assert "omitted check id(s): 80, 82" in output
+    assert "a completed acceptable result for floor check #80" in output
+    assert "superseded:" not in output
+
+
+@pytest.mark.parametrize("field", ["app", "check_suite", "started_at"])
+@pytest.mark.parametrize("incomplete_side", [0, 1])
+@pytest.mark.parametrize("status,conclusion", [("completed", "failure"), ("in_progress", None)])
+def test_incomplete_third_party_result_still_blocks_when_included(field, incomplete_side, status, conclusion):
+    transport, document = proof_scenario()
+    records = [third_party_record(80), third_party_record(82, started_at="2026-09-23T13:00:00Z")]
+    incomplete = records[incomplete_side]
+    incomplete.pop(field)
+    incomplete.update(status=status, conclusion=conclusion, completed_at=None)
+    add_third_party_floor(transport, document, records, records)
+
+    result, output = execute(transport)
+
+    assert result == 1
+    assert f"a completed acceptable result for floor check #{incomplete['id']}" in output
+    assert "omitted check id(s)" not in output
+    assert "superseded:" not in output
+
+
+@pytest.mark.parametrize("fail", [False, True])
+def test_third_party_log_names_final_winner_once_in_numeric_order_on_pass_and_fail(fail):
+    transport, document = proof_scenario()
+    old = third_party_record(79, conclusion="failure", name="Cloudflare\nmultiline")
+    middle = third_party_record(78, started_at="2026-09-23T12:30:00Z", name=old["name"])
+    new = third_party_record(83, started_at="2026-09-23T13:00:00Z", name=old["name"])
+    incomplete = third_party_record(84, started_at="2026-09-23T14:00:00Z", name=old["name"])
+    incomplete.pop("check_suite")
+    add_third_party_floor(transport, document, [new, old, incomplete, middle], [new, incomplete])
+    endpoint = f"repos/{REPO}/commits/{HEAD}/check-runs?filter=all&per_page=100"
+    if fail:
+        transport.responses[endpoint]["check_runs"][0]["conclusion"] = "failure"
+        document["floor"]["checks"][0]["conclusion"] = "failure"
+        replace_proof_document(transport, document)
+    proof_job = copy.deepcopy(transport.responses[endpoint]["check_runs"][0])
+    proof_job.update(id=99, name="caller / Change proof",
+                     details_url=f"https://github.com/{REPO}/actions/runs/100/job/999")
+    transport.responses[endpoint]["check_runs"].append(proof_job)
+    transport.responses[endpoint]["total_count"] += 1
+    transport.responses[f"repos/{REPO}/actions/runs/100"] = {
+        "id": 100, "head_sha": HEAD, "workflow_id": 72,
+        "referenced_workflows": [{
+            "path": "Grimblaz-and-Friends/change-proof/.github/workflows/change-proof.yml@main",
+        }],
+    }
+    transport.responses[f"repos/{REPO}/actions/runs/100/jobs?filter=all&per_page=100"] = {
+        "total_count": 1, "jobs": [{
+            "name": "caller / Change proof", "run_attempt": 1,
+            "check_run_url": f"https://api.github.com/repos/{REPO}/check-runs/99",
+        }],
+    }
+
+    result, output = execute(transport)
+
+    assert result == int(fail), output
+    assert [line for line in output.splitlines() if line.startswith("superseded:")] == [
+        "superseded: check #78 replaced by check #83",
+        "superseded: check #79 replaced by check #83",
+    ]
+    assert "verified: floor check #83" in output
+    assert "verified: floor check #84" in output
+    assert "excluded: reusable proof execution run #100 check #99" in output
+
+
+@pytest.mark.parametrize("alteration", ["dropped-check", "winner-fields"])
+def test_third_party_reduction_preserves_proof_membership_and_public_matching(alteration):
+    transport, document = proof_scenario()
+    old = third_party_record(80)
+    new = third_party_record(82, started_at="2026-09-23T13:00:00Z")
+    add_third_party_floor(transport, document, [old, new], [new])
+    if alteration == "dropped-check":
+        document["floor"]["checks"].append(third_party_proof_check(old))
+    else:
+        document["floor"]["checks"][-1]["started_at"] = "2026-09-23T15:00:00+02:00"
+    replace_proof_document(transport, document)
+
+    result, output = execute(transport)
+
+    assert result == 1
+    if alteration == "dropped-check":
+        assert "public floor check #80 named by the proof document" in output
+    else:
+        assert "floor check #82 to match its public record: started_at" in output
+    assert "superseded: check #80 replaced by check #82" in output
+
+
+@pytest.mark.parametrize("provenance", ["no-url", "no-workflow", "resolved-without-slug"])
+def test_known_actions_never_enter_third_party_reduction_with_incomplete_provenance(provenance):
+    transport, _document = proof_scenario()
+    endpoint = f"repos/{REPO}/commits/{HEAD}/check-runs?filter=all&per_page=100"
+    new = transport.responses[endpoint]["check_runs"][0]
+    new["check_suite"] = {"id": 99285750577}
+    old = copy.deepcopy(new)
+    old.update(id=80, conclusion="failure", started_at="2026-09-23T11:00:00Z",
+               details_url=f"https://github.com/{REPO}/actions/runs/91/job/800")
+    transport.responses[endpoint] = {"total_count": 2, "check_runs": [old, new]}
+    if provenance == "no-url":
+        old["details_url"] = "https://checks.example/runs/80"
+        new["details_url"] = "https://checks.example/runs/81"
+    else:
+        transport.responses[f"repos/{REPO}/actions/runs/91"].pop("workflow_id")
+        jobs = transport.responses[f"repos/{REPO}/actions/runs/91/jobs?filter=all&per_page=100"]
+        jobs["total_count"] = 2
+        jobs["jobs"].append({
+            "name": "Tests", "run_attempt": 1,
+            "check_run_url": f"https://api.github.com/repos/{REPO}/check-runs/80",
+        })
+        if provenance == "resolved-without-slug":
+            old["app"].pop("slug")
+            new["app"].pop("slug")
+
+    result, output = execute(transport)
+
+    assert result == 1
+    assert "omitted check id(s): 80" in output
+    assert "a completed acceptable result for floor check #80" in output
+    assert "superseded:" not in output
+
+
 def ancestor_proof_scenario():
     transport, document = proof_scenario()
     transport.responses[f"repos/{REPO}/pulls/17/files?per_page=100"] = [
