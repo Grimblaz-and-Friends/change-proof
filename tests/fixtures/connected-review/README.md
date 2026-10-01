@@ -42,6 +42,15 @@ review ids, missing whole-review answers, and all unidentified reviews. It does
 not compare `ignored_authors`, a producer diagnostic the gate does not emit.
 The fixture's `.gitattributes` entry preserves its bytes without text conversion.
 
+The replay applies exactly one labelled expectation override for
+`section-without-count-missing-entry`, under the
+[Steward's ruling, comment 5937486813](https://github.com/Grimblaz-and-Friends/change-proof/issues/38#issuecomment-5937486813).
+That CodeRabbit case owes only `cr-comment:v1:alpha` from review 100, with no
+missing or unidentified review. The test cites the ruling in its assertion
+message and fails if the pinned expectation already matches the override.
+#809's corrected file will replace this copy, forcing removal of that override;
+the pinned file itself remains byte for byte unchanged.
+
 `derived-review-body-examples.json` remains the gate's own synthetic coverage,
 derived directly from tradecraft #809's [settled artifact, comment 5934093522](https://github.com/Grimblaz-and-Friends/tradecraft/issues/809#issuecomment-5934093522),
 **Implementation reading**, **Identity and accounting** and **Answer contract**.
@@ -50,7 +59,13 @@ It was not copied from a tradecraft commit. This follows the holder's
 These derived examples came first and were then reconciled to #809's shared
 file under the [Steward's rulings, comment 5936971325](https://github.com/Grimblaz-and-Friends/change-proof/issues/38#issuecomment-5936971325).
 `test_derived_shared_protocol_examples` evaluates the derived examples through
-both gate evidence paths. No fixture is a runtime dependency.
+both gate evidence paths. Added gate-owned examples follow the
+[structural forms ruling](https://github.com/Grimblaz-and-Friends/change-proof/issues/38#issuecomment-5937322711),
+its [bold-line amendment](https://github.com/Grimblaz-and-Friends/change-proof/issues/38#issuecomment-5937338526)
+and the [section and code-span rulings](https://github.com/Grimblaz-and-Friends/change-proof/issues/38#issuecomment-5937356812).
+They cover new labels, declarations with deficits, anchored-title controls, and
+code spans separated by paragraph breaks or left unmatched. No fixture is a
+runtime dependency.
 
 `tradecraft-654-body.trimmed.json` and `tradecraft-757-body.trimmed.json` were
 fetched with GET on 2026-10-01:
@@ -67,6 +82,28 @@ with its review join, author and reply parent. User objects are retained intact.
 Unused top-level API fields are removed; no retained value is synthetic.
 `test_recorded_vendor_sections_keep_their_real_accounting` checks the recordings
 at their actual repository and pull requests.
+`test_recorded_declaration_shapes_check_missing_identities` also uses the #654,
+#733 and #757 bodies through both evidence paths, with synthetic metadata,
+answered inline roots and proof membership. Its negative controls remove only
+the recorded finding identity, so an ignored declaration cannot pass the test.
+
+`tradecraft-757-walkthrough.trimmed.json` was fetched with GET on 2026-10-01:
+
+```text
+gh api --method GET repos/Grimblaz-and-Friends/tradecraft/issues/comments/5817397750
+```
+
+It retains the comment's id, intact user object, HTML URL and complete verbatim
+body, including the `Security review details` block and its
+`Security Findings and Attack Paths` heading. Only unused top-level API fields
+are removed; the body is not trimmed and no retained value is synthetic.
+`test_recorded_walkthrough_adds_no_obligation_beside_nitpick` checks this comment
+alongside the recorded #757 review and inline records at their actual repository
+and pull request: only the identified nitpick needs a body answer. It also reuses
+both verbatim bodies through both evidence paths in synthetic worlds, with
+synthetic review metadata, inline roots and replies, proof membership, and a
+nitpick answer. The declaration rules follow the
+[Steward's ruling, comment 5937284942](https://github.com/Grimblaz-and-Friends/change-proof/issues/38#issuecomment-5937284942).
 
 `tradecraft-733-review-joins.json` separately restores the
 `pull_request_review_id` fields omitted by the earlier #733 world's trimming,

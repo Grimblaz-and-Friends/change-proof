@@ -1179,9 +1179,11 @@ BODY_PREFIXES = {
     "coderabbitai[bot]": "cr-comment:v1:",
     LAB_REVIEWER: "tradecraft-review-finding:v1:",
 }
-BODY_SECTION = re.compile(
-    r"(?:Outside diff range comments|Nitpick comments|Other comments|Findings)\b", re.I
+CODERABBIT_BODY_SECTION = re.compile(
+    r"((?:\w+\s+)+comments)\s+\(([^()]*)\)", re.I
 )
+GENERIC_BODY_SECTION = re.compile(r"^(Findings)\b(.*)$", re.I | re.S)
+EXPLICIT_ZERO_FINDINGS = ("None.", "No findings.", "No findings were found.")
 REVIEW_TARGET = re.compile(
     r"https://github\.com/([A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+)/pull/"
     r"([1-9][0-9]*)#(pullrequestreview|issuecomment)-([1-9][0-9]*)\b"
@@ -1210,11 +1212,23 @@ def _review_markup(body: str, *, inline: bool = True) -> str:
         lines.append(re.sub(r"[^\r\n]", " ", line) if masked else line)
     result = "".join(lines)
     if inline:
+        # A paragraph break, including a quoted blank line, ends any code span.
+        paragraphs = []
+        paragraph = []
+        for line in result.splitlines(keepends=True):
+            content = re.sub(r"^(?:[ \t]*>[ \t]?)+", "", line)
+            if not content.strip():
+                paragraphs.extend(("".join(paragraph), line))
+                paragraph = []
+            else:
+                paragraph.append(line)
+        paragraphs.append("".join(paragraph))
         # A closing delimiter must have exactly the opener's run length.
-        result = re.sub(
+        # An unmatched opener has no match and therefore masks nothing.
+        result = "".join(re.sub(
             r"(?<!`)(`+)(?!`)(.*?)(?<!`)\1(?!`)",
-            lambda match: re.sub(r"[^\r\n]", " ", match[0]), result, flags=re.S,
-        )
+            lambda match: re.sub(r"[^\r\n]", " ", match[0]), part, flags=re.S,
+        ) for part in paragraphs)
         result = re.sub(r"<code\b[^>]*>.*?</code>",
                         lambda match: " " * len(match[0]), result, flags=re.S | re.I)
     return result
@@ -1246,6 +1260,67 @@ def _detail_scopes(markup: str) -> list[tuple[int, int, str]]:
     return scopes
 
 
+def _bold_title(line: str) -> str | None:
+    match = re.fullmatch(r"(\*\*|__)(.+)\1", line)
+    if match is None or match[1] in match[2]:
+        return None
+    return match[2].strip()
+
+
+def _body_sections(
+    markup: str, reviewer: str, details: list[tuple[int, int, str]],
+) -> list[tuple[int, int, int, str, str]]:
+    """Return declaration start, end, content start, label and count text."""
+    candidates: list[tuple[int, int, int, str, str]] = []
+    summaries = list(re.finditer(r"<summary\b[^>]*>(.*?)</summary\s*>", markup, re.S | re.I))
+
+    def add(start: int, content_start: int, end: int, raw_title: str) -> None:
+        title = re.sub(r"<[^>]*>", "", raw_title).strip()
+        title = _bold_title(title) or title
+        if reviewer == "coderabbitai[bot]":
+            if re.search(r"Findings", title, re.I):
+                return
+            # Real CodeRabbit titles carry one leading emoji/symbol run.
+            title = re.sub(r"^[^\w]+", "", title).strip()
+            signal = CODERABBIT_BODY_SECTION.fullmatch(title)
+        else:
+            signal = GENERIC_BODY_SECTION.match(title)
+        if signal is not None:
+            suffix = (f"({signal[2].strip()})" if reviewer == "coderabbitai[bot]"
+                      else signal[2].strip())
+            candidates.append((start, end, content_start, signal[1].strip().lower(), suffix))
+
+    for summary in summaries:
+        enclosing = [scope for scope in details if scope[0] <= summary.start() < scope[1]]
+        end = min(enclosing, key=lambda scope: scope[1] - scope[0])[1] if enclosing else len(markup)
+        add(summary.start(), summary.end(), end, summary[1])
+
+    dividers = []
+    for line_match in re.finditer(r"[^\n]+", markup):
+        line = re.sub(r"^(?:[ \t]*>[ \t]?)+", "", line_match[0]).strip()
+        if line == "---":
+            dividers.append(line_match.start())
+        if any(summary.start() <= line_match.start() < summary.end() for summary in summaries):
+            continue
+        title = _bold_title(line)
+        if title is None and reviewer != "coderabbitai[bot]":
+            heading = re.fullmatch(r"#{1,6}[ \t]+(.+?)(?:[ \t]+#+)?", line)
+            title = heading[1] if heading else None
+        if title is not None:
+            add(line_match.start(), line_match.end(), len(markup), title)
+
+    candidates.sort()
+    sections = []
+    for index, (start, end, content_start, label, suffix) in enumerate(candidates):
+        boundaries = [end] + [divider for divider in dividers if divider > start]
+        if index + 1 < len(candidates):
+            boundaries.append(candidates[index + 1][0])
+        # Declared intervals do not overlap: an inner declaration takes credit
+        # from its start, and its identities cannot fill its parent's deficit.
+        sections.append((start, min(boundaries), content_start, label, suffix))
+    return sections
+
+
 def _declared_body_deficits(
     body: str, reviewer: str, roots: list[dict[str, object]],
 ) -> list[str]:
@@ -1270,8 +1345,13 @@ def _declared_body_deficits(
             reasons.append(f"{label} declares {values[0]}, accounted {actual}")
 
     if reviewer == "coderabbitai[bot]":
-        values = [value.strip().strip("*").strip() for value in
-                  re.findall(r"Actionable comments posted:([^\n]*)", markup, re.I)]
+        values = []
+        for line in markup.splitlines():
+            line = re.sub(r"^(?:[ \t]*>[ \t]?)+", "", line).strip()
+            title = _bold_title(line) or line
+            count = re.fullmatch(r"Actionable comments posted:(.*)", title, re.I)
+            if count:
+                values.append(count[1].strip())
         count_declaration("actionable comments", values, len(inline_ids))
     elif reviewer == LAB_REVIEWER:
         values = re.findall(r"([^\s]+) validated finding(?:\(s\)|s)?\.", markup, re.I)
@@ -1288,44 +1368,27 @@ def _declared_body_deficits(
         ) if match[0].strip() != "No findings."]
         count_declaration("findings", values, accounted)
 
-    # CodeRabbit uses details summaries and bold, blockquoted headings. Other
-    # reviewers can declare a Markdown Findings section. Prompt blocks are code.
     details = _detail_scopes(markup)
-    sections: list[tuple[int, int, str, str]] = []
-    for line_match in re.finditer(r"[^\n]+", markup):
-        line = re.sub(r"^(?:[ \t]*>[ \t]?)+", "", line_match[0]).strip()
-        summary = re.search(r"<summary\b[^>]*>(.*?)</summary>", line, re.I)
-        title = re.sub(r"<[^>]*>|[*_#]", "", summary[1] if summary else line).strip()
-        signal = BODY_SECTION.search(title)
-        if signal is None or not (line.startswith(("#", "**", "__"))
-                                  or re.match(r"(?:<details\b[^>]*>\s*)?<summary\b", line, re.I)):
-            continue
-        # 'Findings: N' is an aggregate declaration, not a body-only section.
-        if re.match(r"Findings:\s*\S+", title, re.I):
-            continue
-        start = line_match.start()
-        enclosing = [scope for scope in details if scope[0] <= start < scope[1]]
-        if re.search(r"<summary\b", line, re.I) and enclosing:
-            end = min(enclosing, key=lambda scope: scope[1] - scope[0])[1]
-        else:
-            heading = re.match(r"(#{1,6})\s", line)
-            heading_boundary = r"|#{1," + str(len(heading[1])) + r"}\s" if heading else ""
-            boundary = re.search(r"\n(?:[ \t]*>[ \t]*)?(?:---\s*$" + heading_boundary + ")",
-                                 markup[line_match.end():], re.M)
-            end = line_match.end() + boundary.start() if boundary else len(markup)
-        sections.append((start, end, signal[0].lower(), title[signal.end():].strip()))
+    sections = _body_sections(markup, reviewer, details)
     seen_sections: set[str] = set()
-    for start, end, label, suffix in sections:
-        end = min([end] + [other[0] for other in sections if start < other[0] < end])
+    for start, end, content_start, label, suffix in sections:
         if label in seen_sections:
             reasons.append(f"{label} section is duplicated")
         seen_sections.add(label)
-        scoped = markup[start:end]
+        scoped = markup[content_start:end]
         scoped_ids, _ = _body_identities(scoped, reviewer)
-        section_accounted = len(inline_ids | scoped_ids) if label == "findings" else len(scoped_ids)
+        content = re.sub(r"^(?:[ \t]*>[ \t]?)+", "", scoped, flags=re.M)
+        content = re.sub(r"<(?!\!)[^>]*>", "", content).strip()
+        empty_or_zero = content in ("", *EXPLICIT_ZERO_FINDINGS)
+        section_accounted = len(scoped_ids)
+        if label == "findings" and empty_or_zero:
+            section_accounted = len(inline_ids | scoped_ids)
         if suffix:
             number = re.fullmatch(r"\(([0-9]+)\)", suffix)
-            count_declaration(label, [number[1] if number else suffix], section_accounted)
+            value = number[1] if number else suffix
+            if label == "findings" and suffix.startswith(":"):
+                value = suffix[1:].strip()
+            count_declaration(label, [value], section_accounted)
         # Each nested finding/file details must account for its own entries.
         for child_start, child_end, child in details:
             if not (start < child_start < child_end <= end):
@@ -1349,19 +1412,15 @@ def _declared_body_deficits(
             elif not nested and not child_ids:
                 reasons.append(f"{label} has an unidentified entry")
         # Markdown lists/subheadings explicitly declare separate body entries.
-        section_summary = re.search(r"<summary\b[^>]*>.*?</summary>", scoped, re.S | re.I)
-        content_start = (section_summary.end() if section_summary
-                         else (scoped.find("\n") + 1 or len(scoped)))
-        entries = list(re.finditer(r"(?m)^(?:[ \t]*>[ \t]?)?(?: {0,3}(?:[-+*]|[0-9]+[.)])\s+|#{2,6}\s+)", scoped[content_start:]))
+        entries = list(re.finditer(r"(?m)^(?:[ \t]*>[ \t]?)?(?: {0,3}(?:[-+*]|[0-9]+[.)])\s+|#{2,6}\s+)", scoped))
         for index, entry in enumerate(entries):
-            stop = content_start + entries[index + 1].start() if index + 1 < len(entries) else len(scoped)
-            if not _body_identities(scoped[content_start + entry.start():stop], reviewer)[0]:
+            stop = entries[index + 1].start() if index + 1 < len(entries) else len(scoped)
+            if not _body_identities(scoped[entry.start():stop], reviewer)[0]:
                 reasons.append(f"{label} has an unidentified entry")
-        if not suffix and not scoped_ids:
-            content = re.sub(r"<[^>]*>", "", scoped[content_start:]).strip()
-            if content in ("None.", "No findings.", "No findings were found."):
+        if not scoped_ids:
+            if not suffix and content in EXPLICIT_ZERO_FINDINGS:
                 count_declaration(label, ["0"], section_accounted)
-            else:
+            elif not empty_or_zero or not suffix:
                 reasons.append(f"{label} section has no identified findings")
     return list(dict.fromkeys(reasons))
 

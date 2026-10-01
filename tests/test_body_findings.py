@@ -280,11 +280,11 @@ def test_inline_exemption_does_not_waive_proof_membership():
 @pytest.mark.parametrize("body", (
     "**Actionable comments posted: many**", "**Actionable comments posted:**",
     "**Actionable comments posted: 0**\n**Actionable comments posted: 0**",
-    "**Nitpick comments (two)**", "**Nitpick comments**\n<details><summary>A finding</summary>unknown</details>",
+    "**Nitpick comments (two)**", "**Nitpick comments (1)**\n<details><summary>A finding</summary>unknown</details>",
     "**Outside diff range comments (1)**\n<details><summary>Missing identity</summary>unknown</details>\n---\n**Nitpick comments (2)**\n<!-- cr-comment:v1:a -->\n<!-- cr-comment:v1:b -->",
     "<!-- cr-comment:v1: -->", "<!-- cr-comment:v2:unknown -->",
     "**Outside diff range comments (1)**\n<details><summary>Missing identity</summary>unknown</details>\n**Nitpick comments (1)**\n<!-- cr-comment:v1:a -->",
-    "<details>\n<summary>Nitpick comments</summary>\n<details><summary>file.py (2)</summary>\n<!-- cr-comment:v1:a -->\n</details></details>",
+    "<details>\n<summary>Nitpick comments (2)</summary>\n<details><summary>file.py (2)</summary>\n<!-- cr-comment:v1:a -->\n</details></details>",
 ))
 def test_malformed_and_unidentified_sections_fail_closed(evidence_path, body):
     transport, _ = body_scenario(evidence_path)
@@ -359,6 +359,8 @@ def test_conflicting_and_malformed_lab_evidence_is_unidentified(evidence_path, b
 @pytest.mark.parametrize("body,inline,expected", (
     ("Findings: 1", True, 0), ("1 findings.", False, 1),
     ("## Findings\n- Finding without an identity", False, 1),
+    ("## Security Findings", False, 0), ("## Findings (1)", False, 1),
+    ("## Findings: 1", False, 1), ("## Findings: 1", True, 0),
     ("## Opening note\nSummary text", False, 0),
 ))
 def test_other_configured_reviewer_structural_declarations(evidence_path, body, inline, expected):
@@ -373,6 +375,17 @@ def test_other_configured_reviewer_structural_declarations(evidence_path, body, 
         transport.responses[COMMENTS_ENDPOINT].append(answer(None))
         result, output = execute(transport)
         assert result == 0, output
+
+
+@pytest.mark.parametrize("reviewer", (CR, LAB, "other[bot]"))
+@pytest.mark.parametrize("title,declares", (
+    ("Findings", True), ("Findings (1)", True), ("Findings: 1", True),
+    ("Security Findings and Attack Paths", False),
+))
+def test_findings_heading_declarations_are_reviewer_specific(reviewer, title, declares):
+    deficits = check._declared_body_deficits("## " + title, reviewer, [])
+    expected = reviewer != CR and declares
+    assert bool(deficits) == expected
 
 
 def test_reviewer_conversation_findings_use_their_source_comment(evidence_path):
@@ -397,6 +410,181 @@ def test_recorded_vendor_sections_keep_their_real_accounting(number):
     assert len(failures) == 1
     assert "body finding" in failures[0].missing
     assert "unidentified" not in failures[0].missing
+
+
+def test_recorded_walkthrough_adds_no_obligation_beside_nitpick(evidence_path):
+    walkthrough = json.loads((FIXTURES / "tradecraft-757-walkthrough.trimmed.json").read_bytes())
+    fixture = json.loads((FIXTURES / "tradecraft-757-body.trimmed.json").read_bytes())
+    comment = walkthrough["comment"]
+    nitpick = "cr-comment:v1:589ed22553ee38f47c16505e"
+    config = check.WorkConfig(frozenset({CR}), frozenset({"grimblaz"}))
+    failures, _ = check._check_body_findings(
+        fixture["repository"], fixture["pull_request"], config, [comment],
+        [fixture["review"]], fixture["inline_comments"],
+    )
+    url = source_url(fixture["review"]["id"], repo=fixture["repository"], number=757)
+    assert [item.missing for item in failures] == [
+        f"an authorized conversation disposition for {CR} body finding {nitpick} at {url}"
+    ]
+
+    # Synthetic evidence worlds carry both verbatim recorded bodies. Inline
+    # roots/replies, proof membership, and the final nitpick answer are overlays.
+    transport, document = body_scenario(evidence_path)
+    transport.responses[REVIEW_ENDPOINT][0]["body"] = fixture["review"]["body"]
+    transport.responses[COMMENTS_ENDPOINT].append(comment)
+    roots = [item for item in fixture["inline_comments"] if item.get("in_reply_to_id") is None
+             and check._author(item) == CR]
+    for index, _ in enumerate(roots):
+        add_inline(transport, document, identity=None, thread_id=51 + index)
+    result, output = execute(transport)
+    assert result == 1, output
+    assert [line for line in output.splitlines() if line.startswith("missing:")] == [
+        f"missing: an authorized conversation disposition for {CR} body finding {nitpick} at {source_url()}"
+    ]
+    transport.responses[COMMENTS_ENDPOINT].append(answer(nitpick))
+    result, output = execute(transport)
+    assert result == 0, output
+
+
+@pytest.mark.parametrize("number", (654, 733, 757))
+@pytest.mark.parametrize("identified", (False, True))
+def test_recorded_declaration_shapes_check_missing_identities(evidence_path, number, identified):
+    if number == 733:
+        world = json.loads((FIXTURES.parent / "proof-v1/recorded/world-tc733.trimmed.json").read_bytes())
+        repo = world["repository"]
+        review = next(item for item in world["responses"][f"repos/{repo}/pulls/733/reviews?per_page=100"]
+                      if item["id"] == 5291109788)
+        inline = world["responses"][f"repos/{repo}/pulls/733/comments?per_page=100"]
+        joins = json.loads((FIXTURES / "tradecraft-733-review-joins.json").read_bytes())
+    else:
+        fixture = json.loads((FIXTURES / f"tradecraft-{number}-body.trimmed.json").read_bytes())
+        review, inline = fixture["review"], fixture["inline_comments"]
+        joins = {str(item["id"]): item.get("pull_request_review_id") for item in inline}
+    roots = [item for item in inline if item.get("in_reply_to_id") is None
+             and check._author(item) == CR and joins.get(str(item["id"])) == review["id"]]
+    identity, = check._body_identities(review["body"], CR)[0]
+    transport, document = body_scenario(evidence_path)
+    # Synthetic overlays retain the recorded body; the negative control removes
+    # only its identity. Each world supplies answered roots and proof membership.
+    body = review["body"] if identified else check.BODY_IDENTITIES[CR].sub("", review["body"])
+    transport.responses[REVIEW_ENDPOINT][0]["body"] = body
+    for index, _ in enumerate(roots):
+        add_inline(transport, document, identity=None, thread_id=51 + index)
+    result, output = execute(transport)
+    assert result == 1, output
+    assert ("missing: an authorized whole-review disposition" in output) == (not identified)
+    assert (f"body finding {identity}" in output) == identified
+    transport.responses[COMMENTS_ENDPOINT].append(answer(identity if identified else None))
+    result, output = execute(transport)
+    assert result == 0, output
+
+
+@pytest.mark.parametrize("outer_shape", ("bold", "summary"))
+@pytest.mark.parametrize("deficient", (False, True))
+def test_nested_entries_end_at_the_next_declared_section(evidence_path, outer_shape, deficient):
+    second = "Unidentified entry" if deficient else "<!-- cr-comment:v1:two -->"
+    entries = (
+        "<details><summary><em>Major</em> First entry</summary>\n" + MARKER + "\n</details>\n"
+        "<details><summary><em>Minor</em> Second entry</summary>\n" + second + "\n</details>\n"
+    )
+    title = "\u26a0\ufe0f Outside diff range comments (2)"
+    outside = ("> **" + title + "**\n" + entries if outer_shape == "bold" else
+               "<details><summary>" + title + "</summary>\n" + entries + "</details>\n")
+    body = outside + "<details><summary>Nitpick comments (1)</summary>\n<!-- cr-comment:v1:later -->\n</details>"
+    transport, _ = body_scenario(evidence_path)
+    transport.responses[REVIEW_ENDPOINT][0]["body"] = body
+    for identity in (IDENTITY, "cr-comment:v1:later") + (() if deficient else ("cr-comment:v1:two",)):
+        transport.responses[COMMENTS_ENDPOINT].append(answer(identity))
+    result, output = execute(transport)
+    assert result == int(deficient), output
+    if deficient:
+        assert "outside diff range comments declares 2, accounted 1" in output
+        transport.responses[COMMENTS_ENDPOINT].append(answer(None))
+        result, output = execute(transport)
+        assert result == 0, output
+
+
+@pytest.mark.parametrize("boundary", ("divider", "details-close"))
+def test_identity_after_a_section_end_cannot_fill_its_count(evidence_path, boundary):
+    body = ("**Other comments (1)**\nUnknown entry\n---\n" if boundary == "divider" else
+            "<details><summary>Other comments (1)</summary>Unknown entry</details>\n") + MARKER
+    transport, _ = body_scenario(evidence_path)
+    transport.responses[REVIEW_ENDPOINT][0]["body"] = body
+    transport.responses[COMMENTS_ENDPOINT].append(answer())
+    result, output = execute(transport)
+    assert result == 1, output
+    assert "other comments declares 1, accounted 0" in output
+
+
+@pytest.mark.parametrize("parent_identified", (False, True))
+def test_nested_declaration_credits_only_its_own_identity(evidence_path, parent_identified):
+    body = "<details><summary>Outside diff range comments (1)</summary>\n"
+    if parent_identified:
+        body += MARKER + "\n"
+    body += "<details><summary>Duplicate comments (1)</summary>\n<!-- cr-comment:v1:inner -->\n</details></details>"
+    transport, _ = body_scenario(evidence_path)
+    transport.responses[REVIEW_ENDPOINT][0]["body"] = body
+    transport.responses[COMMENTS_ENDPOINT].append(answer("cr-comment:v1:inner"))
+    if parent_identified:
+        transport.responses[COMMENTS_ENDPOINT].append(answer())
+    result, output = execute(transport)
+    assert result == (0 if parent_identified else 1), output
+    if not parent_identified:
+        assert "outside diff range comments declares 1, accounted 0" in output
+
+
+@pytest.mark.parametrize("content,complete", (
+    ("", True), ("None.", True), ("No findings.", True), ("No findings were found.", True),
+    ("Unidentified body prose.", False), ("No findings.\nAdditional prose.", False),
+))
+@pytest.mark.parametrize("total", (0, 1))
+def test_inline_roots_fill_only_empty_or_explicit_zero_sections(evidence_path, content, complete, total):
+    transport, document = body_scenario(evidence_path, "other[bot]")
+    transport.responses[REVIEW_ENDPOINT][0]["body"] = f"## Findings ({total})\n" + content
+    if total:
+        add_inline(transport, document, reviewer="other[bot]", identity=None)
+    result, output = execute(transport)
+    assert result == (0 if complete else 1), output
+    if not complete:
+        assert "missing: an authorized whole-review disposition" in output
+        if total:
+            assert "findings declares 1, accounted 0" in output
+        transport.responses[COMMENTS_ENDPOINT].append(answer(None))
+        result, output = execute(transport)
+        assert result == 0, output
+
+
+def test_counted_body_section_cannot_borrow_inline_credit(evidence_path):
+    transport, document = body_scenario(evidence_path, LAB)
+    review = transport.responses[REVIEW_ENDPOINT][0]
+    review["body"] = f"## Findings (2)\n<!-- {LAB_IDENTITY} -->\n" + review["body"]
+    add_inline(transport, document, reviewer=LAB, identity=None)
+    transport.responses[COMMENTS_ENDPOINT].append(answer(LAB_IDENTITY, review["id"]))
+    result, output = execute(transport)
+    assert result == 1, output
+    assert "findings declares 2, accounted 1" in output
+    transport.responses[COMMENTS_ENDPOINT].append(answer(None, review["id"]))
+    result, output = execute(transport)
+    assert result == 0, output
+
+
+def test_review_and_config_logins_are_case_insensitive(evidence_path):
+    transport, _ = body_scenario(evidence_path)
+    review = transport.responses[REVIEW_ENDPOINT][0]
+    review["user"]["login"] = "CodeRabbitAI[bot]"
+    review["body"] = "**Nitpick comments (1)**\n" + MARKER
+    for revision in (HEAD, BASE_TIP):
+        endpoint = f"repos/{REPO}/contents/.tradecraft/work.json?ref={revision}"
+        config = json.loads(base64.b64decode(transport.responses[endpoint]["content"]))
+        config["connected_reviewers"] = ["CoDeRaBbItAi[bot]"]
+        config["marker_producers"] = [OWNER.swapcase()]
+        transport.responses[endpoint] = contents(config)
+    result, output = execute(transport)
+    assert result == 1, output
+    assert f"body finding {IDENTITY}" in output
+    transport.responses[COMMENTS_ENDPOINT].append(answer(author=OWNER.swapcase()))
+    result, output = execute(transport)
+    assert result == 0, output
 
 
 @pytest.mark.parametrize("comment_name", ("tradecraft-733.comment.md", "tradecraft-733-no-bundle.comment.md"))
@@ -463,8 +651,27 @@ assert len(SHARED_BODY_CASES) == 67
 
 @pytest.mark.parametrize("case", SHARED_BODY_CASES, ids=lambda case: case["name"])
 def test_shared_review_body_dispositions(case):
-    config = check.WorkConfig(frozenset(case["connected_reviewers"]),
-                              frozenset(case["marker_producers"]))
+    config = check.load_work_config({
+        "schema_version": 1, "product_repositories": [],
+        "connected_reviewers": case["connected_reviewers"],
+        "marker_producers": case["marker_producers"],
+    })
+    expected = case["expected"]
+    context = case["name"]
+    if case["name"] == "section-without-count-missing-entry":
+        # The pinned case contradicts CodeRabbit's declaration rule. Its sole
+        # expectation override is authorized by the Steward's ruling:
+        # https://github.com/Grimblaz-and-Friends/change-proof/issues/38#issuecomment-5937486813
+        ruling = "https://github.com/Grimblaz-and-Friends/change-proof/issues/38#issuecomment-5937486813"
+        override = {
+            "missing_findings": [{"reviewer": CR, "identity": "cr-comment:v1:alpha", "sources": [100]}],
+            "missing_reviews": [], "unidentified_reviews": [],
+        }
+        assert {key: expected[key] for key in override} != override, (
+            f"Remove the now-unnecessary expectation override authorized by {ruling}"
+        )
+        expected = override
+        context += f"; labelled Steward expectation override: {ruling}"
     failures, verified = check._check_body_findings(
         case["repository"], case["pull_request"], config,
         case["conversation_comments"], case["reviews"], case["inline_comments"],
@@ -493,29 +700,28 @@ def test_shared_review_body_dispositions(case):
                 if check._author(review) == reviewer and review.get("state") != "PENDING"
                 and identity in check._body_identities(review.get("body") or "", reviewer)[0]
             }
-            assert int(source) in sources, (case["name"], failure)
+            assert int(source) in sources, (context, failure)
             missing_findings[reviewer, identity] = sources
         else:
             review = unidentified_pattern.search(failure.missing)
             assert review and failure.missing.startswith(
                 "an authorized whole-review disposition for "
-            ), (case["name"], failure)
+            ), (context, failure)
             missing_reviews.add(int(review[1]))
             unidentified_reviews.add(int(review[1]))
     for message in verified:
         review = unidentified_pattern.match(message)
         if review:
             unidentified_reviews.add(int(review[1]))
-    expected = case["expected"]
     # ignored_authors is a producer diagnostic, not an obligation; this gate
     # does not emit it, so only the three obligation/classification fields compare.
     assert missing_findings == {
         (item["reviewer"], item["identity"]): set(item["sources"])
         for item in expected["missing_findings"]
-    }, (case["name"], failures, verified)
-    assert missing_reviews == set(expected["missing_reviews"]), (case["name"], failures, verified)
+    }, (context, failures, verified)
+    assert missing_reviews == set(expected["missing_reviews"]), (context, failures, verified)
     assert unidentified_reviews == set(expected["unidentified_reviews"]), (
-        case["name"], failures, verified
+        context, failures, verified
     )
 
 
