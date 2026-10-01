@@ -848,7 +848,7 @@ SHARED_BODY_CASES = json.loads(
 
 @pytest.mark.parametrize("case", SHARED_BODY_CASES, ids=lambda case: case["name"])
 def test_shared_review_body_dispositions(case):
-    """Replay every pinned case with one labelled, self-removing ruling override."""
+    """Replay every case in the pinned shared fixture file without overrides."""
     config = check.load_work_config({
         "schema_version": 1, "product_repositories": [],
         "connected_reviewers": case["connected_reviewers"],
@@ -856,22 +856,6 @@ def test_shared_review_body_dispositions(case):
     })
     expected = case["expected"]
     context = case["name"]
-    if context == "innermost-declared-section-owns-identity":
-        # Steward: a declaration-shaped summary inside a declared section is
-        # content, so alpha accounts for the outer section's sole entry.
-        # https://github.com/Grimblaz-and-Friends/change-proof/issues/38#issuecomment-5939291068
-        ruling = "https://github.com/Grimblaz-and-Friends/change-proof/issues/38#issuecomment-5939291068"
-        override = {
-            "missing_findings": [{
-                "reviewer": CR, "identity": "cr-comment:v1:alpha", "sources": [100],
-            }],
-            "missing_reviews": [], "unidentified_reviews": [],
-        }
-        assert {field: expected[field] for field in override} != override, (
-            f"{context}: remove now-unnecessary expectation override under {ruling}"
-        )
-        expected = override
-        context += f"; labelled Steward expectation override under {ruling}"
     failures, verified = check._check_body_findings(
         case["repository"], case["pull_request"], config,
         case["conversation_comments"], case["reviews"], case["inline_comments"],

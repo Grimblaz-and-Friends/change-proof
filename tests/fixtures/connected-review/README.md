@@ -29,37 +29,30 @@ overlays in the tests. Those evaluations are not recordings of PR #795's gate.
 ## Body findings for #38
 
 `v1-review-body-dispositions.json` is copied verbatim from tradecraft commit
-`8421327e84b3e99ad72d9329f8cc1dd445ef89fa`, git blob
-`8b6170f75e6c838da2ff5484f9616804ec1b9cee`, with 92 cases, using this GET on
+`ddfc521d000e0e966b1532affb6007a0f4e86c3e`, git blob
+`7667d1c7c1017cdde162ce1a291c28da98032987`, with 97 cases, using this GET on
 2026-10-01:
 
 ```text
-gh api --method GET -H "Accept: application/vnd.github.raw" "repos/Grimblaz-and-Friends/tradecraft/contents/skills/work/references/proof-fixtures/v1-review-body-dispositions.json?ref=8421327e84b3e99ad72d9329f8cc1dd445ef89fa"
+gh api --method GET -H "Accept: application/vnd.github.raw" "repos/Grimblaz-and-Friends/tradecraft/contents/skills/work/references/proof-fixtures/v1-review-body-dispositions.json?ref=ddfc521d000e0e966b1532affb6007a0f4e86c3e"
 ```
 
 `test_shared_review_body_dispositions` replays every case in the file directly
-through the gate's body-finding check. It compares
+through the gate's body-finding check without expectation overrides. It compares
 missing findings with their carrying review ids, missing whole-review answers,
 and all unidentified reviews. It does not compare `ignored_authors`, a producer
 diagnostic the gate does not emit. The fixture's `.gitattributes` entry preserves
 its bytes without text conversion.
 
 This copy replaces tradecraft commit
-`e957cf9467f6e2b36ac0bc180f517bfab793e203`, git blob
-`d2a2a1d62bd49b9045a78afaeef769b67afad8e7`. Its corrected `bundled-body-answer`
-expectation follows the
-[Steward's ruling, comment 5938424447](https://github.com/Grimblaz-and-Friends/change-proof/issues/38#issuecomment-5938424447).
-The labelled override and its guard were removed after the guard failed on the
-corrected expectation, demanding removal.
-
-The later [Steward's section-depth ruling, comment 5939291068](https://github.com/Grimblaz-and-Friends/change-proof/issues/38#issuecomment-5939291068)
-supersedes `innermost-declared-section-owns-identity`: its nested summary is
-content, so `cr-comment:v1:alpha` from review 100 remains owed while
-`missing_reviews` and `unidentified_reviews` both change from `[100]` to `[]`.
-The replay has exactly one labelled expectation override for that case, citing
-the ruling, with a guard requiring removal once the file's own expectation
-matches. The pinned bytes remain unchanged; #809's corrected file will replace
-this copy and remove the override.
+`8421327e84b3e99ad72d9329f8cc1dd445ef89fa`, git blob
+`8b6170f75e6c838da2ff5484f9616804ec1b9cee`. Its corrected
+`innermost-declared-section-owns-identity` expectation follows the
+[Steward's section-depth ruling, comment 5939291068](https://github.com/Grimblaz-and-Friends/change-proof/issues/38#issuecomment-5939291068):
+its nested summary is content, so `cr-comment:v1:alpha` from review 100 remains
+owed while `missing_reviews` and `unidentified_reviews` both change from `[100]`
+to `[]`. The labelled override and its guard were removed after the guard failed
+on the corrected expectation, demanding removal. No expectation override remains.
 
 `derived-review-body-examples.json` remains the gate's own synthetic coverage,
 derived directly from tradecraft #809's [settled artifact, comment 5934093522](https://github.com/Grimblaz-and-Friends/tradecraft/issues/809#issuecomment-5934093522),

@@ -3535,12 +3535,8 @@
             ]
           }
         ],
-        "missing_reviews": [
-          100
-        ],
-        "unidentified_reviews": [
-          100
-        ],
+        "missing_reviews": [],
+        "unidentified_reviews": [],
         "ignored_authors": []
       }
     },
@@ -4019,6 +4015,211 @@
             "login": "coderabbitai[bot]"
           },
           "body": "<details><summary>Nitpick comments (1)</summary>\n<!-- cr-comment:v1:gamma -->\n</details>"
+        }
+      ],
+      "expected": {
+        "missing_findings": [],
+        "missing_reviews": [],
+        "unidentified_reviews": [],
+        "ignored_authors": []
+      }
+    },
+    {
+      "name": "depth-prose-bullets-in-finding",
+      "repository": "example/product",
+      "pull_request": 7,
+      "connected_reviewers": [
+        "coderabbitai[bot]",
+        "github-actions[bot]",
+        "review-bot"
+      ],
+      "marker_producers": [
+        "holder"
+      ],
+      "reviews": [
+        {
+          "id": 100,
+          "user": {
+            "login": "coderabbitai[bot]"
+          },
+          "state": "COMMENTED",
+          "body": "<details><summary>Nitpick comments (1)</summary>\n<details><summary>app.py (1)</summary>\n- First supporting point\n- Second supporting point\n<!-- cr-comment:v1:alpha -->\n</details>\n</details>",
+          "html_url": "https://github.com/example/product/pull/7#pullrequestreview-100",
+          "commit_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      ],
+      "inline_comments": [],
+      "conversation_comments": [
+        {
+          "id": 200,
+          "user": {
+            "login": "holder"
+          },
+          "body": "fixed - repaired; [cr-comment:v1:alpha](https://github.com/example/product/pull/7#pullrequestreview-100)"
+        }
+      ],
+      "expected": {
+        "missing_findings": [],
+        "missing_reviews": [],
+        "unidentified_reviews": [],
+        "ignored_authors": []
+      }
+    },
+    {
+      "name": "depth-analysis-chain-divider-in-nested-details",
+      "repository": "example/product",
+      "pull_request": 7,
+      "connected_reviewers": [
+        "coderabbitai[bot]",
+        "github-actions[bot]",
+        "review-bot"
+      ],
+      "marker_producers": [
+        "holder"
+      ],
+      "reviews": [
+        {
+          "id": 100,
+          "user": {
+            "login": "coderabbitai[bot]"
+          },
+          "state": "COMMENTED",
+          "body": "<details><summary>Nitpick comments (1)</summary>\n<details><summary>app.py (1)</summary>\n<details><summary>\ud83e\udde9 Analysis chain</summary>\n- Supporting analysis\n---\nMore analysis.\n</details>\n<!-- cr-comment:v1:alpha -->\n</details>\n</details>",
+          "html_url": "https://github.com/example/product/pull/7#pullrequestreview-100",
+          "commit_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      ],
+      "inline_comments": [],
+      "conversation_comments": [
+        {
+          "id": 200,
+          "user": {
+            "login": "holder"
+          },
+          "body": "fixed - repaired; [cr-comment:v1:alpha](https://github.com/example/product/pull/7#pullrequestreview-100)"
+        }
+      ],
+      "expected": {
+        "missing_findings": [],
+        "missing_reviews": [],
+        "unidentified_reviews": [],
+        "ignored_authors": []
+      }
+    },
+    {
+      "name": "depth-nested-bold-two-places",
+      "repository": "example/product",
+      "pull_request": 7,
+      "connected_reviewers": [
+        "coderabbitai[bot]",
+        "github-actions[bot]",
+        "review-bot"
+      ],
+      "marker_producers": [
+        "holder"
+      ],
+      "reviews": [
+        {
+          "id": 100,
+          "user": {
+            "login": "coderabbitai[bot]"
+          },
+          "state": "COMMENTED",
+          "body": "<details><summary>Nitpick comments (1)</summary>\n<details><summary>app.py (1)</summary>\n**Update stale code comments (two places)**\n<!-- cr-comment:v1:alpha -->\n</details>\n</details>",
+          "html_url": "https://github.com/example/product/pull/7#pullrequestreview-100",
+          "commit_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      ],
+      "inline_comments": [],
+      "conversation_comments": [
+        {
+          "id": 200,
+          "user": {
+            "login": "holder"
+          },
+          "body": "fixed - repaired; [cr-comment:v1:alpha](https://github.com/example/product/pull/7#pullrequestreview-100)"
+        }
+      ],
+      "expected": {
+        "missing_findings": [],
+        "missing_reviews": [],
+        "unidentified_reviews": [],
+        "ignored_authors": []
+      }
+    },
+    {
+      "name": "depth-nested-bold-digit-count",
+      "repository": "example/product",
+      "pull_request": 7,
+      "connected_reviewers": [
+        "coderabbitai[bot]",
+        "github-actions[bot]",
+        "review-bot"
+      ],
+      "marker_producers": [
+        "holder"
+      ],
+      "reviews": [
+        {
+          "id": 100,
+          "user": {
+            "login": "coderabbitai[bot]"
+          },
+          "state": "COMMENTED",
+          "body": "<details><summary>Nitpick comments (1)</summary>\n<details><summary>app.py (1)</summary>\n**Remove two stale comments (2)**\n<!-- cr-comment:v1:alpha -->\n</details>\n</details>",
+          "html_url": "https://github.com/example/product/pull/7#pullrequestreview-100",
+          "commit_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      ],
+      "inline_comments": [],
+      "conversation_comments": [
+        {
+          "id": 200,
+          "user": {
+            "login": "holder"
+          },
+          "body": "fixed - repaired; [cr-comment:v1:alpha](https://github.com/example/product/pull/7#pullrequestreview-100)"
+        }
+      ],
+      "expected": {
+        "missing_findings": [],
+        "missing_reviews": [],
+        "unidentified_reviews": [],
+        "ignored_authors": []
+      }
+    },
+    {
+      "name": "answer-link-repository-case-insensitive",
+      "repository": "example/product",
+      "pull_request": 7,
+      "connected_reviewers": [
+        "coderabbitai[bot]",
+        "github-actions[bot]",
+        "review-bot"
+      ],
+      "marker_producers": [
+        "holder"
+      ],
+      "reviews": [
+        {
+          "id": 100,
+          "user": {
+            "login": "coderabbitai[bot]"
+          },
+          "state": "COMMENTED",
+          "body": "<details><summary>Nitpick comments (1)</summary>\n<details><summary>app.py (1)</summary>\nFix the bounds check.\n<!-- cr-comment:v1:alpha -->\n</details>\n</details>",
+          "html_url": "https://github.com/example/product/pull/7#pullrequestreview-100",
+          "commit_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      ],
+      "inline_comments": [],
+      "conversation_comments": [
+        {
+          "id": 200,
+          "user": {
+            "login": "holder"
+          },
+          "body": "fixed - repaired; [cr-comment:v1:alpha](https://github.com/Example/Product/pull/7#pullrequestreview-100)"
         }
       ],
       "expected": {
