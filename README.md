@@ -2,7 +2,7 @@
 
 **Purpose:** define and operate the independent release-proof gate used by this repository and its adopters. **Audience:** repository owners, holders, and adopters configuring or interpreting the gate. **Success:** a reader can grant the exact read boundary, supply either compatibility markers or one proof document per head, and distinguish facts the gate verified from producer declarations and diagnostics.
 
-Change proof is a reusable GitHub workflow for pull requests: it requires the pull-request body's `**Path departures:**` paragraph, decides from caller-owned path rules whether use was required unless the owner's verified mechanical lane exempts it, verifies the applicable use or no-use evidence and every configured connected reviewer, and requires authorized dispositions on those reviewers' top-level inline comments before the proof passes.
+Change proof is a reusable GitHub workflow for pull requests: it requires the pull-request body's `**Path departures:**` paragraph, decides from caller-owned path rules whether use was required unless the owner's verified mechanical lane exempts it, verifies the applicable use or no-use evidence and every configured connected reviewer, and requires authorized dispositions on their inline threads, identified body findings and unidentified reviews before the proof passes.
 
 ## Call the workflow
 
@@ -100,7 +100,7 @@ All three lists are required by the shared work-configuration schema, including 
 
 ## Evidence contract
 
-Pull requests to this repository take the same release proof as its callers. A change here is reported ready for merge only after its body has the required path-departures paragraph, the change-proof check has run, every configured connected reviewer has run, and every top-level inline reviewer thread has a marker-producer disposition.
+Pull requests to this repository take the same release proof as its callers. A change here is reported ready for merge only after its body has the required path-departures paragraph, the change-proof check has run, every configured connected reviewer has run, and every owed reviewer thread, body finding and unidentified review has a marker-producer disposition.
 
 For the compatibility release, the gate selects one of two evidence paths and prints the selected path. One authorized comment framed by a `tradecraft:proof:v1 head=FULL_SHA` envelope followed by exactly one JSON fence selects `proof-v1`; the fenced object is the input and its readable rendering is not. Multiple authorized current-head documents, an invalid selected document, or a document whose envelope cannot be scoped safely fails without falling back to markers. When no authorized current-head document exists, older documents are ignored and the existing marker family selects `legacy-markers`. Unauthorized proof comments supply neither declarations nor authority and cannot suppress otherwise valid evidence.
 
@@ -155,11 +155,29 @@ Every top-level inline comment from a connected reviewer needs a reply by a mark
 
 The checker ignores leading blank lines and whitespace and one balanced Markdown inline wrapper—backticks, asterisks or underscores—around the whole line or its opening disposition word. It also ignores one balanced whole-line wrapper when reading the `Use: not required` line.
 
+Findings outside inline threads are checked directly from GitHub in both evidence paths, without new proof-document fields. For configured CodeRabbit and lab reviewers, genuine `<!-- cr-comment:v1:IDENTITY -->` and `<!-- tradecraft-review-finding:v1:RUN_ID:ORDINAL -->` markup identifies a finding, including CodeRabbit's blockquoted form. Code examples identify nothing. Every identified category counts, including nitpicks; repeated identities count once within their reviewer and pull request. Findings from earlier heads stay owed. A body identity needs no second answer only when that reviewer's identical identity appears on an inline root with an authorized disposition reply.
+
+Declarations are accounted for within their own review: inline roots join by `pull_request_review_id` and reviewer. CodeRabbit's actionable count is checked against inline roots, and each outside-diff or nitpick section against its own distinct body identities. The lab's `N validated finding(s).` total is checked against inline findings plus body identities, counting exact restatements once. Other configured reviewers' structural findings sections or counts also declare findings; summaries, walkthroughs, Codex opening notes and identity-free fix prompts create no additional obligation. Incomplete, duplicated, malformed or inconsistent declarations make a review **unidentified**, which requires its own answer alongside any identified findings. A whole-review answer clears that obligation while the review remains classified as unidentified.
+
+A body answer is one pull-request conversation comment by a marker producer, opening on its first nonblank line with an **unformatted** existing disposition. It explicitly names the full finding identity and links a review carrying it, for example:
+
+```text
+declined — unnecessary; [cr-comment:v1:IDENTITY](https://github.com/OWNER/REPO/pull/N#pullrequestreview-REVIEW_ID)
+```
+
+Use the lab identity in the same form. If the reviewer posted an identity in a conversation comment, link that source's `#issuecomment-ID` instead. An unidentified review receives a separate answer:
+
+```text
+fixed — addressed the unaccounted findings; [unidentified review](https://github.com/OWNER/REPO/pull/N#pullrequestreview-REVIEW_ID)
+```
+
+Each answer targets one finding or one unidentified review. A grouped answer, an unauthorized author, identity text without its source link, or a link to a different pull request answers nothing. An identity answer does not also answer its unidentified review. Conversation answers replace neither inline replies nor reviewer receipts; proof-v1 still requires its existing inline disposition entries. The gate's `missing:` and `satisfy:` lines name the source, identity or unmet declaration and the required comment.
+
 The checker returns exit `0` only when it has evaluated the pull request head's evidence and that evidence satisfies this contract; a result that does not evaluate the evidence is not a pass.
 
-- **Pass:** the pull-request body has the required paragraph; a current-head generated no-use record or compatibility no-use note agrees with a no-use decision, a valid current-head or qualifying ancestor use note agrees with a use decision, or a proof document's sourced generated no-use carrier has the latest authorized ordinary/mechanical affirmed brief; every connected reviewer has a credited run; and every owed inline disposition is present.
+- **Pass:** the pull-request body has the required paragraph; a current-head generated no-use record or compatibility no-use note agrees with a no-use decision, a valid current-head or qualifying ancestor use note agrees with a use decision, or a proof document's sourced generated no-use carrier has the latest authorized ordinary/mechanical affirmed brief; every connected reviewer has a credited run; and every owed inline, body-finding and whole-review disposition is present.
 
-- **Fail:** the pull-request body lacks the required paragraph; the note or mechanical-lane source is missing, stale, malformed, unauthorized, misplaced, or false; a configured reviewer has no credited run; or an owed inline disposition is missing or unauthorized.
+- **Fail:** the pull-request body lacks the required paragraph; the note or mechanical-lane source is missing, stale, malformed, unauthorized, misplaced, or false; a configured reviewer has no credited run; or an owed inline, body-finding or whole-review disposition is missing or unauthorized.
 
 A connected reviewer has run when at least one review, inline review comment, or pull-request comment by its login exists, with the shared workflow login `github-actions[bot]` subject to the provenance rule below; a work-issue comment cannot credit review of the pull request. A pull-request comment saying the review was limited, rate limited, skipped, or still running is a notice of not reviewing and does not count. For other logins, review bodies and inline comments retain direct credit, repeated appearances are allowed, and a completed summary-only pull-request comment counts and owes no invented inline disposition. This notice classification reads vendor comment text rather than a vendor API and can be wrong in both directions when a vendor changes its wording.
 

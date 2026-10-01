@@ -1202,6 +1202,317 @@ jobs:
               return "".join(separators.get(character, character) for character in escaped)
 
 
+          BODY_IDENTITIES = {
+              "coderabbitai[bot]": re.compile(r"<!-- cr-comment:v1:([A-Za-z0-9_-]+) -->"),
+              LAB_REVIEWER: re.compile(r"<!-- tradecraft-review-finding:v1:([1-9][0-9]*:[1-9][0-9]*) -->"),
+          }
+          BODY_PREFIXES = {
+              "coderabbitai[bot]": "cr-comment:v1:",
+              LAB_REVIEWER: "tradecraft-review-finding:v1:",
+          }
+          BODY_SECTION = re.compile(
+              r"(?:Outside diff range comments|Nitpick comments|Findings)\b", re.I
+          )
+          REVIEW_TARGET = re.compile(
+              r"https://github\.com/([A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+)/pull/"
+              r"([1-9][0-9]*)#(pullrequestreview|issuecomment)-([1-9][0-9]*)\b"
+          )
+          ANSWER_IDENTITY = re.compile(
+              r"(?:cr-comment:v1:[A-Za-z0-9_-]+|tradecraft-review-finding:v1:[1-9][0-9]*:[1-9][0-9]*)"
+          )
+
+
+          def _review_markup(body: str, *, inline: bool = True) -> str:
+              """Mask code examples, preserving offsets for declaration scopes."""
+              lines = []
+              fence: tuple[str, int] | None = None
+              for line in body.splitlines(keepends=True):
+                  content = re.sub(r"^(?:[ \t]*>[ \t]?)+", "", line)
+                  match = re.match(r"^ {0,3}(`{3,}|~{3,})(.*)$", content.rstrip("\r\n"))
+                  masked = fence is not None
+                  if fence is not None:
+                      if match and match[1][0] == fence[0] and len(match[1]) >= fence[1] and not match[2].strip():
+                          fence = None
+                  elif match and (match[1][0] != "`" or "`" not in match[2]):
+                      fence = (match[1][0], len(match[1]))
+                      masked = True
+                  elif content.startswith("    ") or content.startswith("\t"):
+                      masked = True
+                  lines.append(re.sub(r"[^\r\n]", " ", line) if masked else line)
+              result = "".join(lines)
+              if inline:
+                  # A closing delimiter must have exactly the opener's run length.
+                  result = re.sub(
+                      r"(?<!`)(`+)(?!`)(.*?)(?<!`)\1(?!`)",
+                      lambda match: re.sub(r"[^\r\n]", " ", match[0]), result, flags=re.S,
+                  )
+                  result = re.sub(r"<code\b[^>]*>.*?</code>",
+                                  lambda match: " " * len(match[0]), result, flags=re.S | re.I)
+              return result
+
+
+          def _body_identities(body: str, reviewer: str) -> tuple[set[str], bool]:
+              pattern = BODY_IDENTITIES.get(reviewer)
+              prefix = BODY_PREFIXES.get(reviewer)
+              if pattern is None or prefix is None:
+                  return set(), False
+              markup = _review_markup(body)
+              identities = {prefix + match[1] for match in pattern.finditer(markup)}
+              remainder = pattern.sub("", markup)
+              malformed = bool(re.search(r"<!--\s*" + re.escape(prefix.split(":v1:")[0]) + r"\b", remainder))
+              return identities, malformed
+
+
+          def _detail_scopes(markup: str) -> list[tuple[int, int, str]]:
+              """Return details scopes with their summary, including unclosed scopes."""
+              stack: list[int] = []
+              scopes = []
+              for match in re.finditer(r"<details\b[^>]*>|</details\s*>", markup, re.I):
+                  if not match[0].startswith("</"):
+                      stack.append(match.start())
+                  elif stack:
+                      start = stack.pop()
+                      scopes.append((start, match.end(), markup[start:match.end()]))
+              scopes.extend((start, len(markup), markup[start:]) for start in stack)
+              return scopes
+
+
+          def _declared_body_deficits(
+              body: str, reviewer: str, roots: list[dict[str, object]],
+          ) -> list[str]:
+              """Declarations are structural signals, never guesses from finding prose."""
+              markup = _review_markup(body)
+              body_ids, malformed = _body_identities(body, reviewer)
+              reasons = ["malformed finding identity"] if malformed else []
+              inline_ids: set[object] = set()
+              for root in roots:
+                  identities, bad = _body_identities(str(root.get("body") or ""), reviewer)
+                  if bad:
+                      reasons.append("malformed inline finding identity")
+                  inline_ids.update(identities or {("inline", root["id"])})
+              accounted = len(inline_ids | body_ids)
+
+              def count_declaration(label: str, values: list[str], actual: int) -> None:
+                  if not values:
+                      return
+                  if len(values) != 1 or not re.fullmatch(r"0|[1-9][0-9]*", values[0]):
+                      reasons.append(f"{label} declaration is duplicated or malformed")
+                  elif int(values[0]) != actual:
+                      reasons.append(f"{label} declares {values[0]}, accounted {actual}")
+
+              if reviewer == "coderabbitai[bot]":
+                  values = [value.strip().strip("*").strip() for value in
+                            re.findall(r"Actionable comments posted:([^\n]*)", markup, re.I)]
+                  count_declaration("actionable comments", values, len(inline_ids))
+              elif reviewer == LAB_REVIEWER:
+                  values = re.findall(r"([^\s]+) validated finding(?:\(s\)|s)?\.", markup, re.I)
+                  count_declaration("validated findings", values, accounted)
+                  trailing = next((line for line in reversed(body.splitlines()) if line.strip()), "")
+                  run = CONNECTED_REVIEW_RUN.fullmatch(trailing)
+                  if run and any(not identity.startswith(f"tradecraft-review-finding:v1:{run[1]}:")
+                                 for identity in body_ids):
+                      reasons.append("finding identity conflicts with the review's workflow run")
+              else:
+                  values = re.findall(r"(?:^|\n)[ \t]*(?:\*\*)?Findings:\s*([^\s*<>]+)", markup, re.I)
+                  values += re.findall(r"(?:^|\n)[ \t]*([^\s]+) (?:validated )?findings?\.", markup, re.I)
+                  count_declaration("findings", values, accounted)
+
+              # CodeRabbit uses details summaries and bold, blockquoted headings. Other
+              # reviewers can declare a Markdown Findings section. Prompt blocks are code.
+              details = _detail_scopes(markup)
+              sections: list[tuple[int, int, str, str]] = []
+              for line_match in re.finditer(r"[^\n]+", markup):
+                  line = re.sub(r"^(?:[ \t]*>[ \t]?)+", "", line_match[0]).strip()
+                  title = re.sub(r"<[^>]*>|[*_#]", "", line).strip()
+                  signal = BODY_SECTION.search(title)
+                  if signal is None or not (line.startswith(("#", "**", "__"))
+                                            or re.match(r"<summary\b", line, re.I)):
+                      continue
+                  # 'Findings: N' is an aggregate declaration, not a body-only section.
+                  if re.match(r"Findings:\s*\S+", title, re.I):
+                      continue
+                  start = line_match.start()
+                  enclosing = [scope for scope in details if scope[0] <= start < scope[1]]
+                  if re.search(r"<summary\b", line, re.I) and enclosing:
+                      end = min(enclosing, key=lambda scope: scope[1] - scope[0])[1]
+                  else:
+                      heading = re.match(r"(#{1,6})\s", line)
+                      heading_boundary = r"|#{1," + str(len(heading[1])) + r"}\s" if heading else ""
+                      boundary = re.search(r"\n(?:[ \t]*>[ \t]*)?(?:---\s*$" + heading_boundary + ")",
+                                           markup[line_match.end():], re.M)
+                      end = line_match.end() + boundary.start() if boundary else len(markup)
+                  sections.append((start, end, signal[0].lower(), title[signal.end():].strip()))
+              seen_sections: set[str] = set()
+              for start, end, label, suffix in sections:
+                  end = min([end] + [other[0] for other in sections if start < other[0] < end])
+                  if label in seen_sections:
+                      reasons.append(f"{label} section is duplicated")
+                  seen_sections.add(label)
+                  scoped = markup[start:end]
+                  scoped_ids, _ = _body_identities(scoped, reviewer)
+                  if suffix:
+                      number = re.fullmatch(r"\(([0-9]+)\)", suffix)
+                      count_declaration(label, [number[1] if number else suffix], len(scoped_ids))
+                  # Each nested finding/file details must account for its own entries.
+                  for child_start, child_end, child in details:
+                      if not (start < child_start < child_end <= end):
+                          continue
+                      parents = [parent for parent in details
+                                 if start < parent[0] < child_start < child_end < parent[1] <= end]
+                      if any(not re.search(r"\([0-9]+\)\s*</summary>", parent[2].split("</summary>", 1)[0] + "</summary>")
+                             for parent in parents):
+                          continue
+                      summary = re.search(r"<summary\b[^>]*>(.*?)</summary>", child, re.S | re.I)
+                      if summary is None or re.search(r"Prompt|Suggested|Review info", summary[1], re.I):
+                          continue
+                      # Parent grouping details are checked by their declared local count.
+                      nested = any(child_start < other[0] < other[1] < child_end
+                                   and not re.search(r"<summary>.*?(?:Prompt|Suggested)", other[2], re.S | re.I)
+                                   for other in details)
+                      child_ids, _ = _body_identities(child, reviewer)
+                      local_count = re.search(r"\(([0-9]+)\)\s*$", re.sub(r"<[^>]*>", "", summary[1]))
+                      if local_count:
+                          count_declaration(f"{label} entry", [local_count[1]], len(child_ids))
+                      elif not nested and not child_ids:
+                          reasons.append(f"{label} has an unidentified entry")
+                  # Markdown lists/subheadings explicitly declare separate body entries.
+                  content_start = scoped.find("\n") + 1
+                  entries = list(re.finditer(r"(?m)^(?:[ \t]*>[ \t]?)?(?: {0,3}(?:[-+*]|[0-9]+[.)])\s+|#{2,6}\s+)", scoped[content_start:]))
+                  for index, entry in enumerate(entries):
+                      stop = content_start + entries[index + 1].start() if index + 1 < len(entries) else len(scoped)
+                      if not _body_identities(scoped[content_start + entry.start():stop], reviewer)[0]:
+                          reasons.append(f"{label} has an unidentified entry")
+                  if not suffix and not scoped_ids:
+                      reasons.append(f"{label} section has no identified findings")
+              return list(dict.fromkeys(reasons))
+
+
+          def _body_answer(body: str) -> bool:
+              first = next((line.strip() for line in body.splitlines() if line.strip()), "")
+              # Inline replies have their existing Markdown tolerance. Body answers open
+              # with the bare word and retain that vocabulary's required continuations.
+              if re.match(r"(?:fixed|yours|declined|duplicate|lapsed)(?=$|[^\w*`])", first, re.I) is None:
+                  return False
+              if not _disposition(first):
+                  return False
+              normalized = first.lower().replace(chr(0x2014), "-")
+              if normalized.startswith(("declined -", "lapsed -")):
+                  reason = normalized.split("-", 1)[1].split(";", 1)[0].strip()
+                  return bool(reason and not reason.startswith("["))
+              if normalized.startswith("fixed in #"):
+                  return re.match(r"fixed in #[1-9][0-9]*\b", normalized) is not None
+              if normalized.startswith("duplicate of "):
+                  return bool(normalized[len("duplicate of "):].split(";", 1)[0].strip())
+              return True
+
+
+          def _check_body_findings(
+              repo: str, number: int | None, config: WorkConfig,
+              comments: list[dict[str, object]], reviews: list[dict[str, object]],
+              review_comments: list[dict[str, object]],
+          ) -> tuple[list[Finding], list[str]]:
+              obligations: dict[tuple[str, str], set[tuple[str, int]]] = {}
+              unidentified: dict[tuple[str, int], tuple[str, list[str]]] = {}
+              failures: list[Finding] = []
+              verified: list[str] = []
+              roots = [item for item in review_comments if item.get("in_reply_to_id") is None
+                       and _is_integer(item.get("id")) and item["id"] > 0]
+              replies: dict[int, list[dict[str, object]]] = {}
+              for item in review_comments:
+                  if _is_integer(item.get("in_reply_to_id")):
+                      replies.setdefault(item["in_reply_to_id"], []).append(item)
+              answered_inline: set[tuple[str, str]] = set()
+              for root in roots:
+                  reviewer = _author(root)
+                  if reviewer not in config.connected_reviewers:
+                      continue
+                  if any(_author(reply) in config.marker_producers
+                         and _disposition(str(reply.get("body") or ""))
+                         for reply in replies.get(root["id"], [])):
+                      answered_inline.update((reviewer, identity) for identity in
+                                             _body_identities(str(root.get("body") or ""), reviewer)[0])
+              for kind, records in (("pullrequestreview", reviews), ("issuecomment", comments)):
+                  for item in records:
+                      reviewer = _author(item)
+                      if reviewer not in config.connected_reviewers or item.get("state") == "PENDING":
+                          continue
+                      body = str(item.get("body") or "")
+                      identities, _ = _body_identities(body, reviewer)
+                      own_roots = [root for root in roots if kind == "pullrequestreview"
+                                   and _author(root) == reviewer
+                                   and _is_integer(item.get("id"))
+                                   and _is_integer(root.get("pull_request_review_id"))
+                                   and root.get("pull_request_review_id") == item["id"]]
+                      deficits = _declared_body_deficits(body, reviewer, own_roots)
+                      if not identities and not deficits:
+                          continue
+                      source_id = item.get("id")
+                      if not _is_integer(source_id) or source_id <= 0 or not repo or number is None:
+                          failures.append(Finding(
+                              f"scopable body findings from {reviewer}; source {kind} #{_safe_text(source_id)} is incomplete",
+                              "restore the complete pull-request source record and re-run change-proof",
+                          ))
+                          continue
+                      source = (kind, source_id)
+                      for identity in identities:
+                          obligations.setdefault((reviewer, identity), set()).add(source)
+                      if deficits:
+                          unidentified[source] = (reviewer, deficits)
+
+              answered: set[tuple[str, str]] = set()
+              answered_reviews: set[tuple[str, int]] = set()
+              for comment in comments:
+                  if _author(comment) not in config.marker_producers:
+                      continue
+                  body = str(comment.get("body") or "")
+                  if not _body_answer(body):
+                      continue
+                  markup = _review_markup(body)
+                  named = set(ANSWER_IDENTITY.findall(markup))
+                  targets = {(match[1], int(match[2]), match[3], int(match[4]))
+                             for match in REVIEW_TARGET.finditer(markup)}
+                  if len(targets) != 1 or len(named) > 1:
+                      continue
+                  target_repo, target_number, kind, source_id = next(iter(targets))
+                  if target_repo != repo or target_number != number:
+                      continue
+                  source = (kind, source_id)
+                  if named:
+                      matches = [key for key, sources in obligations.items()
+                                 if key[1] in named and source in sources]
+                      if len(matches) == 1:
+                          answered.add(matches[0])
+                  elif source in unidentified:
+                      answered_reviews.add(source)
+
+              for (reviewer, identity), sources in sorted(obligations.items()):
+                  kind, source_id = sorted(sources)[0]
+                  url = f"https://github.com/{repo}/pull/{number}#{kind}-{source_id}"
+                  label = f"{reviewer} body finding {identity} at {url}"
+                  if (reviewer, identity) in answered_inline:
+                      verified.append(f"{label} is answered by its identical inline thread")
+                  elif (reviewer, identity) in answered:
+                      verified.append(f"{label} has an authorized conversation disposition")
+                  else:
+                      failures.append(Finding(
+                          f"an authorized conversation disposition for {label}",
+                          f"post one pull-request comment opening with a bare closed disposition; "
+                          f"name and link [{identity}]({url})",
+                      ))
+              for (kind, source_id), (reviewer, deficits) in sorted(unidentified.items()):
+                  url = f"https://github.com/{repo}/pull/{number}#{kind}-{source_id}"
+                  label = f"unidentified {reviewer} review at {url}; {'; '.join(deficits)}"
+                  if (kind, source_id) in answered_reviews:
+                      verified.append(f"{label}; has an authorized whole-review disposition")
+                  else:
+                      failures.append(Finding(
+                          f"an authorized whole-review disposition for {label}",
+                          f"post a separate pull-request comment opening with a bare closed disposition "
+                          f"and linking [unidentified review]({url})",
+                      ))
+              return failures, verified
+
+
           def _source_identity(value: object) -> str:
               if _is_integer(value):
                   return str(value)
@@ -2344,6 +2655,11 @@ jobs:
                       verified.append(f"reviewer thread {thread_id} has an authorized disposition")
               if not owed:
                   verified.append("every top-level inline reviewer comment has a marker-producer disposition")
+              body_failures, body_verified = _check_body_findings(
+                  repo, number, config, comments, reviews, review_comments
+              )
+              failures.extend(body_failures)
+              verified.extend(body_verified)
               return failures, verified, declared, diagnostics, producer_diagnostics, excluded, superseded
 
 
@@ -2357,6 +2673,7 @@ jobs:
               review_comments: list[dict[str, object]],
               transport=None,
               repo: str = "",
+              number: int | None = None,
           ) -> tuple[list[Finding], list[str]]:
               failures: list[Finding] = []
               verified: list[str] = []
@@ -2502,6 +2819,11 @@ jobs:
                   ))
               else:
                   verified.append("every top-level inline reviewer comment has a marker-producer disposition")
+              body_failures, body_verified = _check_body_findings(
+                  repo, number, config, comments, reviews, review_comments
+              )
+              failures.extend(body_failures)
+              verified.extend(body_verified)
               return failures, verified
 
 
@@ -2815,6 +3137,7 @@ jobs:
                                   review_comments,
                                   github,
                                   repo,
+                                  number,
                               )
                               failures.extend(evidence_failures)
                               verified.extend(evidence_verified)
