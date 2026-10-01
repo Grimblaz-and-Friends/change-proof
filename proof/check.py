@@ -77,8 +77,7 @@ REVIEW_NOTICE_PATTERNS = (
 )
 LAB_REVIEWER = "github-actions[bot]"
 LAB_REVIEW_WORKFLOW = ".github/workflows/connected-review.yml"
-REVIEW_ATTEMPT = re.compile(r"<!--\s*connected-review-attempt:\s*([0-9]+)\s*-->")
-REVIEW_ATTEMPT_CLAIM = re.compile(r"<!--\s*connected-review-attempt\b", re.I)
+REVIEW_ATTEMPT = re.compile(r"<!--\s*connected-review-attempt:\s*([0-9]+)\s*-->\Z")
 PATH_DEPARTURES_LEAD_IN = "**Path departures:**"
 SETEXT_UNDERLINE = re.compile(r"^ {0,3}(?:=+|-+)[ \t]*$")
 ATX_HEADING = re.compile(r"^ {0,3}#{1,6}(?:[ \t]+|$)")
@@ -1130,16 +1129,15 @@ def _review_receipt(
     if not isinstance(commit, str) or FULL_SHA.fullmatch(commit) is None:
         return None, "review has no full commit_id"
     body = str(item.get("body") or "")
-    matches = list(REVIEW_ATTEMPT.finditer(body))
-    if len(matches) != len(list(REVIEW_ATTEMPT_CLAIM.finditer(body))):
-        return None, "review contains a malformed connected-review-attempt claim"
+    match = REVIEW_ATTEMPT.search(body.rstrip())
+    if match is None:
+        return None, "review must end with a trailing connected-review-attempt marker naming a positive run id"
     try:
-        run_ids = {int(match.group(1)) for match in matches}
+        run_id = int(match.group(1))
     except ValueError:
-        return None, "review contains an invalid connected-review-attempt run id"
-    if len(run_ids) != 1 or min(run_ids) <= 0:
-        return None, "review must name one unambiguous positive connected-review-attempt run id"
-    run_id = next(iter(run_ids))
+        return None, "review contains an invalid trailing connected-review-attempt run id"
+    if run_id <= 0:
+        return None, "review's trailing connected-review-attempt marker must name a positive run id"
     run_head, run_credit, error = _lab_review_run(transport, repo, run_id, cache)
     if error is not None:
         return None, error
@@ -1148,10 +1146,10 @@ def _review_receipt(
     return f"{_record_label(kind, item)}; {run_credit}", None
 
 
-def _lab_review_remedy() -> str:
+def _lab_review_remedy(follow_up: str) -> str:
     return (
         "retry unreadable Actions records or wait for a submitted connected-review review "
-        "naming its run and a completed successful review job in any attempt, then recompose proof"
+        f"naming its run and a completed successful review job in any attempt, {follow_up}"
     )
 
 
@@ -2216,7 +2214,7 @@ def evaluate_document(
                     and _review_receipt(item, "review", transport, repo, receipt_cache)[0] is not None
                 )), None)
                 detail = source_error or receipt_error or "review record is missing"
-                remedy = _lab_review_remedy()
+                remedy = _lab_review_remedy("then recompose proof")
                 if alternate is not None:
                     alternate_id = _source_identity(alternate.get("id"))
                     prefix = "document pointer is stale" if pointer_missing else "selected source is not a receipt"
@@ -2426,7 +2424,7 @@ def evaluate(
                 detail += f"; public notice(s) {named} do not count, so a review is still owed"
             failures.append(Finding(
                 f"connected reviewer run for {reviewer}; {detail}",
-                _lab_review_remedy(),
+                _lab_review_remedy("then re-run change-proof"),
             ))
         elif notices:
             named = ", ".join(f"{notice!r}" for notice in dict.fromkeys(notices))

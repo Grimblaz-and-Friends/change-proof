@@ -193,15 +193,66 @@ def test_lab_receipt_rejects_unproved_fields(evidence_path, target, field, value
     "<!-- connected-review-attempt:negative -->",
     "<!-- connected-review-attempt:1 extra=true -->",
     "<!-- connected-review-attempt:1",
-    f"<!-- connected-review-attempt:{RUN_ID} -->\n<!-- connected-review-attempt:2 -->",
     f"<!-- connected-review-attempt:{RUN_ID} -->\n<!-- connected-review-attempt:invalid -->",
 ))
-def test_lab_receipt_requires_an_unambiguous_run_marker(evidence_path, body):
+def test_lab_receipt_requires_a_valid_trailing_run_marker(evidence_path, body):
     transport, _ = receipt_scenario(evidence_path)
     transport.responses[REVIEW_ENDPOINT][0]["body"] = body
 
     assert_receipt_rejected(transport, "connected-review-attempt")
     assert not any(endpoint == RUN_ENDPOINT for endpoint, _ in transport.calls)
+
+
+@pytest.mark.parametrize("evidence_path", EVIDENCE_PATHS)
+@pytest.mark.parametrize("quoted_marker", (
+    "<!-- connected-review-attempt:RUN_ID -->",
+    "<!-- connected-review-attempt:2 -->",
+    "<!-- connected-review-attempt:0 -->",
+    "<!-- connected-review-attempt:malformed",
+))
+def test_lab_receipt_ignores_quoted_markers_before_trailing_receipt(evidence_path, quoted_marker):
+    transport, _ = receipt_scenario(evidence_path)
+    transport.responses[REVIEW_ENDPOINT][0]["body"] = (
+        f"Finding quotes `{quoted_marker}` in the diff.\n\n"
+        f"<!-- connected-review-attempt:{RUN_ID} -->\n \t"
+    )
+
+    result, output = execute(transport)
+
+    assert result == 0, output
+    assert f"credited by review #{REVIEW_ID}; run #{RUN_ID}" in output
+    assert (RUN_ENDPOINT, False) in transport.calls
+    assert not any(endpoint == f"repos/{REPO}/actions/runs/2" for endpoint, _ in transport.calls)
+
+
+@pytest.mark.parametrize("evidence_path", EVIDENCE_PATHS)
+@pytest.mark.parametrize("suffix", (
+    "More findings without a trailing receipt.",
+    "<!-- connected-review-attempt:RUN_ID -->",
+    "<!-- connected-review-attempt:0 -->",
+    "<!-- connected-review-attempt:123",
+))
+def test_lab_receipt_requires_trailing_marker_even_with_an_earlier_valid_one(evidence_path, suffix):
+    transport, _ = receipt_scenario(evidence_path)
+    transport.responses[REVIEW_ENDPOINT][0]["body"] = (
+        f"Quoted <!-- connected-review-attempt:{RUN_ID} -->\n{suffix}"
+    )
+
+    assert_receipt_rejected(transport, "trailing")
+    assert not any(endpoint == RUN_ENDPOINT for endpoint, _ in transport.calls)
+
+
+@pytest.mark.parametrize("evidence_path,follow_up,other_path_follow_up", (
+    ("legacy-markers", "then re-run change-proof", "then recompose proof"),
+    ("proof-v1", "then recompose proof", "then re-run change-proof"),
+))
+def test_lab_receipt_remedy_matches_selected_evidence_path(evidence_path, follow_up, other_path_follow_up):
+    transport, _ = receipt_scenario(evidence_path)
+    transport.responses[RUN_ENDPOINT] = check.ProofError("run unreadable")
+
+    output = assert_receipt_rejected(transport, "run unreadable")
+    assert follow_up in output
+    assert other_path_follow_up not in output
 
 
 @pytest.mark.parametrize("evidence_path", EVIDENCE_PATHS)
