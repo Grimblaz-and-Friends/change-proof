@@ -1,0 +1,59 @@
+{
+  "repository": "Grimblaz-and-Friends/tradecraft",
+  "review": {
+    "id": 5361748516,
+    "state": "COMMENTED",
+    "submitted_at": "2026-09-30T05:11:31Z",
+    "commit_id": "851159f3f685bcb1febf0663c7d5106dbf3971ce",
+    "user": {
+      "login": "github-actions[bot]"
+    },
+    "body": "<!-- connected-review-attempt:36672170816 -->"
+  },
+  "run": {
+    "id": 36672170816,
+    "path": ".github/workflows/connected-review.yml",
+    "event": "pull_request_target",
+    "head_sha": "851159f3f685bcb1febf0663c7d5106dbf3971ce",
+    "status": "completed",
+    "conclusion": "success",
+    "run_attempt": 1,
+    "repository": {
+      "full_name": "Grimblaz-and-Friends/tradecraft"
+    }
+  },
+  "jobs": [
+    {
+      "total_count": 3,
+      "jobs": [
+        {
+          "id": 109749318762,
+          "run_id": 36672170816,
+          "run_attempt": 1,
+          "name": "prepare",
+          "head_sha": "851159f3f685bcb1febf0663c7d5106dbf3971ce",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "id": 109749373184,
+          "run_id": 36672170816,
+          "run_attempt": 1,
+          "name": "review",
+          "head_sha": "851159f3f685bcb1febf0663c7d5106dbf3971ce",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "id": 109749657758,
+          "run_id": 36672170816,
+          "run_attempt": 1,
+          "name": "report",
+          "head_sha": "851159f3f685bcb1febf0663c7d5106dbf3971ce",
+          "status": "completed",
+          "conclusion": "success"
+        }
+      ]
+    }
+  ]
+}

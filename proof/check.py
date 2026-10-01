@@ -75,6 +75,10 @@ REVIEW_NOTICE_PATTERNS = (
         ),
     ),
 )
+LAB_REVIEWER = "github-actions[bot]"
+LAB_REVIEW_WORKFLOW = ".github/workflows/connected-review.yml"
+REVIEW_ATTEMPT = re.compile(r"<!--\s*connected-review-attempt:\s*([0-9]+)\s*-->")
+REVIEW_ATTEMPT_CLAIM = re.compile(r"<!--\s*connected-review-attempt\b", re.I)
 PATH_DEPARTURES_LEAD_IN = "**Path departures:**"
 SETEXT_UNDERLINE = re.compile(r"^ {0,3}(?:=+|-+)[ \t]*$")
 ATX_HEADING = re.compile(r"^ {0,3}#{1,6}(?:[ \t]+|$)")
@@ -1045,6 +1049,110 @@ def _review_notice(body: str) -> str | None:
 def _record_label(kind: str, item: dict[str, object]) -> str:
     identity = item.get("id")
     return f"{kind} #{identity}" if isinstance(identity, int) else kind
+
+
+def _lab_review_run(
+    transport,
+    repo: str,
+    run_id: int,
+    cache: dict[tuple[str, int], tuple[str | None, str | None, str | None]],
+) -> tuple[str | None, str | None, str | None]:
+    key = (repo.lower(), run_id)
+    if key in cache:
+        return cache[key]
+    endpoint = f"repos/{repo}/actions/runs/{run_id}"
+    try:
+        if transport is None:
+            raise ProofError("Actions records are unavailable")
+        run = _object(transport.get(endpoint), endpoint)
+        if not _is_integer(run.get("id")) or run["id"] != run_id:
+            raise ProofError(f"run #{run_id} returned a different or non-numeric id")
+        repository = _object(run.get("repository"), f"run #{run_id} repository")
+        full_name = repository.get("full_name")
+        if not isinstance(full_name, str) or full_name.lower() != repo.lower():
+            raise ProofError(f"run #{run_id} repository {full_name!r} differs from {repo}")
+        if run.get("path") != LAB_REVIEW_WORKFLOW:
+            raise ProofError(
+                f"run #{run_id} workflow path {run.get('path')!r} differs from {LAB_REVIEW_WORKFLOW}"
+            )
+        if run.get("event") not in ("pull_request", "pull_request_target"):
+            raise ProofError(f"run #{run_id} event {run.get('event')!r} is not a pull-request trigger")
+        head = run.get("head_sha")
+        if not isinstance(head, str):
+            raise ProofError(f"run #{run_id} has no full head_sha")
+        jobs = _run_jobs(transport, repo, run_id)
+        successful = next((job for job in jobs if (
+            job.get("name") == "review"
+            and _is_integer(job.get("id")) and job["id"] > 0
+            and _is_integer(job.get("run_id")) and job["run_id"] == run_id
+            and isinstance(job.get("head_sha"), str) and job["head_sha"].lower() == head.lower()
+            and _is_integer(job.get("run_attempt")) and job["run_attempt"] > 0
+            and job.get("status") == "completed"
+            and job.get("conclusion") == "success"
+        )), None)
+        if successful is None:
+            raise ProofError(
+                f"run #{run_id} has no completed successful review job matching its run and commit "
+                "in any attempt"
+            )
+        result = (
+            head.lower(),
+            f"run #{run_id}, successful review job #{successful['id']} attempt #{successful['run_attempt']}",
+            None,
+        )
+    except (OSError, UnicodeError, ValueError, ProofError) as exc:
+        result = (None, None, str(exc) or type(exc).__name__)
+    cache[key] = result
+    return result
+
+
+def _review_receipt(
+    item: dict[str, object],
+    kind: str,
+    transport,
+    repo: str,
+    cache: dict[tuple[str, int], tuple[str | None, str | None, str | None]],
+) -> tuple[str | None, str | None]:
+    surface = kind.replace(" ", "-")
+    if surface == "pull-request-comment":
+        notice = _review_notice(str(item.get("body") or ""))
+        if notice is not None:
+            return None, notice
+    if _author(item) != LAB_REVIEWER:
+        return _record_label(kind, item), None
+    if surface != "review":
+        return None, f"source kind {surface} is not a submitted pull-request review"
+    if item.get("state") not in ("COMMENTED", "APPROVED", "CHANGES_REQUESTED", "DISMISSED"):
+        return None, "review state is not submitted"
+    if _start_instant(item.get("submitted_at")) is None:
+        return None, "review has no usable submitted_at timestamp"
+    commit = item.get("commit_id")
+    if not isinstance(commit, str) or FULL_SHA.fullmatch(commit) is None:
+        return None, "review has no full commit_id"
+    body = str(item.get("body") or "")
+    matches = list(REVIEW_ATTEMPT.finditer(body))
+    if len(matches) != len(list(REVIEW_ATTEMPT_CLAIM.finditer(body))):
+        return None, "review contains a malformed connected-review-attempt claim"
+    try:
+        run_ids = {int(match.group(1)) for match in matches}
+    except ValueError:
+        return None, "review contains an invalid connected-review-attempt run id"
+    if len(run_ids) != 1 or min(run_ids) <= 0:
+        return None, "review must name one unambiguous positive connected-review-attempt run id"
+    run_id = next(iter(run_ids))
+    run_head, run_credit, error = _lab_review_run(transport, repo, run_id, cache)
+    if error is not None:
+        return None, error
+    if run_head != commit.lower():
+        return None, f"run #{run_id} head_sha differs from the review commit_id"
+    return f"{_record_label(kind, item)}; {run_credit}", None
+
+
+def _lab_review_remedy() -> str:
+    return (
+        "retry unreadable Actions records or wait for a submitted connected-review review "
+        "naming its run and a completed successful review job in any attempt, then recompose proof"
+    )
 
 
 def _safe_text(value: object) -> str:
@@ -2039,6 +2147,7 @@ def evaluate_document(
             verified.append("trusted policy classifies the changed paths as no-use and generated evidence is current-head")
 
     reviewer_entries = document["reviewers"]
+    receipt_cache: dict[tuple[str, int], tuple[str | None, str | None, str | None]] = {}
     assert isinstance(reviewer_entries, list)
     reviewer_logins = [str(item["login"]).lower() for item in reviewer_entries if isinstance(item, dict)]
     duplicates = sorted({login for login in reviewer_logins if reviewer_logins.count(login) > 1})
@@ -2073,7 +2182,7 @@ def evaluate_document(
         accepted_review_kinds = {
             "review", "review-comment", "inline-review-comment", "pull-request-comment",
         }
-        if source_kind not in accepted_review_kinds:
+        if source_kind not in accepted_review_kinds and login != LAB_REVIEWER:
             failures.append(Finding(
                 f"a valid completed public review receipt for {login}: source kind "
                 f"{source_kind or 'without a kind'} cannot credit a pull-request review",
@@ -2084,12 +2193,12 @@ def evaluate_document(
         record, source_error = _resolve_source(
             source, repo, comments, work_comments, reviews, review_comments
         )
-        notice = (
-            _review_notice(str(record.get("body") or ""))
-            if record is not None and source_kind == "pull-request-comment"
-            else None
+        credit, receipt_error = (
+            _review_receipt(record, source_kind, transport, repo, receipt_cache)
+            if record is not None and _author(record) == login
+            else (None, "source author differs")
         )
-        if source_error is not None or record is None or _author(record) != login or notice is not None:
+        if source_error is not None or credit is None:
             pointer_missing, alternate = _missing_source_pointer(
                 source,
                 repo,
@@ -2097,15 +2206,23 @@ def evaluate_document(
                 work_comments,
                 reviews,
                 review_comments,
-                lambda item: (
-                    _author(item) == login
-                    and (
-                        source_kind != "pull-request-comment"
-                        or _review_notice(str(item.get("body") or "")) is None
-                    )
-                ),
+                lambda item: _author(item) == login and _review_receipt(
+                    item, source_kind, transport, repo, receipt_cache
+                )[0] is not None,
             )
-            if pointer_missing and alternate is not None:
+            if login == LAB_REVIEWER:
+                alternate = next((item for item in reviews if (
+                    _author(item) == login
+                    and _review_receipt(item, "review", transport, repo, receipt_cache)[0] is not None
+                )), None)
+                detail = source_error or receipt_error or "review record is missing"
+                remedy = _lab_review_remedy()
+                if alternate is not None:
+                    alternate_id = _source_identity(alternate.get("id"))
+                    prefix = "document pointer is stale" if pointer_missing else "selected source is not a receipt"
+                    detail = f"{prefix}; matching review #{alternate_id} already exists; {detail}"
+                    remedy = f"recompose proof from review #{alternate_id} instead of asking {login} to review again"
+            elif pointer_missing and alternate is not None:
                 alternate_id = _source_identity(alternate.get("id"))
                 detail = (
                     f"document pointer is stale; matching {source_kind} "
@@ -2119,7 +2236,7 @@ def evaluate_document(
                 detail = f"review record is missing: {source_error}"
                 remedy = f"have {login} post a completed review receipt and recompose proof"
             else:
-                detail = source_error or notice or "source author differs"
+                detail = source_error or receipt_error or "source author differs"
                 remedy = f"have {login} post a completed review receipt and recompose proof"
             failures.append(Finding(
                 f"a valid completed public review receipt for {login}: "
@@ -2127,7 +2244,7 @@ def evaluate_document(
                 remedy,
             ))
         else:
-            verified.append(f"connected reviewer {login} credited by {_safe_text(source['kind'])} #{_safe_text(source['id'])}")
+            verified.append(f"connected reviewer {login} credited by {_safe_text(credit)}")
     if not config.connected_reviewers:
         verified.append("the caller configures no connected reviewers")
 
@@ -2271,28 +2388,46 @@ def evaluate(
             ))
 
     missing_reviewers: list[str] = []
+    receipt_cache: dict[tuple[str, int], tuple[str | None, str | None, str | None]] = {}
     for reviewer in sorted(config.connected_reviewers):
         credit: str | None = None
         notices: list[str] = []
+        rejections: list[str] = []
         for kind, records in (("review", reviews), ("inline review comment", review_comments)):
             for item in records:
                 if _author(item) != reviewer:
                     continue
-                credit = _record_label(kind, item)
-                break
+                credit, error = _review_receipt(item, kind, transport, repo, receipt_cache)
+                if credit is not None:
+                    break
+                rejections.append(f"{_record_label(kind, item)}: {error}")
             if credit is not None:
                 break
         if credit is None:
             for item in comments:
                 if _author(item) != reviewer:
                     continue
-                notice = _review_notice(str(item.get("body") or ""))
-                if notice is None:
-                    credit = _record_label("pull-request comment", item)
+                credit, error = _review_receipt(
+                    item, "pull-request comment", transport, repo, receipt_cache
+                )
+                if credit is not None:
                     break
-                notices.append(notice)
+                notice = _review_notice(str(item.get("body") or ""))
+                if notice is not None:
+                    notices.append(notice)
+                else:
+                    rejections.append(f"{_record_label('pull-request comment', item)}: {error}")
         if credit is not None:
-            verified.append(f"connected reviewer {reviewer} credited by {credit}")
+            verified.append(f"connected reviewer {reviewer} credited by {_safe_text(credit)}")
+        elif reviewer == LAB_REVIEWER:
+            detail = "; ".join(dict.fromkeys(rejections)) or "no submitted review names its workflow run"
+            if notices:
+                named = ", ".join(f"{notice!r}" for notice in dict.fromkeys(notices))
+                detail += f"; public notice(s) {named} do not count, so a review is still owed"
+            failures.append(Finding(
+                f"connected reviewer run for {reviewer}; {detail}",
+                _lab_review_remedy(),
+            ))
         elif notices:
             named = ", ".join(f"{notice!r}" for notice in dict.fromkeys(notices))
             failures.append(Finding(
