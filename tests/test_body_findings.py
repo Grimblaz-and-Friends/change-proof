@@ -131,11 +131,13 @@ def test_existing_dispositions_answer_one_body_finding(evidence_path, dispositio
     "fixed-in-without-number", "wrong-identity", "identity-only", "review-only",
     "wrong-review", "wrong-pr", "wrong-repo", "two-identities", "two-reviews",
     "fenced-answer", "quoted-answer", "word-prefix",
-    "unbalanced-format", "empty-reason", "bare-duplicate",
+    "unbalanced-format", "empty-reason", "bare-duplicate", "yours-wrong-linked-continuation",
 ))
 def test_invalid_or_grouped_answers_clear_nothing(evidence_path, mutation):
     transport, _ = body_scenario(evidence_path)
     transport.responses[REVIEW_ENDPOINT][0]["body"] = MARKER
+    if mutation == "two-reviews":
+        transport.responses[REVIEW_ENDPOINT].append(record(CR, MARKER, id=42))
     reply = answer()
     if mutation == "author":
         reply["user"]["login"] = "stranger"
@@ -160,6 +162,9 @@ def test_invalid_or_grouped_answers_clear_nothing(evidence_path, mutation):
             "unbalanced-format": reply["body"].replace("fixed", "fixed**", 1),
             "empty-reason": reply["body"].replace("fixed", "declined —", 1),
             "bare-duplicate": reply["body"].replace("fixed", "duplicate of ", 1),
+            "yours-wrong-linked-continuation": reply["body"].replace(
+                "fixed", f"yours — in the [release checklist]({source_url(555, kind='issuecomment')})", 1,
+            ),
         }
         reply["body"] = mutations[mutation]
     transport.responses[COMMENTS_ENDPOINT].append(reply)
@@ -192,6 +197,97 @@ def test_authorized_answer_can_carry_supporting_links_and_leading_blanks(evidenc
     transport.responses[COMMENTS_ENDPOINT].append(reply)
     result, output = execute(transport)
     assert result == 0, output
+
+
+@pytest.mark.parametrize("release_report", (
+    pytest.param("release report", id="plain-prose"),
+    pytest.param(f"[release report]({source_url(555, kind='issuecomment')})", id="same-pr-comment"),
+    pytest.param(f"[release report](https://github.com/{REPO}/issues/9)", id="issue"),
+    pytest.param(f"[release report](https://github.com/{REPO}/commit/abc)", id="commit"),
+))
+def test_finding_answer_accepts_release_report_evidence(evidence_path, release_report):
+    transport, _ = body_scenario(evidence_path)
+    identity = "cr-comment:v1:alpha"
+    transport.responses[REVIEW_ENDPOINT][0]["body"] = f"<!-- {identity} -->"
+    transport.responses[COMMENTS_ENDPOINT].extend((
+        record(OWNER, "Release report.", id=555),
+        answer(identity, disposition=f"yours — in the {release_report}"),
+    ))
+    result, output = execute(transport)
+    assert result == 0, output
+    assert f"body finding {identity}" in output
+    assert "has an authorized conversation disposition" in output
+
+
+@pytest.mark.parametrize("evidence_kind", (
+    "summary-review", "holder-comment-mentions-identity", "answered-inline-review",
+))
+def test_non_obligation_sources_are_only_evidence(evidence_path, evidence_kind):
+    transport, document = body_scenario(evidence_path)
+    transport.responses[REVIEW_ENDPOINT][0]["body"] = MARKER
+    if evidence_kind == "holder-comment-mentions-identity":
+        # The linked comment's prose cannot turn its link into a target or
+        # contribute a second identity to the answer.
+        transport.responses[COMMENTS_ENDPOINT].append(record(
+            OWNER, "Release report mentions cr-comment:v1:earlier.", id=555,
+        ))
+        url = source_url(555, kind="issuecomment")
+    else:
+        body = "Summary"
+        if evidence_kind == "answered-inline-review":
+            body = "<!-- cr-comment:v1:earlier -->"
+        transport.responses[REVIEW_ENDPOINT].insert(0, record(CR, body, id=40))
+        if evidence_kind == "answered-inline-review":
+            add_inline(transport, document, identity="cr-comment:v1:earlier", review_id=40)
+        url = source_url(40)
+    reply = answer()
+    reply["body"] += f"; [earlier evidence]({url})"
+    transport.responses[COMMENTS_ENDPOINT].append(reply)
+    result, output = execute(transport)
+    assert result == 0, output
+    assert "has an authorized conversation disposition" in output
+
+
+@pytest.mark.parametrize("kind,other_id", (("pullrequestreview", 42), ("issuecomment", 41)))
+def test_links_to_two_obligation_sources_answer_nothing(evidence_path, kind, other_id):
+    transport, _ = body_scenario(evidence_path)
+    transport.responses[REVIEW_ENDPOINT][0]["body"] = MARKER
+    other_identity = "cr-comment:v1:other"
+    endpoint = REVIEW_ENDPOINT if kind == "pullrequestreview" else COMMENTS_ENDPOINT
+    transport.responses[endpoint].append(record(CR, f"<!-- {other_identity} -->", id=other_id))
+    reply = answer()
+    # Naming only one identity does not permit linking two obligation sources.
+    # A review and a comment with the same numeric id are distinct sources.
+    reply["body"] += f"; [other source]({source_url(other_id, kind=kind)})"
+    transport.responses[COMMENTS_ENDPOINT].append(reply)
+    result, output = execute(transport)
+    assert result == 1, output
+    for identity in (IDENTITY, other_identity):
+        assert f"missing: an authorized conversation disposition for {CR} body finding {identity}" in output
+    assert "has an authorized conversation disposition" not in output
+
+
+def test_repeated_link_to_one_obligation_source_is_one_target(evidence_path):
+    transport, _ = body_scenario(evidence_path)
+    transport.responses[REVIEW_ENDPOINT][0]["body"] = MARKER
+    reply = answer()
+    reply["body"] += f"; [same source again]({source_url()})"
+    transport.responses[COMMENTS_ENDPOINT].append(reply)
+    result, output = execute(transport)
+    assert result == 0, output
+    assert "has an authorized conversation disposition" in output
+
+
+def test_whole_review_answer_accepts_release_report_evidence(evidence_path):
+    transport, _ = body_scenario(evidence_path)
+    transport.responses[REVIEW_ENDPOINT][0]["body"] = "**Nitpick comments (1)**"
+    transport.responses[COMMENTS_ENDPOINT].extend((
+        record(OWNER, "Release report.", id=555),
+        answer(None, disposition=f"yours — in the [release report]({source_url(555, kind='issuecomment')})"),
+    ))
+    result, output = execute(transport)
+    assert result == 0, output
+    assert "has an authorized whole-review disposition" in output
 
 
 def test_link_to_existing_review_without_the_identity_answers_nothing(evidence_path):

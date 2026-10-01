@@ -1462,7 +1462,9 @@ jobs:
               # with the bare word and retain that vocabulary's required continuations.
               if re.match(r"(?:fixed|yours|declined|duplicate|lapsed)(?=$|[^\w*`])", first, re.I) is None:
                   return False
-              if not _disposition(first):
+              # A continuation can link its text, as in yours — in the [release report](...).
+              readable = re.sub(r"\[([^\]\r\n]+)\]\([^\r\n)]+\)", r"\1", first)
+              if not _disposition(readable):
                   return False
               normalized = first.lower().replace(chr(0x2014), "-")
               if normalized.startswith(("declined -", "lapsed -")):
@@ -1532,6 +1534,11 @@ jobs:
                       if deficits:
                           unidentified[source] = (reviewer, deficits)
 
+              obligation_sources = set(unidentified)
+              for key, sources in obligations.items():
+                  if key not in answered_inline:
+                      obligation_sources.update(sources)
+
               answered: set[tuple[str, str]] = set()
               answered_reviews: set[tuple[str, int]] = set()
               for comment in comments:
@@ -1542,14 +1549,14 @@ jobs:
                       continue
                   markup = _review_markup(body)
                   named = set(ANSWER_IDENTITY.findall(markup))
-                  targets = {(match[1], int(match[2]), match[3], int(match[4]))
-                             for match in REVIEW_TARGET.finditer(markup)}
+                  # Only this pull request's obligation sources are targets. Every other
+                  # link is evidence, regardless of its kind or the linked record's prose.
+                  targets = {(match[3], int(match[4])) for match in REVIEW_TARGET.finditer(markup)
+                             if match[1] == repo and int(match[2]) == number
+                             and (match[3], int(match[4])) in obligation_sources}
                   if len(targets) != 1 or len(named) > 1:
                       continue
-                  target_repo, target_number, kind, source_id = next(iter(targets))
-                  if target_repo != repo or target_number != number:
-                      continue
-                  source = (kind, source_id)
+                  source = next(iter(targets))
                   if named:
                       matches = [key for key, sources in obligations.items()
                                  if key[1] in named and source in sources]

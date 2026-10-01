@@ -175,7 +175,9 @@ Use the lab identity in the same form. If the reviewer posted an identity in a c
 fixed — addressed the unaccounted findings; [unidentified review](https://github.com/OWNER/REPO/pull/N#pullrequestreview-REVIEW_ID)
 ```
 
-Each answer targets one finding or one unidentified review. A grouped answer, an unauthorized author, identity text without its source link, or a link to a different pull request answers nothing. An identity answer does not also answer its unidentified review. Conversation answers replace neither inline replies nor reviewer receipts; proof-v1 still requires its existing inline disposition entries. The gate's `missing:` and `satisfy:` lines name the source, identity or unmet declaration and the required comment.
+Each answer targets one finding or one unidentified review. A link is a target only when its source is on this pull request and carries an owed body identity or is an unidentified review. Source kind and id decide this; identity text in a linked evidence comment's prose changes nothing. Every other link is evidence, including same-PR reviews and conversation comments that carry no obligation. A `yours` disposition can link its `release report` continuation text.
+
+An answer linking two or more distinct obligation sources answers nothing; repeated links to the same source count once. An unauthorized author or identity text without a link to a source carrying it answers nothing. A whole-review answer must link its unidentified review. An identity answer does not also answer its unidentified review. Conversation answers replace neither inline replies nor reviewer receipts; proof-v1 still requires its existing inline disposition entries. The gate's `missing:` and `satisfy:` lines name the source, identity or unmet declaration and the required comment.
 
 The checker returns exit `0` only when it has evaluated the pull request head's evidence and that evidence satisfies this contract; a result that does not evaluate the evidence is not a pass.
 
