@@ -38,7 +38,7 @@ gh api --method GET -H "Accept: application/vnd.github.raw" "repos/Grimblaz-and-
 ```
 
 `test_shared_review_body_dispositions` replays every case in the file directly
-through the gate's body-finding check without expectation overrides. It compares
+through the gate's body-finding check. It compares
 missing findings with their carrying review ids, missing whole-review answers,
 and all unidentified reviews. It does not compare `ignored_authors`, a producer
 diagnostic the gate does not emit. The fixture's `.gitattributes` entry preserves
@@ -50,7 +50,16 @@ This copy replaces tradecraft commit
 expectation follows the
 [Steward's ruling, comment 5938424447](https://github.com/Grimblaz-and-Friends/change-proof/issues/38#issuecomment-5938424447).
 The labelled override and its guard were removed after the guard failed on the
-corrected expectation, demanding removal. No expectation override remains.
+corrected expectation, demanding removal.
+
+The later [Steward's section-depth ruling, comment 5939291068](https://github.com/Grimblaz-and-Friends/change-proof/issues/38#issuecomment-5939291068)
+supersedes `innermost-declared-section-owns-identity`: its nested summary is
+content, so `cr-comment:v1:alpha` from review 100 remains owed while
+`missing_reviews` and `unidentified_reviews` both change from `[100]` to `[]`.
+The replay has exactly one labelled expectation override for that case, citing
+the ruling, with a guard requiring removal once the file's own expectation
+matches. The pinned bytes remain unchanged; #809's corrected file will replace
+this copy and remove the override.
 
 `derived-review-body-examples.json` remains the gate's own synthetic coverage,
 derived directly from tradecraft #809's [settled artifact, comment 5934093522](https://github.com/Grimblaz-and-Friends/tradecraft/issues/809#issuecomment-5934093522),

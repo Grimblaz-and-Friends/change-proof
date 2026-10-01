@@ -1180,7 +1180,7 @@ BODY_PREFIXES = {
     LAB_REVIEWER: "tradecraft-review-finding:v1:",
 }
 CODERABBIT_BODY_SECTION = re.compile(
-    r"((?:\w+\s+)+comments)\s+\(([^()]*)\)", re.I
+    r"((?:\w+\s+)+comments)\s+\(([0-9]+)\)", re.I
 )
 GENERIC_BODY_SECTION = re.compile(r"^(Findings)\b(.*)$", re.I | re.S)
 EXPLICIT_ZERO_FINDINGS = ("None.", "No findings.", "No findings were found.")
@@ -1261,6 +1261,11 @@ def _detail_scopes(markup: str) -> list[tuple[int, int, str]]:
     return scopes
 
 
+def _detail_depth(details: list[tuple[int, int, str]], offset: int) -> int:
+    """At an opening tag's start, return its parent's details depth."""
+    return sum(start < offset < end for start, end, _ in details)
+
+
 def _bold_title(line: str) -> str | None:
     match = re.fullmatch(r"(\*\*|__)(.+)\1", line)
     if match is None or match[1] in match[2]:
@@ -1272,10 +1277,13 @@ def _body_sections(
     markup: str, reviewer: str, details: list[tuple[int, int, str]],
 ) -> list[tuple[int, int, int, str, str]]:
     """Return declaration start, end, content start, label and count text."""
-    candidates: list[tuple[int, int, int, str, str]] = []
+    # The declaration's placement depth excludes its own summary wrapper;
+    # its content depth includes that wrapper. Blockquotes change neither.
+    candidates: list[tuple[int, int, int, str, str, int, int]] = []
     summaries = list(re.finditer(r"<summary\b[^>]*>(.*?)</summary\s*>", markup, re.S | re.I))
 
-    def add(start: int, content_start: int, end: int, raw_title: str) -> None:
+    def add(start: int, content_start: int, end: int, raw_title: str,
+            placement_depth: int, content_depth: int) -> None:
         title = re.sub(r"<[^>]*>", "", raw_title).strip()
         title = _bold_title(title) or title
         if reviewer == "coderabbitai[bot]":
@@ -1289,18 +1297,21 @@ def _body_sections(
         if signal is not None:
             suffix = (f"({signal[2].strip()})" if reviewer == "coderabbitai[bot]"
                       else signal[2].strip())
-            candidates.append((start, end, content_start, signal[1].strip().lower(), suffix))
+            candidates.append((start, end, content_start, signal[1].strip().lower(), suffix,
+                               placement_depth, content_depth))
 
     for summary in summaries:
         enclosing = [scope for scope in details if scope[0] <= summary.start() < scope[1]]
         end = min(enclosing, key=lambda scope: scope[1] - scope[0])[1] if enclosing else len(markup)
-        add(summary.start(), summary.end(), end, summary[1])
+        depth = _detail_depth(details, summary.start())
+        add(summary.start(), summary.end(), end, summary[1],
+            depth - bool(enclosing), depth)
 
     dividers = []
     for line_match in re.finditer(r"[^\n]+", markup):
         line = re.sub(r"^(?:[ \t]*>[ \t]?)+", "", line_match[0]).strip()
         if line == "---":
-            dividers.append(line_match.start())
+            dividers.append((line_match.start(), _detail_depth(details, line_match.start())))
         if any(summary.start() <= line_match.start() < summary.end() for summary in summaries):
             continue
         title = _bold_title(line)
@@ -1308,18 +1319,23 @@ def _body_sections(
             heading = re.fullmatch(r"#{1,6}[ \t]+(.+?)(?:[ \t]+#+)?", line)
             title = heading[1] if heading else None
         if title is not None:
-            add(line_match.start(), line_match.end(), len(markup), title)
+            depth = _detail_depth(details, line_match.start())
+            add(line_match.start(), line_match.end(), len(markup), title, depth, depth)
 
     candidates.sort()
     sections = []
-    for index, (start, end, content_start, label, suffix) in enumerate(candidates):
-        boundaries = [end] + [divider for divider in dividers if divider > start]
-        if index + 1 < len(candidates):
-            boundaries.append(candidates[index + 1][0])
-        # Declared intervals do not overlap: an inner declaration takes credit
-        # from its start, and its identities cannot fill its parent's deficit.
-        sections.append((start, min(boundaries), content_start, label, suffix))
-    return sections
+    for start, end, content_start, label, suffix, placement_depth, content_depth in candidates:
+        end = min([end] + [divider for divider, depth in dividers
+                          if divider > start and depth == content_depth])
+        if sections and start < sections[-1][1]:
+            if placement_depth > sections[-1][5]:
+                # Titles inside a finding or a section's summary wrapper are
+                # content, even when they have a declaration's exact shape.
+                continue
+            previous = sections[-1]
+            sections[-1] = (previous[0], start, *previous[2:])
+        sections.append((start, end, content_start, label, suffix, placement_depth))
+    return [section[:5] for section in sections]
 
 
 def _declared_body_deficits(
@@ -1390,30 +1406,25 @@ def _declared_body_deficits(
             if label == "findings" and suffix.startswith(":"):
                 value = suffix[1:].strip()
             count_declaration(label, [value], section_accounted)
-        # Each nested finding/file details must account for its own entries.
+        depth = _detail_depth(details, content_start)
+        entry_markup = scoped
+        # Direct details children are entries. Their nested prose, titles and
+        # analysis blocks are content, never additional entries or declarations.
         for child_start, child_end, child in details:
-            if not (start < child_start < child_end <= end):
+            if not (content_start <= child_start < child_end <= end
+                    and _detail_depth(details, child_start) == depth):
                 continue
-            parents = [parent for parent in details
-                       if start < parent[0] < child_start < child_end < parent[1] <= end]
-            if any(not re.search(r"\([0-9]+\)\s*</summary>", parent[2].split("</summary>", 1)[0] + "</summary>")
-                   for parent in parents):
-                continue
+            left, right = child_start - content_start, child_end - content_start
+            entry_markup = (entry_markup[:left] + re.sub(r"[^\r\n]", " ", child)
+                            + entry_markup[right:])
             summary = re.search(r"<summary\b[^>]*>(.*?)</summary>", child, re.S | re.I)
             if summary is None or re.search(r"Prompt|Suggested|Review info", summary[1], re.I):
                 continue
-            # Parent grouping details are checked by their declared local count.
-            nested = any(child_start < other[0] < other[1] < child_end
-                         and not re.search(r"<summary>.*?(?:Prompt|Suggested)", other[2], re.S | re.I)
-                         for other in details)
             child_ids, _ = _body_identities(child, reviewer)
-            local_count = re.search(r"\(([0-9]+)\)\s*$", re.sub(r"<[^>]*>", "", summary[1]))
-            if local_count:
-                count_declaration(f"{label} entry", [local_count[1]], len(child_ids))
-            elif not nested and not child_ids:
+            if not child_ids:
                 reasons.append(f"{label} has an unidentified entry")
-        # Markdown lists/subheadings explicitly declare separate body entries.
-        entries = list(re.finditer(r"(?m)^(?:[ \t]*>[ \t]?)?(?: {0,3}(?:[-+*]|[0-9]+[.)])\s+|#{2,6}\s+)", scoped))
+        # Lists/subheadings declare entries only at the section's own depth.
+        entries = list(re.finditer(r"(?m)^(?:[ \t]*>[ \t]?)?(?: {0,3}(?:[-+*]|[0-9]+[.)])\s+|#{2,6}\s+)", entry_markup))
         for index, entry in enumerate(entries):
             stop = entries[index + 1].start() if index + 1 < len(entries) else len(scoped)
             if not _body_identities(scoped[entry.start():stop], reviewer)[0]:
@@ -1468,8 +1479,8 @@ def _check_body_findings(
         if reviewer not in config.connected_reviewers:
             continue
         if any(_author(reply) in config.marker_producers
-               and reply.get("pull_request_url", api_pr_url) == api_pr_url
-               and str(reply.get("html_url", pr_url)).split("#", 1)[0] == pr_url
+               and str(reply.get("pull_request_url", api_pr_url)).lower() == api_pr_url.lower()
+               and str(reply.get("html_url", pr_url)).split("#", 1)[0].lower() == pr_url.lower()
                and _disposition(str(reply.get("body") or ""))
                for reply in replies.get(root["id"], [])):
             answered_inline.update((reviewer, identity) for identity in
@@ -1518,13 +1529,13 @@ def _check_body_findings(
         # Only this pull request's obligation-source reviews are targets. Every other
         # link is evidence, regardless of its kind or the linked record's prose.
         targets = {("pullrequestreview", int(match[3])) for match in REVIEW_TARGET.finditer(markup)
-                   if match[1] == repo and int(match[2]) == number
+                   if match[1].lower() == repo.lower() and int(match[2]) == number
                    and ("pullrequestreview", int(match[3])) in obligation_sources}
         if len(targets) != 1:
             continue
         source = next(iter(targets))
         named = {match[1] for match in FINDING_ANSWER_PAIR.finditer(markup)
-                 if match[2] == repo and int(match[3]) == number
+                 if match[2].lower() == repo.lower() and int(match[3]) == number
                  and ("pullrequestreview", int(match[4])) == source}
         if len(named) > 1:
             continue

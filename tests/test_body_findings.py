@@ -303,6 +303,36 @@ def test_repeated_link_to_one_obligation_source_is_one_target(evidence_path):
     assert "has an authorized conversation disposition" in output
 
 
+@pytest.mark.parametrize("whole_review", (False, True))
+def test_answer_links_ignore_repository_case(evidence_path, whole_review):
+    transport, _ = body_scenario(evidence_path)
+    transport.responses[REVIEW_ENDPOINT][0]["body"] = (
+        "**Nitpick comments (1)**" if whole_review else MARKER
+    )
+    reply = answer(None if whole_review else IDENTITY)
+    reply["body"] = reply["body"].replace(REPO, REPO.lower())
+    transport.responses[COMMENTS_ENDPOINT].append(reply)
+    result, output = execute(transport)
+    assert result == 0, output
+    assert "has an authorized" in output
+
+
+@pytest.mark.parametrize("url_field", ("pull_request_url", "html_url"))
+def test_inline_exemption_ignores_repository_case(evidence_path, url_field):
+    transport, document = body_scenario(evidence_path)
+    transport.responses[REVIEW_ENDPOINT][0]["body"] = MARKER
+    add_inline(transport, document)
+    reply = transport.responses[INLINE_ENDPOINT][-1]
+    reply[url_field] = (
+        f"https://api.github.com/repos/{REPO.lower()}/pulls/17"
+        if url_field == "pull_request_url"
+        else f"https://github.com/{REPO.lower()}/pull/17#discussion_r{reply['id']}"
+    )
+    result, output = execute(transport)
+    assert result == 0, output
+    assert "identical inline thread" in output
+
+
 def test_whole_review_answer_accepts_release_report_evidence(evidence_path):
     transport, _ = body_scenario(evidence_path)
     transport.responses[REVIEW_ENDPOINT][0]["body"] = "**Nitpick comments (1)**"
@@ -381,11 +411,13 @@ def test_same_text_different_identity_or_reviewer_does_not_exempt(evidence_path)
     result, output = execute(transport)
     assert result == 1
     assert f"body finding {IDENTITY}" in output
-    transport.responses[INLINE_ENDPOINT][0]["user"]["login"] = "other[bot]"
+    root = transport.responses[INLINE_ENDPOINT][0]
+    root["body"] = MARKER
+    root["user"]["login"] = "other[bot]"
     failures, _ = check._check_body_findings(REPO, 17, check.WorkConfig(frozenset({CR}), frozenset({OWNER})),
                                            transport.responses[COMMENTS_ENDPOINT], transport.responses[REVIEW_ENDPOINT],
                                            transport.responses[INLINE_ENDPOINT])
-    assert failures
+    assert any(f"body finding {IDENTITY}" in item.missing for item in failures)
 
 
 def test_inline_exemption_does_not_waive_proof_membership():
@@ -401,7 +433,7 @@ def test_inline_exemption_does_not_waive_proof_membership():
 @pytest.mark.parametrize("body", (
     "**Actionable comments posted: many**", "**Actionable comments posted:**",
     "**Actionable comments posted: 0**\n**Actionable comments posted: 0**",
-    "**Nitpick comments (two)**", "**Nitpick comments (1)**\n<details><summary>A finding</summary>unknown</details>",
+    "**Nitpick comments (1)**\n<details><summary>A finding</summary>unknown</details>",
     "**Outside diff range comments (1)**\n<details><summary>Missing identity</summary>unknown</details>\n---\n**Nitpick comments (2)**\n<!-- cr-comment:v1:a -->\n<!-- cr-comment:v1:b -->",
     "<!-- cr-comment:v1: -->", "<!-- cr-comment:v2:unknown -->",
     "**Outside diff range comments (1)**\n<details><summary>Missing identity</summary>unknown</details>\n**Nitpick comments (1)**\n<!-- cr-comment:v1:a -->",
@@ -640,8 +672,10 @@ def test_identity_after_a_section_end_cannot_fill_its_count(evidence_path, bound
 
 
 @pytest.mark.parametrize("parent_identified", (False, True))
-def test_nested_declaration_credits_only_its_own_identity(evidence_path, parent_identified):
-    body = "<details><summary>Outside diff range comments (1)</summary>\n"
+def test_nested_comment_summary_is_content(evidence_path, parent_identified):
+    # A declaration-shaped title inside a section does not start a new section.
+    total = 2 if parent_identified else 1
+    body = f"<details><summary>Outside diff range comments ({total})</summary>\n"
     if parent_identified:
         body += MARKER + "\n"
     body += "<details><summary>Duplicate comments (1)</summary>\n<!-- cr-comment:v1:inner -->\n</details></details>"
@@ -651,9 +685,50 @@ def test_nested_declaration_credits_only_its_own_identity(evidence_path, parent_
     if parent_identified:
         transport.responses[COMMENTS_ENDPOINT].append(answer())
     result, output = execute(transport)
-    assert result == (0 if parent_identified else 1), output
-    if not parent_identified:
-        assert "outside diff range comments declares 1, accounted 0" in output
+    assert result == 0, output
+    assert "unidentified" not in output
+
+
+@pytest.mark.parametrize("section_shape", ("summary", "quoted-bold"))
+@pytest.mark.parametrize("content", (
+    pytest.param("Consequences:\n- First consequence.\n- Second consequence.", id="prose-bullets"),
+    pytest.param(
+        "<details><summary>🧩 Analysis chain</summary>\nFirst run.\n---\nSecond run.\n</details>",
+        id="analysis-chain-divider",
+    ),
+    pytest.param("**Update stale code comments (two places)**", id="nonnumeric-bold-title"),
+    pytest.param("**Remove two stale comments (2)**", id="numeric-bold-title"),
+    pytest.param(
+        "<details><summary>Other comments (1)</summary>\nSupporting prose.\n</details>",
+        id="declaration-shaped-summary",
+    ),
+))
+def test_nested_finding_content_preserves_section_structure(evidence_path, section_shape, content):
+    child = "<details><summary><em>Minor</em> file.py</summary>\n" + content + "\n" + MARKER + "\n</details>"
+    if section_shape == "summary":
+        body = "<details><summary>🧹 Nitpick comments (1)</summary>\n" + child + "\n</details>"
+    else:
+        body = "**⚠️ Outside diff range comments (1)**\n" + child
+        body = "\n".join("> " + line for line in body.splitlines())
+    transport, _ = body_scenario(evidence_path)
+    transport.responses[REVIEW_ENDPOINT][0]["body"] = body
+    transport.responses[COMMENTS_ENDPOINT].append(answer())
+    result, output = execute(transport)
+    assert result == 0, output
+    assert "unidentified" not in output
+    assert "has an authorized conversation disposition" in output
+
+
+@pytest.mark.parametrize("body", (
+    "**Nitpick comments (two)**\nOrdinary prose.",
+    "<details><summary>Nitpick comments (two places)</summary>Ordinary prose.</details>",
+))
+def test_nonnumeric_coderabbit_section_titles_are_content(evidence_path, body):
+    transport, _ = body_scenario(evidence_path)
+    transport.responses[REVIEW_ENDPOINT][0]["body"] = body
+    result, output = execute(transport)
+    assert result == 0, output
+    assert "unidentified" not in output
 
 
 @pytest.mark.parametrize("content,complete", (
@@ -773,7 +848,7 @@ SHARED_BODY_CASES = json.loads(
 
 @pytest.mark.parametrize("case", SHARED_BODY_CASES, ids=lambda case: case["name"])
 def test_shared_review_body_dispositions(case):
-    """Replay every case in the pinned shared fixture file without overrides."""
+    """Replay every pinned case with one labelled, self-removing ruling override."""
     config = check.load_work_config({
         "schema_version": 1, "product_repositories": [],
         "connected_reviewers": case["connected_reviewers"],
@@ -781,6 +856,22 @@ def test_shared_review_body_dispositions(case):
     })
     expected = case["expected"]
     context = case["name"]
+    if context == "innermost-declared-section-owns-identity":
+        # Steward: a declaration-shaped summary inside a declared section is
+        # content, so alpha accounts for the outer section's sole entry.
+        # https://github.com/Grimblaz-and-Friends/change-proof/issues/38#issuecomment-5939291068
+        ruling = "https://github.com/Grimblaz-and-Friends/change-proof/issues/38#issuecomment-5939291068"
+        override = {
+            "missing_findings": [{
+                "reviewer": CR, "identity": "cr-comment:v1:alpha", "sources": [100],
+            }],
+            "missing_reviews": [], "unidentified_reviews": [],
+        }
+        assert {field: expected[field] for field in override} != override, (
+            f"{context}: remove now-unnecessary expectation override under {ruling}"
+        )
+        expected = override
+        context += f"; labelled Steward expectation override under {ruling}"
     failures, verified = check._check_body_findings(
         case["repository"], case["pull_request"], config,
         case["conversation_comments"], case["reviews"], case["inline_comments"],
