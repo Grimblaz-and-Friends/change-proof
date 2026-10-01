@@ -95,11 +95,9 @@ def test_recorded_lab_receipt():
 
 
 @pytest.mark.parametrize("evidence_path", EVIDENCE_PATHS)
-@pytest.mark.parametrize("event", ("pull_request", "pull_request_target"))
-@pytest.mark.parametrize("state", ("COMMENTED", "APPROVED", "CHANGES_REQUESTED", "DISMISSED"))
-def test_lab_receipt_accepts_submitted_review_on_its_own_commit(evidence_path, event, state):
+@pytest.mark.parametrize("state", ("COMMENTED", "APPROVED", "CHANGES_REQUESTED"))
+def test_lab_receipt_accepts_submitted_review_on_its_own_commit(evidence_path, state):
     transport, _ = receipt_scenario(evidence_path)
-    transport.responses[RUN_ENDPOINT]["event"] = event
     transport.responses[REVIEW_ENDPOINT][0]["state"] = state
     assert transport.responses[RUN_ENDPOINT]["head_sha"] != HEAD
 
@@ -109,6 +107,22 @@ def test_lab_receipt_accepts_submitted_review_on_its_own_commit(evidence_path, e
     assert f"evidence path: {evidence_path}" in output
     assert f"review #{REVIEW_ID}; run #{RUN_ID}, successful review job #{JOB_ID} attempt #1" in output
     assert (JOBS_ENDPOINT, True) in transport.calls
+
+
+@pytest.mark.parametrize("evidence_path", EVIDENCE_PATHS)
+def test_lab_receipt_rejects_pull_request_even_with_matching_provenance(evidence_path):
+    transport, _ = receipt_scenario(evidence_path)
+    transport.responses[RUN_ENDPOINT]["event"] = "pull_request"
+
+    assert_receipt_rejected(transport, "pull_request_target")
+
+
+@pytest.mark.parametrize("evidence_path", EVIDENCE_PATHS)
+def test_lab_receipt_rejects_dismissed_review(evidence_path):
+    transport, _ = receipt_scenario(evidence_path)
+    transport.responses[REVIEW_ENDPOINT][0]["state"] = "DISMISSED"
+
+    assert_receipt_rejected(transport, "review state")
 
 
 @pytest.mark.parametrize("evidence_path", EVIDENCE_PATHS)
@@ -133,15 +147,15 @@ INVALID_FIELDS = (
     pytest.param("run", "path", ".github/workflows/mutation-testing.yml", "workflow path", id="wrong-workflow"),
     pytest.param("run", "path", ".github/workflows/Connected-review.yml", "workflow path", id="case-sensitive-workflow"),
     pytest.param("run", "path", ".github/workflows/renamed-review.yml", "workflow path", id="renamed-workflow"),
-    pytest.param("run", "event", "push", "pull-request trigger", id="push"),
-    pytest.param("run", "event", "workflow_dispatch", "pull-request trigger", id="manual"),
-    pytest.param("run", "event", [], "pull-request trigger", id="malformed-event"),
+    pytest.param("run", "event", "push", "not pull_request_target", id="push"),
+    pytest.param("run", "event", "workflow_dispatch", "not pull_request_target", id="manual"),
+    pytest.param("run", "event", [], "not pull_request_target", id="malformed-event"),
     pytest.param("run", "head_sha", "f" * 40, "differs from the review commit_id", id="wrong-commit"),
     pytest.param("run", "head_sha", "short", "head_sha", id="short-run-head"),
     pytest.param("run", "head_sha", None, "head_sha", id="non-string-run-head"),
-    pytest.param("review", "state", "PENDING", "not submitted", id="pending-review"),
-    pytest.param("review", "state", "unknown", "not submitted", id="unknown-review-state"),
-    pytest.param("review", "state", [], "not submitted", id="malformed-review-state"),
+    pytest.param("review", "state", "PENDING", "not counted", id="pending-review"),
+    pytest.param("review", "state", "unknown", "not counted", id="unknown-review-state"),
+    pytest.param("review", "state", [], "not counted", id="malformed-review-state"),
     pytest.param("review", "submitted_at", "invalid", "submitted_at", id="invalid-submitted-at"),
     pytest.param("review", "submitted_at", "2026-09-30T05:11:31", "submitted_at", id="naive-submitted-at"),
     pytest.param("review", "commit_id", "short", "full commit_id", id="short-review-commit"),
