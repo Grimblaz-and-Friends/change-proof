@@ -1211,7 +1211,7 @@ jobs:
               LAB_REVIEWER: "tradecraft-review-finding:v1:",
           }
           BODY_SECTION = re.compile(
-              r"(?:Outside diff range comments|Nitpick comments|Findings)\b", re.I
+              r"(?:Outside diff range comments|Nitpick comments|Other comments|Findings)\b", re.I
           )
           REVIEW_TARGET = re.compile(
               r"https://github\.com/([A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+)/pull/"
@@ -1314,7 +1314,9 @@ jobs:
                       reasons.append("finding identity conflicts with the review's workflow run")
               else:
                   values = re.findall(r"(?:^|\n)[ \t]*(?:\*\*)?Findings:\s*([^\s*<>]+)", markup, re.I)
-                  values += re.findall(r"(?:^|\n)[ \t]*([^\s]+) (?:validated )?findings?\.", markup, re.I)
+                  values += [match[1] for match in re.finditer(
+                      r"(?:^|\n)[ \t]*([^\s<>]+) (?:validated )?findings?\.", markup, re.I
+                  ) if match[0].strip() != "No findings."]
                   count_declaration("findings", values, accounted)
 
               # CodeRabbit uses details summaries and bold, blockquoted headings. Other
@@ -1323,10 +1325,11 @@ jobs:
               sections: list[tuple[int, int, str, str]] = []
               for line_match in re.finditer(r"[^\n]+", markup):
                   line = re.sub(r"^(?:[ \t]*>[ \t]?)+", "", line_match[0]).strip()
-                  title = re.sub(r"<[^>]*>|[*_#]", "", line).strip()
+                  summary = re.search(r"<summary\b[^>]*>(.*?)</summary>", line, re.I)
+                  title = re.sub(r"<[^>]*>|[*_#]", "", summary[1] if summary else line).strip()
                   signal = BODY_SECTION.search(title)
                   if signal is None or not (line.startswith(("#", "**", "__"))
-                                            or re.match(r"<summary\b", line, re.I)):
+                                            or re.match(r"(?:<details\b[^>]*>\s*)?<summary\b", line, re.I)):
                       continue
                   # 'Findings: N' is an aggregate declaration, not a body-only section.
                   if re.match(r"Findings:\s*\S+", title, re.I):
@@ -1350,9 +1353,10 @@ jobs:
                   seen_sections.add(label)
                   scoped = markup[start:end]
                   scoped_ids, _ = _body_identities(scoped, reviewer)
+                  section_accounted = len(inline_ids | scoped_ids) if label == "findings" else len(scoped_ids)
                   if suffix:
                       number = re.fullmatch(r"\(([0-9]+)\)", suffix)
-                      count_declaration(label, [number[1] if number else suffix], len(scoped_ids))
+                      count_declaration(label, [number[1] if number else suffix], section_accounted)
                   # Each nested finding/file details must account for its own entries.
                   for child_start, child_end, child in details:
                       if not (start < child_start < child_end <= end):
@@ -1376,14 +1380,20 @@ jobs:
                       elif not nested and not child_ids:
                           reasons.append(f"{label} has an unidentified entry")
                   # Markdown lists/subheadings explicitly declare separate body entries.
-                  content_start = scoped.find("\n") + 1
+                  section_summary = re.search(r"<summary\b[^>]*>.*?</summary>", scoped, re.S | re.I)
+                  content_start = (section_summary.end() if section_summary
+                                   else (scoped.find("\n") + 1 or len(scoped)))
                   entries = list(re.finditer(r"(?m)^(?:[ \t]*>[ \t]?)?(?: {0,3}(?:[-+*]|[0-9]+[.)])\s+|#{2,6}\s+)", scoped[content_start:]))
                   for index, entry in enumerate(entries):
                       stop = content_start + entries[index + 1].start() if index + 1 < len(entries) else len(scoped)
                       if not _body_identities(scoped[content_start + entry.start():stop], reviewer)[0]:
                           reasons.append(f"{label} has an unidentified entry")
                   if not suffix and not scoped_ids:
-                      reasons.append(f"{label} section has no identified findings")
+                      content = re.sub(r"<[^>]*>", "", scoped[content_start:]).strip()
+                      if content in ("None.", "No findings.", "No findings were found."):
+                          count_declaration(label, ["0"], section_accounted)
+                      else:
+                          reasons.append(f"{label} section has no identified findings")
               return list(dict.fromkeys(reasons))
 
 
@@ -1398,7 +1408,7 @@ jobs:
               normalized = first.lower().replace(chr(0x2014), "-")
               if normalized.startswith(("declined -", "lapsed -")):
                   reason = normalized.split("-", 1)[1].split(";", 1)[0].strip()
-                  return bool(reason and not reason.startswith("["))
+                  return bool(reason)
               if normalized.startswith("fixed in #"):
                   return re.match(r"fixed in #[1-9][0-9]*\b", normalized) is not None
               if normalized.startswith("duplicate of "):
@@ -1422,11 +1432,15 @@ jobs:
                   if _is_integer(item.get("in_reply_to_id")):
                       replies.setdefault(item["in_reply_to_id"], []).append(item)
               answered_inline: set[tuple[str, str]] = set()
+              api_pr_url = f"https://api.github.com/repos/{repo}/pulls/{number}"
+              pr_url = f"https://github.com/{repo}/pull/{number}"
               for root in roots:
                   reviewer = _author(root)
                   if reviewer not in config.connected_reviewers:
                       continue
                   if any(_author(reply) in config.marker_producers
+                         and reply.get("pull_request_url", api_pr_url) == api_pr_url
+                         and str(reply.get("html_url", pr_url)).split("#", 1)[0] == pr_url
                          and _disposition(str(reply.get("body") or ""))
                          for reply in replies.get(root["id"], [])):
                       answered_inline.update((reviewer, identity) for identity in

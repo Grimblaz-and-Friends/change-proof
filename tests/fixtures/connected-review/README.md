@@ -28,15 +28,29 @@ overlays in the tests. Those evaluations are not recordings of PR #795's gate.
 
 ## Body findings for #38
 
-`v1-review-body-dispositions.json` contains synthetic examples derived directly
-from tradecraft #809's [settled artifact, comment 5934093522](https://github.com/Grimblaz-and-Friends/tradecraft/issues/809#issuecomment-5934093522),
+`v1-review-body-dispositions.json` is copied verbatim from tradecraft commit
+`1eab7c9c42dd26caced9cb805a6704d20a3e3f1b`, git blob
+`92a693c8952788f25a9a378fb22e64cb00b6796d`, using this GET on 2026-10-01:
+
+```text
+gh api --method GET -H "Accept: application/vnd.github.raw" "repos/Grimblaz-and-Friends/tradecraft/contents/skills/work/references/proof-fixtures/v1-review-body-dispositions.json?ref=1eab7c9c42dd26caced9cb805a6704d20a3e3f1b"
+```
+
+`test_shared_review_body_dispositions` replays every shared case directly through
+the gate's body-finding check and compares missing findings with their carrying
+review ids, missing whole-review answers, and all unidentified reviews. It does
+not compare `ignored_authors`, a producer diagnostic the gate does not emit.
+The fixture's `.gitattributes` entry preserves its bytes without text conversion.
+
+`derived-review-body-examples.json` remains the gate's own synthetic coverage,
+derived directly from tradecraft #809's [settled artifact, comment 5934093522](https://github.com/Grimblaz-and-Friends/tradecraft/issues/809#issuecomment-5934093522),
 **Implementation reading**, **Identity and accounting** and **Answer contract**.
 It was not copied from a tradecraft commit. This follows the holder's
 [build direction](https://github.com/Grimblaz-and-Friends/change-proof/issues/38#issuecomment-5936467085).
-Reconciliation against #809's pending
-`skills/work/references/proof-fixtures/v1-review-body-dispositions.json` is the
-holder's responsibility. `test_derived_shared_protocol_examples` evaluates these
-examples through both gate evidence paths. No fixture is a runtime dependency.
+These derived examples came first and were then reconciled to #809's shared
+file under the [Steward's rulings, comment 5936971325](https://github.com/Grimblaz-and-Friends/change-proof/issues/38#issuecomment-5936971325).
+`test_derived_shared_protocol_examples` evaluates the derived examples through
+both gate evidence paths. No fixture is a runtime dependency.
 
 `tradecraft-654-body.trimmed.json` and `tradecraft-757-body.trimmed.json` were
 fetched with GET on 2026-10-01:

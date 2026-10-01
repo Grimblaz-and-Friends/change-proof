@@ -3,6 +3,7 @@ from __future__ import annotations
 import base64
 import io
 import json
+import re
 from pathlib import Path
 
 import pytest
@@ -437,7 +438,7 @@ def test_body_obligations_and_answers_on_later_api_pages(evidence_path):
 
 
 def test_derived_shared_protocol_examples(evidence_path):
-    fixture = json.loads((FIXTURES / "v1-review-body-dispositions.json").read_text(encoding="utf-8"))
+    fixture = json.loads((FIXTURES / "derived-review-body-examples.json").read_text(encoding="utf-8"))
     for case in fixture["cases"]:
         transport, document = body_scenario(evidence_path, case["reviewer"])
         review = transport.responses[REVIEW_ENDPOINT][0]
@@ -452,3 +453,105 @@ def test_derived_shared_protocol_examples(evidence_path):
             ))
         result, output = execute(transport)
         assert result == case["exit_code"], (case["name"], output)
+
+
+SHARED_BODY_CASES = json.loads(
+    (FIXTURES / "v1-review-body-dispositions.json").read_bytes()
+)["cases"]
+assert len(SHARED_BODY_CASES) == 67
+
+
+@pytest.mark.parametrize("case", SHARED_BODY_CASES, ids=lambda case: case["name"])
+def test_shared_review_body_dispositions(case):
+    config = check.WorkConfig(frozenset(case["connected_reviewers"]),
+                              frozenset(case["marker_producers"]))
+    failures, verified = check._check_body_findings(
+        case["repository"], case["pull_request"], config,
+        case["conversation_comments"], case["reviews"], case["inline_comments"],
+    )
+    review_url = re.escape(
+        f"https://github.com/{case['repository']}/pull/{case['pull_request']}#pullrequestreview-"
+    )
+    finding_pattern = re.compile(
+        r"an authorized conversation disposition for (.+) body finding (\S+) at "
+        + review_url + r"([1-9][0-9]*)$"
+    )
+    unidentified_pattern = re.compile(
+        r"unidentified .+ review at " + review_url + r"([1-9][0-9]*);"
+    )
+    missing_findings = {}
+    missing_reviews = set()
+    unidentified_reviews = set()
+    for failure in failures:
+        finding = finding_pattern.fullmatch(failure.missing)
+        if finding:
+            reviewer, identity, source = finding.groups()
+            # The gate prints one representative source per finding. Recover all
+            # carrying review ids with its identity parser, preserving deduplication.
+            sources = {
+                review["id"] for review in case["reviews"]
+                if check._author(review) == reviewer and review.get("state") != "PENDING"
+                and identity in check._body_identities(review.get("body") or "", reviewer)[0]
+            }
+            assert int(source) in sources, (case["name"], failure)
+            missing_findings[reviewer, identity] = sources
+        else:
+            review = unidentified_pattern.search(failure.missing)
+            assert review and failure.missing.startswith(
+                "an authorized whole-review disposition for "
+            ), (case["name"], failure)
+            missing_reviews.add(int(review[1]))
+            unidentified_reviews.add(int(review[1]))
+    for message in verified:
+        review = unidentified_pattern.match(message)
+        if review:
+            unidentified_reviews.add(int(review[1]))
+    expected = case["expected"]
+    # ignored_authors is a producer diagnostic, not an obligation; this gate
+    # does not emit it, so only the three obligation/classification fields compare.
+    assert missing_findings == {
+        (item["reviewer"], item["identity"]): set(item["sources"])
+        for item in expected["missing_findings"]
+    }, (case["name"], failures, verified)
+    assert missing_reviews == set(expected["missing_reviews"]), (case["name"], failures, verified)
+    assert unidentified_reviews == set(expected["unidentified_reviews"]), (
+        case["name"], failures, verified
+    )
+
+
+@pytest.mark.parametrize("content,zero", (
+    ("None.", True), ("No findings.", True), ("No findings were found.", True),
+    ("None", False), ("none.", False), ("No findings were found", False),
+    ("No findings.\nAdditional prose.", False), ("Nothing to report.", False),
+))
+@pytest.mark.parametrize("section", (
+    "## Findings\n{}", "<details><summary>Findings</summary>{}</details>",
+))
+def test_only_closed_zero_statements_account_for_empty_sections(content, zero, section):
+    review = record("other[bot]", section.format(content), id=41)
+    failures, _ = check._check_body_findings(
+        REPO, 17, check.WorkConfig(frozenset({"other[bot]"}), frozenset({OWNER})),
+        [], [review], [],
+    )
+    assert bool(failures) == (not zero)
+
+
+@pytest.mark.parametrize("url_field,current_url,other_url", (
+    ("pull_request_url", f"https://api.github.com/repos/{REPO}/pulls/17",
+     f"https://api.github.com/repos/{REPO}/pulls/18"),
+    ("html_url", f"https://github.com/{REPO}/pull/17#discussion_r151",
+     f"https://github.com/{REPO}/pull/18#discussion_r151"),
+))
+@pytest.mark.parametrize("same_pr", (False, True))
+def test_inline_exemption_requires_reply_urls_on_this_pr(url_field, current_url, other_url, same_pr):
+    transport, document = body_scenario("legacy-markers")
+    reviews = transport.responses[REVIEW_ENDPOINT]
+    reviews[0]["body"] = MARKER
+    add_inline(transport, document)
+    inline = transport.responses[INLINE_ENDPOINT]
+    inline[-1][url_field] = current_url if same_pr else other_url
+    failures, _ = check._check_body_findings(
+        REPO, 17, check.WorkConfig(frozenset({CR}), frozenset({OWNER})),
+        [], reviews, inline,
+    )
+    assert bool(failures) == (not same_pr)

@@ -1,191 +1,2952 @@
 {
   "schema_version": 1,
-  "provenance": {
-    "kind": "synthetic-derived",
-    "source": "https://github.com/Grimblaz-and-Friends/tradecraft/issues/809#issuecomment-5934093522",
-    "sections": [
-      "Identity and accounting",
-      "Answer contract"
-    ],
-    "pending": "skills/work/references/proof-fixtures/v1-review-body-dispositions.json; holder-owned reconciliation"
-  },
   "cases": [
     {
+      "name": "empty",
+      "repository": "example/product",
+      "pull_request": 7,
+      "connected_reviewers": [
+        "coderabbitai[bot]",
+        "github-actions[bot]",
+        "review-bot"
+      ],
+      "marker_producers": [
+        "holder"
+      ],
+      "reviews": [
+        {
+          "id": 100,
+          "user": {
+            "login": "coderabbitai[bot]"
+          },
+          "state": "COMMENTED",
+          "body": "",
+          "html_url": "https://github.com/example/product/pull/7#pullrequestreview-100",
+          "commit_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      ],
+      "inline_comments": [],
+      "conversation_comments": [],
+      "expected": {
+        "missing_findings": [],
+        "missing_reviews": [],
+        "unidentified_reviews": [],
+        "ignored_authors": []
+      }
+    },
+    {
       "name": "summary",
-      "reviewer": "coderabbitai[bot]",
-      "body": "Walkthrough summary",
-      "inline": [],
-      "answers": [],
-      "exit_code": 0
-    },
-    {
-      "name": "all-inline",
-      "reviewer": "coderabbitai[bot]",
-      "body": "**Actionable comments posted: 1**",
-      "inline": [
-        null
+      "repository": "example/product",
+      "pull_request": 7,
+      "connected_reviewers": [
+        "coderabbitai[bot]",
+        "github-actions[bot]",
+        "review-bot"
       ],
-      "answers": [],
-      "exit_code": 0
-    },
-    {
-      "name": "outside-diff-unanswered",
-      "reviewer": "coderabbitai[bot]",
-      "body": "**Outside diff range comments (1)**\n<!-- cr-comment:v1:one -->",
-      "inline": [],
-      "answers": [],
-      "exit_code": 1
-    },
-    {
-      "name": "nitpick-declined",
-      "reviewer": "coderabbitai[bot]",
-      "body": "**Nitpick comments (1)**\n<!-- cr-comment:v1:one -->",
-      "inline": [],
-      "answers": [
+      "marker_producers": [
+        "holder"
+      ],
+      "reviews": [
         {
-          "identity": "cr-comment:v1:one",
-          "disposition": "declined — unnecessary"
+          "id": 100,
+          "user": {
+            "login": "coderabbitai[bot]"
+          },
+          "state": "COMMENTED",
+          "body": "Review summary: good change.",
+          "html_url": "https://github.com/example/product/pull/7#pullrequestreview-100",
+          "commit_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
         }
       ],
-      "exit_code": 0
+      "inline_comments": [],
+      "conversation_comments": [],
+      "expected": {
+        "missing_findings": [],
+        "missing_reviews": [],
+        "unidentified_reviews": [],
+        "ignored_authors": []
+      }
     },
     {
-      "name": "identified-fixed",
-      "reviewer": "coderabbitai[bot]",
-      "body": "<!-- cr-comment:v1:one -->",
-      "inline": [],
-      "answers": [
+      "name": "walkthrough",
+      "repository": "example/product",
+      "pull_request": 7,
+      "connected_reviewers": [
+        "coderabbitai[bot]",
+        "github-actions[bot]",
+        "review-bot"
+      ],
+      "marker_producers": [
+        "holder"
+      ],
+      "reviews": [
         {
-          "identity": "cr-comment:v1:one",
-          "disposition": "fixed"
+          "id": 100,
+          "user": {
+            "login": "coderabbitai[bot]"
+          },
+          "state": "COMMENTED",
+          "body": "## Walkthrough\nUpdated one function.",
+          "html_url": "https://github.com/example/product/pull/7#pullrequestreview-100",
+          "commit_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
         }
       ],
-      "exit_code": 0
+      "inline_comments": [],
+      "conversation_comments": [],
+      "expected": {
+        "missing_findings": [],
+        "missing_reviews": [],
+        "unidentified_reviews": [],
+        "ignored_authors": []
+      }
     },
     {
-      "name": "identified-not-answered-by-review-link",
-      "reviewer": "coderabbitai[bot]",
-      "body": "<!-- cr-comment:v1:one -->",
-      "inline": [],
-      "answers": [
+      "name": "codex-opening",
+      "repository": "example/product",
+      "pull_request": 7,
+      "connected_reviewers": [
+        "coderabbitai[bot]",
+        "github-actions[bot]",
+        "review-bot"
+      ],
+      "marker_producers": [
+        "holder"
+      ],
+      "reviews": [
         {
-          "identity": null,
-          "disposition": "fixed"
+          "id": 100,
+          "user": {
+            "login": "coderabbitai[bot]"
+          },
+          "state": "COMMENTED",
+          "body": "I will review this pull request.",
+          "html_url": "https://github.com/example/product/pull/7#pullrequestreview-100",
+          "commit_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
         }
       ],
-      "exit_code": 1
+      "inline_comments": [],
+      "conversation_comments": [],
+      "expected": {
+        "missing_findings": [],
+        "missing_reviews": [],
+        "unidentified_reviews": [],
+        "ignored_authors": []
+      }
     },
     {
-      "name": "identical-answered-inline",
-      "reviewer": "coderabbitai[bot]",
-      "body": "<!-- cr-comment:v1:one -->",
-      "inline": [
-        "cr-comment:v1:one"
+      "name": "marker-examples",
+      "repository": "example/product",
+      "pull_request": 7,
+      "connected_reviewers": [
+        "coderabbitai[bot]",
+        "github-actions[bot]",
+        "review-bot"
       ],
-      "answers": [],
-      "exit_code": 0
-    },
-    {
-      "name": "unidentified-whole-review",
-      "reviewer": "coderabbitai[bot]",
-      "body": "**Nitpick comments (1)**",
-      "inline": [],
-      "answers": [
+      "marker_producers": [
+        "holder"
+      ],
+      "reviews": [
         {
-          "identity": null,
-          "disposition": "fixed — addressed"
+          "id": 100,
+          "user": {
+            "login": "coderabbitai[bot]"
+          },
+          "state": "COMMENTED",
+          "body": "```html\n<!-- cr-comment:v1:alpha -->\n```\n`<!-- cr-comment:v1:alpha -->`\n<code><!-- cr-comment:v1:alpha --></code>",
+          "html_url": "https://github.com/example/product/pull/7#pullrequestreview-100",
+          "commit_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
         }
       ],
-      "exit_code": 0
+      "inline_comments": [],
+      "conversation_comments": [],
+      "expected": {
+        "missing_findings": [],
+        "missing_reviews": [],
+        "unidentified_reviews": [],
+        "ignored_authors": []
+      }
     },
     {
-      "name": "mixed-whole-answer-insufficient",
-      "reviewer": "coderabbitai[bot]",
-      "body": "**Nitpick comments (2)**\n<!-- cr-comment:v1:one -->",
-      "inline": [],
-      "answers": [
+      "name": "unconfigured-author",
+      "repository": "example/product",
+      "pull_request": 7,
+      "connected_reviewers": [
+        "coderabbitai[bot]",
+        "github-actions[bot]",
+        "review-bot"
+      ],
+      "marker_producers": [
+        "holder"
+      ],
+      "reviews": [
         {
-          "identity": null,
-          "disposition": "fixed — addressed"
+          "id": 100,
+          "user": {
+            "login": "outsider"
+          },
+          "state": "COMMENTED",
+          "body": "<!-- cr-comment:v1:alpha -->",
+          "html_url": "https://github.com/example/product/pull/7#pullrequestreview-100",
+          "commit_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
         }
       ],
-      "exit_code": 1
+      "inline_comments": [],
+      "conversation_comments": [],
+      "expected": {
+        "missing_findings": [],
+        "missing_reviews": [],
+        "unidentified_reviews": [],
+        "ignored_authors": []
+      }
     },
     {
-      "name": "mixed-separate-answers",
-      "reviewer": "coderabbitai[bot]",
-      "body": "**Nitpick comments (2)**\n<!-- cr-comment:v1:one -->",
-      "inline": [],
-      "answers": [
+      "name": "pending-review",
+      "repository": "example/product",
+      "pull_request": 7,
+      "connected_reviewers": [
+        "coderabbitai[bot]",
+        "github-actions[bot]",
+        "review-bot"
+      ],
+      "marker_producers": [
+        "holder"
+      ],
+      "reviews": [
         {
-          "identity": null,
-          "disposition": "fixed — addressed"
+          "id": 100,
+          "user": {
+            "login": "coderabbitai[bot]"
+          },
+          "state": "PENDING",
+          "body": "<!-- cr-comment:v1:alpha -->",
+          "html_url": "https://github.com/example/product/pull/7#pullrequestreview-100",
+          "commit_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      ],
+      "inline_comments": [],
+      "conversation_comments": [],
+      "expected": {
+        "missing_findings": [],
+        "missing_reviews": [],
+        "unidentified_reviews": [],
+        "ignored_authors": []
+      }
+    },
+    {
+      "name": "Outside diff range-unanswered",
+      "repository": "example/product",
+      "pull_request": 7,
+      "connected_reviewers": [
+        "coderabbitai[bot]",
+        "github-actions[bot]",
+        "review-bot"
+      ],
+      "marker_producers": [
+        "holder"
+      ],
+      "reviews": [
+        {
+          "id": 100,
+          "user": {
+            "login": "coderabbitai[bot]"
+          },
+          "state": "COMMENTED",
+          "body": "<details>\n<summary>Outside diff range comments (1)</summary><blockquote>\n<details><summary>app.py (1)</summary><blockquote>\nFinding\n<!-- cr-comment:v1:alpha -->\n</blockquote></details>\n</blockquote></details>",
+          "html_url": "https://github.com/example/product/pull/7#pullrequestreview-100",
+          "commit_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      ],
+      "inline_comments": [],
+      "conversation_comments": [],
+      "expected": {
+        "missing_findings": [
+          {
+            "reviewer": "coderabbitai[bot]",
+            "identity": "cr-comment:v1:alpha",
+            "sources": [
+              100
+            ]
+          }
+        ],
+        "missing_reviews": [],
+        "unidentified_reviews": [],
+        "ignored_authors": []
+      }
+    },
+    {
+      "name": "Outside diff range-answered",
+      "repository": "example/product",
+      "pull_request": 7,
+      "connected_reviewers": [
+        "coderabbitai[bot]",
+        "github-actions[bot]",
+        "review-bot"
+      ],
+      "marker_producers": [
+        "holder"
+      ],
+      "reviews": [
+        {
+          "id": 100,
+          "user": {
+            "login": "coderabbitai[bot]"
+          },
+          "state": "COMMENTED",
+          "body": "<details>\n<summary>Outside diff range comments (1)</summary><blockquote>\n<details><summary>app.py (1)</summary><blockquote>\nFinding\n<!-- cr-comment:v1:alpha -->\n</blockquote></details>\n</blockquote></details>",
+          "html_url": "https://github.com/example/product/pull/7#pullrequestreview-100",
+          "commit_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      ],
+      "inline_comments": [],
+      "conversation_comments": [
+        {
+          "id": 200,
+          "user": {
+            "login": "holder"
+          },
+          "body": "fixed - repaired; [cr-comment:v1:alpha](https://github.com/example/product/pull/7#pullrequestreview-100)"
+        }
+      ],
+      "expected": {
+        "missing_findings": [],
+        "missing_reviews": [],
+        "unidentified_reviews": [],
+        "ignored_authors": []
+      }
+    },
+    {
+      "name": "Nitpick-unanswered",
+      "repository": "example/product",
+      "pull_request": 7,
+      "connected_reviewers": [
+        "coderabbitai[bot]",
+        "github-actions[bot]",
+        "review-bot"
+      ],
+      "marker_producers": [
+        "holder"
+      ],
+      "reviews": [
+        {
+          "id": 100,
+          "user": {
+            "login": "coderabbitai[bot]"
+          },
+          "state": "COMMENTED",
+          "body": "<details>\n<summary>Nitpick comments (1)</summary><blockquote>\n<details><summary>app.py (1)</summary><blockquote>\nFinding\n<!-- cr-comment:v1:alpha -->\n</blockquote></details>\n</blockquote></details>",
+          "html_url": "https://github.com/example/product/pull/7#pullrequestreview-100",
+          "commit_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      ],
+      "inline_comments": [],
+      "conversation_comments": [],
+      "expected": {
+        "missing_findings": [
+          {
+            "reviewer": "coderabbitai[bot]",
+            "identity": "cr-comment:v1:alpha",
+            "sources": [
+              100
+            ]
+          }
+        ],
+        "missing_reviews": [],
+        "unidentified_reviews": [],
+        "ignored_authors": []
+      }
+    },
+    {
+      "name": "Nitpick-answered",
+      "repository": "example/product",
+      "pull_request": 7,
+      "connected_reviewers": [
+        "coderabbitai[bot]",
+        "github-actions[bot]",
+        "review-bot"
+      ],
+      "marker_producers": [
+        "holder"
+      ],
+      "reviews": [
+        {
+          "id": 100,
+          "user": {
+            "login": "coderabbitai[bot]"
+          },
+          "state": "COMMENTED",
+          "body": "<details>\n<summary>Nitpick comments (1)</summary><blockquote>\n<details><summary>app.py (1)</summary><blockquote>\nFinding\n<!-- cr-comment:v1:alpha -->\n</blockquote></details>\n</blockquote></details>",
+          "html_url": "https://github.com/example/product/pull/7#pullrequestreview-100",
+          "commit_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      ],
+      "inline_comments": [],
+      "conversation_comments": [
+        {
+          "id": 200,
+          "user": {
+            "login": "holder"
+          },
+          "body": "fixed - repaired; [cr-comment:v1:alpha](https://github.com/example/product/pull/7#pullrequestreview-100)"
+        }
+      ],
+      "expected": {
+        "missing_findings": [],
+        "missing_reviews": [],
+        "unidentified_reviews": [],
+        "ignored_authors": []
+      }
+    },
+    {
+      "name": "Other-unanswered",
+      "repository": "example/product",
+      "pull_request": 7,
+      "connected_reviewers": [
+        "coderabbitai[bot]",
+        "github-actions[bot]",
+        "review-bot"
+      ],
+      "marker_producers": [
+        "holder"
+      ],
+      "reviews": [
+        {
+          "id": 100,
+          "user": {
+            "login": "coderabbitai[bot]"
+          },
+          "state": "COMMENTED",
+          "body": "<details>\n<summary>Other comments (1)</summary><blockquote>\n<details><summary>app.py (1)</summary><blockquote>\nFinding\n<!-- cr-comment:v1:alpha -->\n</blockquote></details>\n</blockquote></details>",
+          "html_url": "https://github.com/example/product/pull/7#pullrequestreview-100",
+          "commit_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      ],
+      "inline_comments": [],
+      "conversation_comments": [],
+      "expected": {
+        "missing_findings": [
+          {
+            "reviewer": "coderabbitai[bot]",
+            "identity": "cr-comment:v1:alpha",
+            "sources": [
+              100
+            ]
+          }
+        ],
+        "missing_reviews": [],
+        "unidentified_reviews": [],
+        "ignored_authors": []
+      }
+    },
+    {
+      "name": "Other-answered",
+      "repository": "example/product",
+      "pull_request": 7,
+      "connected_reviewers": [
+        "coderabbitai[bot]",
+        "github-actions[bot]",
+        "review-bot"
+      ],
+      "marker_producers": [
+        "holder"
+      ],
+      "reviews": [
+        {
+          "id": 100,
+          "user": {
+            "login": "coderabbitai[bot]"
+          },
+          "state": "COMMENTED",
+          "body": "<details>\n<summary>Other comments (1)</summary><blockquote>\n<details><summary>app.py (1)</summary><blockquote>\nFinding\n<!-- cr-comment:v1:alpha -->\n</blockquote></details>\n</blockquote></details>",
+          "html_url": "https://github.com/example/product/pull/7#pullrequestreview-100",
+          "commit_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      ],
+      "inline_comments": [],
+      "conversation_comments": [
+        {
+          "id": 200,
+          "user": {
+            "login": "holder"
+          },
+          "body": "fixed - repaired; [cr-comment:v1:alpha](https://github.com/example/product/pull/7#pullrequestreview-100)"
+        }
+      ],
+      "expected": {
+        "missing_findings": [],
+        "missing_reviews": [],
+        "unidentified_reviews": [],
+        "ignored_authors": []
+      }
+    },
+    {
+      "name": "733-blockquoted-outside-diff",
+      "repository": "example/product",
+      "pull_request": 7,
+      "connected_reviewers": [
+        "coderabbitai[bot]",
+        "github-actions[bot]",
+        "review-bot"
+      ],
+      "marker_producers": [
+        "holder"
+      ],
+      "reviews": [
+        {
+          "id": 100,
+          "user": {
+            "login": "coderabbitai[bot]"
+          },
+          "state": "COMMENTED",
+          "body": "**Actionable comments posted: 3**\n\n> **Outside diff range comments (1)**\n> <details><summary>Real off-diff location</summary><blockquote>\n> **Fix the holder-owned status.**\n> ```diff\n> + example\n> ```\n> <!-- cr-comment:v1:alpha -->\n> </blockquote></details>\n\n---\n<details><summary>Prompt to fix review comments</summary>\n```\nInline comments:\n- Restatement\nOutside diff comments:\n- Restatement\n```\n</details>",
+          "html_url": "https://github.com/example/product/pull/7#pullrequestreview-100",
+          "commit_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      ],
+      "inline_comments": [
+        {
+          "id": 10,
+          "user": {
+            "login": "coderabbitai[bot]"
+          },
+          "body": "inline finding",
+          "pull_request_review_id": 100
         },
         {
-          "identity": "cr-comment:v1:one",
-          "disposition": "fixed"
+          "id": 11,
+          "user": {
+            "login": "coderabbitai[bot]"
+          },
+          "body": "inline finding",
+          "pull_request_review_id": 100
+        },
+        {
+          "id": 12,
+          "user": {
+            "login": "coderabbitai[bot]"
+          },
+          "body": "inline finding",
+          "pull_request_review_id": 100
         }
       ],
-      "exit_code": 0
+      "conversation_comments": [],
+      "expected": {
+        "missing_findings": [
+          {
+            "reviewer": "coderabbitai[bot]",
+            "identity": "cr-comment:v1:alpha",
+            "sources": [
+              100
+            ]
+          }
+        ],
+        "missing_reviews": [],
+        "unidentified_reviews": [],
+        "ignored_authors": []
+      }
+    },
+    {
+      "name": "757-separate-nitpick-scope",
+      "repository": "example/product",
+      "pull_request": 7,
+      "connected_reviewers": [
+        "coderabbitai[bot]",
+        "github-actions[bot]",
+        "review-bot"
+      ],
+      "marker_producers": [
+        "holder"
+      ],
+      "reviews": [
+        {
+          "id": 100,
+          "user": {
+            "login": "coderabbitai[bot]"
+          },
+          "state": "COMMENTED",
+          "body": "**Actionable comments posted: 5**\n<details><summary>Nitpick comments (1)</summary><blockquote><details><summary>app.py (1)</summary>\n<!-- cr-comment:v1:alpha -->\n</details></blockquote></details>",
+          "html_url": "https://github.com/example/product/pull/7#pullrequestreview-100",
+          "commit_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      ],
+      "inline_comments": [
+        {
+          "id": 10,
+          "user": {
+            "login": "coderabbitai[bot]"
+          },
+          "body": "inline finding",
+          "pull_request_review_id": 100
+        },
+        {
+          "id": 11,
+          "user": {
+            "login": "coderabbitai[bot]"
+          },
+          "body": "inline finding",
+          "pull_request_review_id": 100
+        },
+        {
+          "id": 12,
+          "user": {
+            "login": "coderabbitai[bot]"
+          },
+          "body": "inline finding",
+          "pull_request_review_id": 100
+        },
+        {
+          "id": 13,
+          "user": {
+            "login": "coderabbitai[bot]"
+          },
+          "body": "inline finding",
+          "pull_request_review_id": 100
+        },
+        {
+          "id": 14,
+          "user": {
+            "login": "coderabbitai[bot]"
+          },
+          "body": "inline finding",
+          "pull_request_review_id": 100
+        }
+      ],
+      "conversation_comments": [],
+      "expected": {
+        "missing_findings": [
+          {
+            "reviewer": "coderabbitai[bot]",
+            "identity": "cr-comment:v1:alpha",
+            "sources": [
+              100
+            ]
+          }
+        ],
+        "missing_reviews": [],
+        "unidentified_reviews": [],
+        "ignored_authors": []
+      }
+    },
+    {
+      "name": "812-identity-free-fix-prompt",
+      "repository": "example/product",
+      "pull_request": 7,
+      "connected_reviewers": [
+        "coderabbitai[bot]",
+        "github-actions[bot]",
+        "review-bot"
+      ],
+      "marker_producers": [
+        "holder"
+      ],
+      "reviews": [
+        {
+          "id": 100,
+          "user": {
+            "login": "coderabbitai[bot]"
+          },
+          "state": "COMMENTED",
+          "body": "**Actionable comments posted: 1**\n<details><summary>Prompt to fix review comments</summary>\n```\nInline comments:\n- Fix f.\n```\n</details>",
+          "html_url": "https://github.com/example/product/pull/7#pullrequestreview-100",
+          "commit_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      ],
+      "inline_comments": [
+        {
+          "id": 10,
+          "user": {
+            "login": "coderabbitai[bot]"
+          },
+          "body": "inline finding",
+          "pull_request_review_id": 100
+        }
+      ],
+      "conversation_comments": [],
+      "expected": {
+        "missing_findings": [],
+        "missing_reviews": [],
+        "unidentified_reviews": [],
+        "ignored_authors": []
+      }
     },
     {
       "name": "old-lab-all-inline",
-      "reviewer": "github-actions[bot]",
-      "body": "1 validated finding(s).",
-      "inline": [
-        null
+      "repository": "example/product",
+      "pull_request": 7,
+      "connected_reviewers": [
+        "coderabbitai[bot]",
+        "github-actions[bot]",
+        "review-bot"
       ],
-      "answers": [],
-      "exit_code": 0
-    },
-    {
-      "name": "old-lab-body-unidentified",
-      "reviewer": "github-actions[bot]",
-      "body": "1 validated finding(s).",
-      "inline": [],
-      "answers": [],
-      "exit_code": 1
-    },
-    {
-      "name": "old-lab-whole-answer",
-      "reviewer": "github-actions[bot]",
-      "body": "1 validated finding(s).",
-      "inline": [],
-      "answers": [
+      "marker_producers": [
+        "holder"
+      ],
+      "reviews": [
         {
-          "identity": null,
-          "disposition": "fixed — addressed"
+          "id": 100,
+          "user": {
+            "login": "github-actions[bot]"
+          },
+          "state": "COMMENTED",
+          "body": "2 validated finding(s).",
+          "html_url": "https://github.com/example/product/pull/7#pullrequestreview-100",
+          "commit_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
         }
       ],
-      "exit_code": 0
-    },
-    {
-      "name": "identified-lab",
-      "reviewer": "github-actions[bot]",
-      "body": "1 validated finding(s).\n<!-- tradecraft-review-finding:v1:36672170816:1 -->",
-      "inline": [],
-      "answers": [
+      "inline_comments": [
         {
-          "identity": "tradecraft-review-finding:v1:36672170816:1",
-          "disposition": "declined — unnecessary"
+          "id": 10,
+          "user": {
+            "login": "github-actions[bot]"
+          },
+          "body": "inline finding",
+          "pull_request_review_id": 100
+        },
+        {
+          "id": 11,
+          "user": {
+            "login": "github-actions[bot]"
+          },
+          "body": "inline finding",
+          "pull_request_review_id": 100
         }
       ],
-      "exit_code": 0
+      "conversation_comments": [],
+      "expected": {
+        "missing_findings": [],
+        "missing_reviews": [],
+        "unidentified_reviews": [],
+        "ignored_authors": []
+      }
     },
     {
-      "name": "lab-mixed",
-      "reviewer": "github-actions[bot]",
-      "body": "2 validated finding(s).\n<!-- tradecraft-review-finding:v1:36672170816:1 -->",
-      "inline": [
-        null
+      "name": "old-lab-off-diff",
+      "repository": "example/product",
+      "pull_request": 7,
+      "connected_reviewers": [
+        "coderabbitai[bot]",
+        "github-actions[bot]",
+        "review-bot"
       ],
-      "answers": [
+      "marker_producers": [
+        "holder"
+      ],
+      "reviews": [
         {
-          "identity": "tradecraft-review-finding:v1:36672170816:1",
-          "disposition": "fixed"
+          "id": 100,
+          "user": {
+            "login": "github-actions[bot]"
+          },
+          "state": "COMMENTED",
+          "body": "1 validated finding(s).\n\n**P1 - Wrong result** (`real.py:99`)",
+          "html_url": "https://github.com/example/product/pull/7#pullrequestreview-100",
+          "commit_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
         }
       ],
-      "exit_code": 0
+      "inline_comments": [],
+      "conversation_comments": [],
+      "expected": {
+        "missing_findings": [],
+        "missing_reviews": [
+          100
+        ],
+        "unidentified_reviews": [
+          100
+        ],
+        "ignored_authors": []
+      }
+    },
+    {
+      "name": "old-lab-off-diff-answered",
+      "repository": "example/product",
+      "pull_request": 7,
+      "connected_reviewers": [
+        "coderabbitai[bot]",
+        "github-actions[bot]",
+        "review-bot"
+      ],
+      "marker_producers": [
+        "holder"
+      ],
+      "reviews": [
+        {
+          "id": 100,
+          "user": {
+            "login": "github-actions[bot]"
+          },
+          "state": "COMMENTED",
+          "body": "1 validated finding(s).\n**P1 - Wrong result**",
+          "html_url": "https://github.com/example/product/pull/7#pullrequestreview-100",
+          "commit_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      ],
+      "inline_comments": [],
+      "conversation_comments": [
+        {
+          "id": 200,
+          "user": {
+            "login": "holder"
+          },
+          "body": "fixed - repaired; [unidentified review](https://github.com/example/product/pull/7#pullrequestreview-100)"
+        }
+      ],
+      "expected": {
+        "missing_findings": [],
+        "missing_reviews": [],
+        "unidentified_reviews": [
+          100
+        ],
+        "ignored_authors": []
+      }
+    },
+    {
+      "name": "new-lab-mixed",
+      "repository": "example/product",
+      "pull_request": 7,
+      "connected_reviewers": [
+        "coderabbitai[bot]",
+        "github-actions[bot]",
+        "review-bot"
+      ],
+      "marker_producers": [
+        "holder"
+      ],
+      "reviews": [
+        {
+          "id": 100,
+          "user": {
+            "login": "github-actions[bot]"
+          },
+          "state": "COMMENTED",
+          "body": "2 validated finding(s).\n\n<!-- tradecraft-review-finding:v1:91:1 -->",
+          "html_url": "https://github.com/example/product/pull/7#pullrequestreview-100",
+          "commit_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      ],
+      "inline_comments": [
+        {
+          "id": 10,
+          "user": {
+            "login": "github-actions[bot]"
+          },
+          "body": "inline finding",
+          "pull_request_review_id": 100
+        }
+      ],
+      "conversation_comments": [],
+      "expected": {
+        "missing_findings": [
+          {
+            "reviewer": "github-actions[bot]",
+            "identity": "tradecraft-review-finding:v1:91:1",
+            "sources": [
+              100
+            ]
+          }
+        ],
+        "missing_reviews": [],
+        "unidentified_reviews": [],
+        "ignored_authors": []
+      }
+    },
+    {
+      "name": "new-lab-all-inline",
+      "repository": "example/product",
+      "pull_request": 7,
+      "connected_reviewers": [
+        "coderabbitai[bot]",
+        "github-actions[bot]",
+        "review-bot"
+      ],
+      "marker_producers": [
+        "holder"
+      ],
+      "reviews": [
+        {
+          "id": 100,
+          "user": {
+            "login": "github-actions[bot]"
+          },
+          "state": "COMMENTED",
+          "body": "1 validated finding(s).",
+          "html_url": "https://github.com/example/product/pull/7#pullrequestreview-100",
+          "commit_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      ],
+      "inline_comments": [
+        {
+          "id": 10,
+          "user": {
+            "login": "github-actions[bot]"
+          },
+          "body": "inline finding",
+          "pull_request_review_id": 100
+        }
+      ],
+      "conversation_comments": [],
+      "expected": {
+        "missing_findings": [],
+        "missing_reviews": [],
+        "unidentified_reviews": [],
+        "ignored_authors": []
+      }
+    },
+    {
+      "name": "new-lab-body-only",
+      "repository": "example/product",
+      "pull_request": 7,
+      "connected_reviewers": [
+        "coderabbitai[bot]",
+        "github-actions[bot]",
+        "review-bot"
+      ],
+      "marker_producers": [
+        "holder"
+      ],
+      "reviews": [
+        {
+          "id": 100,
+          "user": {
+            "login": "github-actions[bot]"
+          },
+          "state": "COMMENTED",
+          "body": "1 validated finding(s).\n<!-- tradecraft-review-finding:v1:91:1 -->",
+          "html_url": "https://github.com/example/product/pull/7#pullrequestreview-100",
+          "commit_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      ],
+      "inline_comments": [],
+      "conversation_comments": [],
+      "expected": {
+        "missing_findings": [
+          {
+            "reviewer": "github-actions[bot]",
+            "identity": "tradecraft-review-finding:v1:91:1",
+            "sources": [
+              100
+            ]
+          }
+        ],
+        "missing_reviews": [],
+        "unidentified_reviews": [],
+        "ignored_authors": []
+      }
+    },
+    {
+      "name": "wrong-review-root",
+      "repository": "example/product",
+      "pull_request": 7,
+      "connected_reviewers": [
+        "coderabbitai[bot]",
+        "github-actions[bot]",
+        "review-bot"
+      ],
+      "marker_producers": [
+        "holder"
+      ],
+      "reviews": [
+        {
+          "id": 100,
+          "user": {
+            "login": "github-actions[bot]"
+          },
+          "state": "COMMENTED",
+          "body": "1 validated finding(s).",
+          "html_url": "https://github.com/example/product/pull/7#pullrequestreview-100",
+          "commit_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      ],
+      "inline_comments": [
+        {
+          "id": 10,
+          "user": {
+            "login": "github-actions[bot]"
+          },
+          "body": "inline finding",
+          "pull_request_review_id": 101
+        }
+      ],
+      "conversation_comments": [],
+      "expected": {
+        "missing_findings": [],
+        "missing_reviews": [
+          100
+        ],
+        "unidentified_reviews": [
+          100
+        ],
+        "ignored_authors": []
+      }
+    },
+    {
+      "name": "reply-does-not-inflate-count",
+      "repository": "example/product",
+      "pull_request": 7,
+      "connected_reviewers": [
+        "coderabbitai[bot]",
+        "github-actions[bot]",
+        "review-bot"
+      ],
+      "marker_producers": [
+        "holder"
+      ],
+      "reviews": [
+        {
+          "id": 100,
+          "user": {
+            "login": "github-actions[bot]"
+          },
+          "state": "COMMENTED",
+          "body": "2 validated finding(s).",
+          "html_url": "https://github.com/example/product/pull/7#pullrequestreview-100",
+          "commit_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      ],
+      "inline_comments": [
+        {
+          "id": 10,
+          "user": {
+            "login": "github-actions[bot]"
+          },
+          "body": "inline finding",
+          "pull_request_review_id": 100
+        },
+        {
+          "id": 20,
+          "in_reply_to_id": 10,
+          "user": {
+            "login": "github-actions[bot]"
+          },
+          "body": "**fixed** - repaired"
+        }
+      ],
+      "conversation_comments": [],
+      "expected": {
+        "missing_findings": [],
+        "missing_reviews": [
+          100
+        ],
+        "unidentified_reviews": [
+          100
+        ],
+        "ignored_authors": []
+      }
+    },
+    {
+      "name": "duplicate-body-identity-no-extra-credit",
+      "repository": "example/product",
+      "pull_request": 7,
+      "connected_reviewers": [
+        "coderabbitai[bot]",
+        "github-actions[bot]",
+        "review-bot"
+      ],
+      "marker_producers": [
+        "holder"
+      ],
+      "reviews": [
+        {
+          "id": 100,
+          "user": {
+            "login": "coderabbitai[bot]"
+          },
+          "state": "COMMENTED",
+          "body": "<details><summary>Nitpick comments (2)</summary>\n<!-- cr-comment:v1:alpha -->\n<!-- cr-comment:v1:alpha -->\n</details>",
+          "html_url": "https://github.com/example/product/pull/7#pullrequestreview-100",
+          "commit_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      ],
+      "inline_comments": [],
+      "conversation_comments": [],
+      "expected": {
+        "missing_findings": [
+          {
+            "reviewer": "coderabbitai[bot]",
+            "identity": "cr-comment:v1:alpha",
+            "sources": [
+              100
+            ]
+          }
+        ],
+        "missing_reviews": [
+          100
+        ],
+        "unidentified_reviews": [
+          100
+        ],
+        "ignored_authors": []
+      }
+    },
+    {
+      "name": "section-deficit-with-surplus-elsewhere",
+      "repository": "example/product",
+      "pull_request": 7,
+      "connected_reviewers": [
+        "coderabbitai[bot]",
+        "github-actions[bot]",
+        "review-bot"
+      ],
+      "marker_producers": [
+        "holder"
+      ],
+      "reviews": [
+        {
+          "id": 100,
+          "user": {
+            "login": "coderabbitai[bot]"
+          },
+          "state": "COMMENTED",
+          "body": "<details><summary>Outside diff range comments (2)</summary>\n<!-- cr-comment:v1:alpha -->\n</details>\n<details><summary>Nitpick comments (2)</summary>\n<!-- cr-comment:v1:beta -->\n<!-- cr-comment:v1:gamma -->\n</details>",
+          "html_url": "https://github.com/example/product/pull/7#pullrequestreview-100",
+          "commit_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      ],
+      "inline_comments": [],
+      "conversation_comments": [],
+      "expected": {
+        "missing_findings": [
+          {
+            "reviewer": "coderabbitai[bot]",
+            "identity": "cr-comment:v1:alpha",
+            "sources": [
+              100
+            ]
+          },
+          {
+            "reviewer": "coderabbitai[bot]",
+            "identity": "cr-comment:v1:beta",
+            "sources": [
+              100
+            ]
+          },
+          {
+            "reviewer": "coderabbitai[bot]",
+            "identity": "cr-comment:v1:gamma",
+            "sources": [
+              100
+            ]
+          }
+        ],
+        "missing_reviews": [
+          100
+        ],
+        "unidentified_reviews": [
+          100
+        ],
+        "ignored_authors": []
+      }
+    },
+    {
+      "name": "exact-answered-inline-exemption",
+      "repository": "example/product",
+      "pull_request": 7,
+      "connected_reviewers": [
+        "coderabbitai[bot]",
+        "github-actions[bot]",
+        "review-bot"
+      ],
+      "marker_producers": [
+        "holder"
+      ],
+      "reviews": [
+        {
+          "id": 100,
+          "user": {
+            "login": "coderabbitai[bot]"
+          },
+          "state": "COMMENTED",
+          "body": "<!-- cr-comment:v1:alpha -->",
+          "html_url": "https://github.com/example/product/pull/7#pullrequestreview-100",
+          "commit_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      ],
+      "inline_comments": [
+        {
+          "id": 10,
+          "user": {
+            "login": "coderabbitai[bot]"
+          },
+          "body": "<!-- cr-comment:v1:alpha -->",
+          "pull_request_review_id": 100
+        },
+        {
+          "id": 20,
+          "in_reply_to_id": 10,
+          "user": {
+            "login": "holder"
+          },
+          "body": "**fixed** - repaired"
+        }
+      ],
+      "conversation_comments": [],
+      "expected": {
+        "missing_findings": [],
+        "missing_reviews": [],
+        "unidentified_reviews": [],
+        "ignored_authors": []
+      }
+    },
+    {
+      "name": "same-wording-different-identity",
+      "repository": "example/product",
+      "pull_request": 7,
+      "connected_reviewers": [
+        "coderabbitai[bot]",
+        "github-actions[bot]",
+        "review-bot"
+      ],
+      "marker_producers": [
+        "holder"
+      ],
+      "reviews": [
+        {
+          "id": 100,
+          "user": {
+            "login": "coderabbitai[bot]"
+          },
+          "state": "COMMENTED",
+          "body": "<!-- cr-comment:v1:alpha -->",
+          "html_url": "https://github.com/example/product/pull/7#pullrequestreview-100",
+          "commit_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      ],
+      "inline_comments": [
+        {
+          "id": 10,
+          "user": {
+            "login": "coderabbitai[bot]"
+          },
+          "body": "<!-- cr-comment:v1:beta -->",
+          "pull_request_review_id": 100
+        },
+        {
+          "id": 20,
+          "in_reply_to_id": 10,
+          "user": {
+            "login": "holder"
+          },
+          "body": "**fixed** - repaired"
+        }
+      ],
+      "conversation_comments": [],
+      "expected": {
+        "missing_findings": [
+          {
+            "reviewer": "coderabbitai[bot]",
+            "identity": "cr-comment:v1:alpha",
+            "sources": [
+              100
+            ]
+          }
+        ],
+        "missing_reviews": [],
+        "unidentified_reviews": [],
+        "ignored_authors": []
+      }
+    },
+    {
+      "name": "matching-inline-unanswered",
+      "repository": "example/product",
+      "pull_request": 7,
+      "connected_reviewers": [
+        "coderabbitai[bot]",
+        "github-actions[bot]",
+        "review-bot"
+      ],
+      "marker_producers": [
+        "holder"
+      ],
+      "reviews": [
+        {
+          "id": 100,
+          "user": {
+            "login": "coderabbitai[bot]"
+          },
+          "state": "COMMENTED",
+          "body": "<!-- cr-comment:v1:alpha -->",
+          "html_url": "https://github.com/example/product/pull/7#pullrequestreview-100",
+          "commit_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      ],
+      "inline_comments": [
+        {
+          "id": 10,
+          "user": {
+            "login": "coderabbitai[bot]"
+          },
+          "body": "<!-- cr-comment:v1:alpha -->",
+          "pull_request_review_id": 100
+        }
+      ],
+      "conversation_comments": [],
+      "expected": {
+        "missing_findings": [
+          {
+            "reviewer": "coderabbitai[bot]",
+            "identity": "cr-comment:v1:alpha",
+            "sources": [
+              100
+            ]
+          }
+        ],
+        "missing_reviews": [],
+        "unidentified_reviews": [],
+        "ignored_authors": []
+      }
+    },
+    {
+      "name": "unauthorized-inline-answer",
+      "repository": "example/product",
+      "pull_request": 7,
+      "connected_reviewers": [
+        "coderabbitai[bot]",
+        "github-actions[bot]",
+        "review-bot"
+      ],
+      "marker_producers": [
+        "holder"
+      ],
+      "reviews": [
+        {
+          "id": 100,
+          "user": {
+            "login": "coderabbitai[bot]"
+          },
+          "state": "COMMENTED",
+          "body": "<!-- cr-comment:v1:alpha -->",
+          "html_url": "https://github.com/example/product/pull/7#pullrequestreview-100",
+          "commit_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      ],
+      "inline_comments": [
+        {
+          "id": 10,
+          "user": {
+            "login": "coderabbitai[bot]"
+          },
+          "body": "<!-- cr-comment:v1:alpha -->",
+          "pull_request_review_id": 100
+        },
+        {
+          "id": 20,
+          "in_reply_to_id": 10,
+          "user": {
+            "login": "outsider"
+          },
+          "body": "**fixed** - repaired"
+        }
+      ],
+      "conversation_comments": [],
+      "expected": {
+        "missing_findings": [
+          {
+            "reviewer": "coderabbitai[bot]",
+            "identity": "cr-comment:v1:alpha",
+            "sources": [
+              100
+            ]
+          }
+        ],
+        "missing_reviews": [],
+        "unidentified_reviews": [],
+        "ignored_authors": []
+      }
+    },
+    {
+      "name": "resolved-thread-alone",
+      "repository": "example/product",
+      "pull_request": 7,
+      "connected_reviewers": [
+        "coderabbitai[bot]",
+        "github-actions[bot]",
+        "review-bot"
+      ],
+      "marker_producers": [
+        "holder"
+      ],
+      "reviews": [
+        {
+          "id": 100,
+          "user": {
+            "login": "coderabbitai[bot]"
+          },
+          "state": "COMMENTED",
+          "body": "<!-- cr-comment:v1:alpha -->",
+          "html_url": "https://github.com/example/product/pull/7#pullrequestreview-100",
+          "commit_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      ],
+      "inline_comments": [
+        {
+          "id": 10,
+          "user": {
+            "login": "coderabbitai[bot]"
+          },
+          "body": "<!-- cr-comment:v1:alpha -->",
+          "pull_request_review_id": 100,
+          "resolved": true
+        }
+      ],
+      "conversation_comments": [],
+      "expected": {
+        "missing_findings": [
+          {
+            "reviewer": "coderabbitai[bot]",
+            "identity": "cr-comment:v1:alpha",
+            "sources": [
+              100
+            ]
+          }
+        ],
+        "missing_reviews": [],
+        "unidentified_reviews": [],
+        "ignored_authors": []
+      }
+    },
+    {
+      "name": "other-reviewer-thread",
+      "repository": "example/product",
+      "pull_request": 7,
+      "connected_reviewers": [
+        "coderabbitai[bot]",
+        "github-actions[bot]",
+        "review-bot"
+      ],
+      "marker_producers": [
+        "holder"
+      ],
+      "reviews": [
+        {
+          "id": 100,
+          "user": {
+            "login": "coderabbitai[bot]"
+          },
+          "state": "COMMENTED",
+          "body": "<!-- cr-comment:v1:alpha -->",
+          "html_url": "https://github.com/example/product/pull/7#pullrequestreview-100",
+          "commit_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      ],
+      "inline_comments": [
+        {
+          "id": 10,
+          "user": {
+            "login": "github-actions[bot]"
+          },
+          "body": "<!-- cr-comment:v1:alpha -->",
+          "pull_request_review_id": 100
+        },
+        {
+          "id": 20,
+          "in_reply_to_id": 10,
+          "user": {
+            "login": "holder"
+          },
+          "body": "**fixed** - repaired"
+        }
+      ],
+      "conversation_comments": [],
+      "expected": {
+        "missing_findings": [
+          {
+            "reviewer": "coderabbitai[bot]",
+            "identity": "cr-comment:v1:alpha",
+            "sources": [
+              100
+            ]
+          }
+        ],
+        "missing_reviews": [],
+        "unidentified_reviews": [],
+        "ignored_authors": []
+      }
+    },
+    {
+      "name": "unauthorized-body-answer",
+      "repository": "example/product",
+      "pull_request": 7,
+      "connected_reviewers": [
+        "coderabbitai[bot]",
+        "github-actions[bot]",
+        "review-bot"
+      ],
+      "marker_producers": [
+        "holder"
+      ],
+      "reviews": [
+        {
+          "id": 100,
+          "user": {
+            "login": "coderabbitai[bot]"
+          },
+          "state": "COMMENTED",
+          "body": "<!-- cr-comment:v1:alpha -->",
+          "html_url": "https://github.com/example/product/pull/7#pullrequestreview-100",
+          "commit_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      ],
+      "inline_comments": [],
+      "conversation_comments": [
+        {
+          "id": 200,
+          "user": {
+            "login": "outsider"
+          },
+          "body": "fixed - repaired; [cr-comment:v1:alpha](https://github.com/example/product/pull/7#pullrequestreview-100)"
+        }
+      ],
+      "expected": {
+        "missing_findings": [
+          {
+            "reviewer": "coderabbitai[bot]",
+            "identity": "cr-comment:v1:alpha",
+            "sources": [
+              100
+            ]
+          }
+        ],
+        "missing_reviews": [],
+        "unidentified_reviews": [],
+        "ignored_authors": [
+          "outsider"
+        ]
+      }
+    },
+    {
+      "name": "whole-review-does-not-answer-identified-finding",
+      "repository": "example/product",
+      "pull_request": 7,
+      "connected_reviewers": [
+        "coderabbitai[bot]",
+        "github-actions[bot]",
+        "review-bot"
+      ],
+      "marker_producers": [
+        "holder"
+      ],
+      "reviews": [
+        {
+          "id": 100,
+          "user": {
+            "login": "coderabbitai[bot]"
+          },
+          "state": "COMMENTED",
+          "body": "<details><summary>Other comments (2)</summary>\n<!-- cr-comment:v1:alpha -->\n</details>",
+          "html_url": "https://github.com/example/product/pull/7#pullrequestreview-100",
+          "commit_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      ],
+      "inline_comments": [],
+      "conversation_comments": [
+        {
+          "id": 200,
+          "user": {
+            "login": "holder"
+          },
+          "body": "fixed - repaired; [unidentified review](https://github.com/example/product/pull/7#pullrequestreview-100)"
+        }
+      ],
+      "expected": {
+        "missing_findings": [
+          {
+            "reviewer": "coderabbitai[bot]",
+            "identity": "cr-comment:v1:alpha",
+            "sources": [
+              100
+            ]
+          }
+        ],
+        "missing_reviews": [],
+        "unidentified_reviews": [
+          100
+        ],
+        "ignored_authors": []
+      }
+    },
+    {
+      "name": "generic-inline-total",
+      "repository": "example/product",
+      "pull_request": 7,
+      "connected_reviewers": [
+        "coderabbitai[bot]",
+        "github-actions[bot]",
+        "review-bot"
+      ],
+      "marker_producers": [
+        "holder"
+      ],
+      "reviews": [
+        {
+          "id": 100,
+          "user": {
+            "login": "review-bot"
+          },
+          "state": "COMMENTED",
+          "body": "Findings: 1",
+          "html_url": "https://github.com/example/product/pull/7#pullrequestreview-100",
+          "commit_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      ],
+      "inline_comments": [
+        {
+          "id": 10,
+          "user": {
+            "login": "review-bot"
+          },
+          "body": "inline finding",
+          "pull_request_review_id": 100
+        }
+      ],
+      "conversation_comments": [],
+      "expected": {
+        "missing_findings": [],
+        "missing_reviews": [],
+        "unidentified_reviews": [],
+        "ignored_authors": []
+      }
+    },
+    {
+      "name": "generic-unidentified-section",
+      "repository": "example/product",
+      "pull_request": 7,
+      "connected_reviewers": [
+        "coderabbitai[bot]",
+        "github-actions[bot]",
+        "review-bot"
+      ],
+      "marker_producers": [
+        "holder"
+      ],
+      "reviews": [
+        {
+          "id": 100,
+          "user": {
+            "login": "review-bot"
+          },
+          "state": "COMMENTED",
+          "body": "## Findings\n- P1 Wrong result",
+          "html_url": "https://github.com/example/product/pull/7#pullrequestreview-100",
+          "commit_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      ],
+      "inline_comments": [],
+      "conversation_comments": [],
+      "expected": {
+        "missing_findings": [],
+        "missing_reviews": [
+          100
+        ],
+        "unidentified_reviews": [
+          100
+        ],
+        "ignored_authors": []
+      }
+    },
+    {
+      "name": "section-without-count-missing-entry",
+      "repository": "example/product",
+      "pull_request": 7,
+      "connected_reviewers": [
+        "coderabbitai[bot]",
+        "github-actions[bot]",
+        "review-bot"
+      ],
+      "marker_producers": [
+        "holder"
+      ],
+      "reviews": [
+        {
+          "id": 100,
+          "user": {
+            "login": "coderabbitai[bot]"
+          },
+          "state": "COMMENTED",
+          "body": "## Findings\n- First\n<!-- cr-comment:v1:alpha -->\n- Second",
+          "html_url": "https://github.com/example/product/pull/7#pullrequestreview-100",
+          "commit_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      ],
+      "inline_comments": [],
+      "conversation_comments": [],
+      "expected": {
+        "missing_findings": [
+          {
+            "reviewer": "coderabbitai[bot]",
+            "identity": "cr-comment:v1:alpha",
+            "sources": [
+              100
+            ]
+          }
+        ],
+        "missing_reviews": [
+          100
+        ],
+        "unidentified_reviews": [
+          100
+        ],
+        "ignored_authors": []
+      }
+    },
+    {
+      "name": "section-without-count-identified-entry",
+      "repository": "example/product",
+      "pull_request": 7,
+      "connected_reviewers": [
+        "coderabbitai[bot]",
+        "github-actions[bot]",
+        "review-bot"
+      ],
+      "marker_producers": [
+        "holder"
+      ],
+      "reviews": [
+        {
+          "id": 100,
+          "user": {
+            "login": "coderabbitai[bot]"
+          },
+          "state": "COMMENTED",
+          "body": "## Findings\n- First\n<!-- cr-comment:v1:alpha -->",
+          "html_url": "https://github.com/example/product/pull/7#pullrequestreview-100",
+          "commit_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      ],
+      "inline_comments": [],
+      "conversation_comments": [],
+      "expected": {
+        "missing_findings": [
+          {
+            "reviewer": "coderabbitai[bot]",
+            "identity": "cr-comment:v1:alpha",
+            "sources": [
+              100
+            ]
+          }
+        ],
+        "missing_reviews": [],
+        "unidentified_reviews": [],
+        "ignored_authors": []
+      }
+    },
+    {
+      "name": "malformed-identity",
+      "repository": "example/product",
+      "pull_request": 7,
+      "connected_reviewers": [
+        "coderabbitai[bot]",
+        "github-actions[bot]",
+        "review-bot"
+      ],
+      "marker_producers": [
+        "holder"
+      ],
+      "reviews": [
+        {
+          "id": 100,
+          "user": {
+            "login": "coderabbitai[bot]"
+          },
+          "state": "COMMENTED",
+          "body": "<!-- cr-comment:v1: -->",
+          "html_url": "https://github.com/example/product/pull/7#pullrequestreview-100",
+          "commit_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      ],
+      "inline_comments": [],
+      "conversation_comments": [],
+      "expected": {
+        "missing_findings": [],
+        "missing_reviews": [
+          100
+        ],
+        "unidentified_reviews": [
+          100
+        ],
+        "ignored_authors": []
+      }
+    },
+    {
+      "name": "duplicate-declaration",
+      "repository": "example/product",
+      "pull_request": 7,
+      "connected_reviewers": [
+        "coderabbitai[bot]",
+        "github-actions[bot]",
+        "review-bot"
+      ],
+      "marker_producers": [
+        "holder"
+      ],
+      "reviews": [
+        {
+          "id": 100,
+          "user": {
+            "login": "coderabbitai[bot]"
+          },
+          "state": "COMMENTED",
+          "body": "**Actionable comments posted: 0**\n**Actionable comments posted: 0**",
+          "html_url": "https://github.com/example/product/pull/7#pullrequestreview-100",
+          "commit_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      ],
+      "inline_comments": [],
+      "conversation_comments": [],
+      "expected": {
+        "missing_findings": [],
+        "missing_reviews": [
+          100
+        ],
+        "unidentified_reviews": [
+          100
+        ],
+        "ignored_authors": []
+      }
+    },
+    {
+      "name": "malformed-declaration",
+      "repository": "example/product",
+      "pull_request": 7,
+      "connected_reviewers": [
+        "coderabbitai[bot]",
+        "github-actions[bot]",
+        "review-bot"
+      ],
+      "marker_producers": [
+        "holder"
+      ],
+      "reviews": [
+        {
+          "id": 100,
+          "user": {
+            "login": "coderabbitai[bot]"
+          },
+          "state": "COMMENTED",
+          "body": "**Actionable comments posted: unknown**",
+          "html_url": "https://github.com/example/product/pull/7#pullrequestreview-100",
+          "commit_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      ],
+      "inline_comments": [],
+      "conversation_comments": [],
+      "expected": {
+        "missing_findings": [],
+        "missing_reviews": [
+          100
+        ],
+        "unidentified_reviews": [
+          100
+        ],
+        "ignored_authors": []
+      }
+    },
+    {
+      "name": "reused-identity-across-heads",
+      "repository": "example/product",
+      "pull_request": 7,
+      "connected_reviewers": [
+        "coderabbitai[bot]",
+        "github-actions[bot]",
+        "review-bot"
+      ],
+      "marker_producers": [
+        "holder"
+      ],
+      "reviews": [
+        {
+          "id": 100,
+          "user": {
+            "login": "coderabbitai[bot]"
+          },
+          "state": "COMMENTED",
+          "body": "<!-- cr-comment:v1:alpha -->",
+          "html_url": "https://github.com/example/product/pull/7#pullrequestreview-100",
+          "commit_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        },
+        {
+          "id": 101,
+          "user": {
+            "login": "coderabbitai[bot]"
+          },
+          "state": "COMMENTED",
+          "body": "<!-- cr-comment:v1:alpha -->",
+          "html_url": "https://github.com/example/product/pull/7#pullrequestreview-101",
+          "commit_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      ],
+      "inline_comments": [],
+      "conversation_comments": [
+        {
+          "id": 200,
+          "user": {
+            "login": "holder"
+          },
+          "body": "fixed - repaired; [cr-comment:v1:alpha](https://github.com/example/product/pull/7#pullrequestreview-101)"
+        }
+      ],
+      "expected": {
+        "missing_findings": [],
+        "missing_reviews": [],
+        "unidentified_reviews": [],
+        "ignored_authors": []
+      }
+    },
+    {
+      "name": "older-finding-survives-new-review",
+      "repository": "example/product",
+      "pull_request": 7,
+      "connected_reviewers": [
+        "coderabbitai[bot]",
+        "github-actions[bot]",
+        "review-bot"
+      ],
+      "marker_producers": [
+        "holder"
+      ],
+      "reviews": [
+        {
+          "id": 100,
+          "user": {
+            "login": "coderabbitai[bot]"
+          },
+          "state": "COMMENTED",
+          "body": "<!-- cr-comment:v1:alpha -->",
+          "html_url": "https://github.com/example/product/pull/7#pullrequestreview-100",
+          "commit_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        },
+        {
+          "id": 101,
+          "user": {
+            "login": "coderabbitai[bot]"
+          },
+          "state": "COMMENTED",
+          "body": "No findings.",
+          "html_url": "https://github.com/example/product/pull/7#pullrequestreview-101",
+          "commit_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      ],
+      "inline_comments": [],
+      "conversation_comments": [],
+      "expected": {
+        "missing_findings": [
+          {
+            "reviewer": "coderabbitai[bot]",
+            "identity": "cr-comment:v1:alpha",
+            "sources": [
+              100
+            ]
+          }
+        ],
+        "missing_reviews": [],
+        "unidentified_reviews": [],
+        "ignored_authors": []
+      }
+    },
+    {
+      "name": "generic-section-all-inline",
+      "repository": "example/product",
+      "pull_request": 7,
+      "connected_reviewers": [
+        "coderabbitai[bot]",
+        "github-actions[bot]",
+        "review-bot"
+      ],
+      "marker_producers": [
+        "holder"
+      ],
+      "reviews": [
+        {
+          "id": 100,
+          "user": {
+            "login": "review-bot"
+          },
+          "state": "COMMENTED",
+          "body": "## Findings (1)",
+          "html_url": "https://github.com/example/product/pull/7#pullrequestreview-100",
+          "commit_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      ],
+      "inline_comments": [
+        {
+          "id": 10,
+          "user": {
+            "login": "review-bot"
+          },
+          "body": "inline finding",
+          "pull_request_review_id": 100
+        }
+      ],
+      "conversation_comments": [],
+      "expected": {
+        "missing_findings": [],
+        "missing_reviews": [],
+        "unidentified_reviews": [],
+        "ignored_authors": []
+      }
+    },
+    {
+      "name": "generic-section-unidentified-body-beside-inline-total",
+      "repository": "example/product",
+      "pull_request": 7,
+      "connected_reviewers": [
+        "coderabbitai[bot]",
+        "github-actions[bot]",
+        "review-bot"
+      ],
+      "marker_producers": [
+        "holder"
+      ],
+      "reviews": [
+        {
+          "id": 100,
+          "user": {
+            "login": "review-bot"
+          },
+          "state": "COMMENTED",
+          "body": "## Findings (1)\n- An unidentified body finding",
+          "html_url": "https://github.com/example/product/pull/7#pullrequestreview-100",
+          "commit_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      ],
+      "inline_comments": [
+        {
+          "id": 10,
+          "user": {
+            "login": "review-bot"
+          },
+          "body": "inline finding",
+          "pull_request_review_id": 100
+        }
+      ],
+      "conversation_comments": [],
+      "expected": {
+        "missing_findings": [],
+        "missing_reviews": [
+          100
+        ],
+        "unidentified_reviews": [
+          100
+        ],
+        "ignored_authors": []
+      }
+    },
+    {
+      "name": "body-title-does-not-end-outside-diff-section",
+      "repository": "example/product",
+      "pull_request": 7,
+      "connected_reviewers": [
+        "coderabbitai[bot]",
+        "github-actions[bot]",
+        "review-bot"
+      ],
+      "marker_producers": [
+        "holder"
+      ],
+      "reviews": [
+        {
+          "id": 100,
+          "user": {
+            "login": "coderabbitai[bot]"
+          },
+          "state": "COMMENTED",
+          "body": "**Outside diff range comments (1)**\n<details><summary>app.py</summary>\n**Fix the comments**\n<!-- cr-comment:v1:alpha -->\n</details>",
+          "html_url": "https://github.com/example/product/pull/7#pullrequestreview-100",
+          "commit_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      ],
+      "inline_comments": [],
+      "conversation_comments": [],
+      "expected": {
+        "missing_findings": [
+          {
+            "reviewer": "coderabbitai[bot]",
+            "identity": "cr-comment:v1:alpha",
+            "sources": [
+              100
+            ]
+          }
+        ],
+        "missing_reviews": [],
+        "unidentified_reviews": [],
+        "ignored_authors": []
+      }
+    },
+    {
+      "name": "known-identity-producer-unconfigured",
+      "repository": "example/product",
+      "pull_request": 7,
+      "connected_reviewers": [],
+      "marker_producers": [
+        "holder"
+      ],
+      "reviews": [
+        {
+          "id": 100,
+          "user": {
+            "login": "coderabbitai[bot]"
+          },
+          "state": "COMMENTED",
+          "body": "<details>\n<summary>Outside diff range comments (1)</summary><blockquote>\n<details><summary>app.py (1)</summary><blockquote>\nFinding\n<!-- cr-comment:v1:alpha -->\n</blockquote></details>\n</blockquote></details>",
+          "html_url": "https://github.com/example/product/pull/7#pullrequestreview-100",
+          "commit_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      ],
+      "inline_comments": [],
+      "conversation_comments": [],
+      "expected": {
+        "missing_findings": [],
+        "missing_reviews": [],
+        "unidentified_reviews": [],
+        "ignored_authors": []
+      }
+    },
+    {
+      "name": "reply-from-another-pr",
+      "repository": "example/product",
+      "pull_request": 7,
+      "connected_reviewers": [
+        "coderabbitai[bot]",
+        "github-actions[bot]",
+        "review-bot"
+      ],
+      "marker_producers": [
+        "holder"
+      ],
+      "reviews": [
+        {
+          "id": 100,
+          "user": {
+            "login": "coderabbitai[bot]"
+          },
+          "state": "COMMENTED",
+          "body": "<!-- cr-comment:v1:alpha -->",
+          "html_url": "https://github.com/example/product/pull/7#pullrequestreview-100",
+          "commit_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      ],
+      "inline_comments": [
+        {
+          "id": 10,
+          "user": {
+            "login": "coderabbitai[bot]"
+          },
+          "body": "<!-- cr-comment:v1:alpha -->",
+          "pull_request_review_id": 100
+        },
+        {
+          "id": 20,
+          "in_reply_to_id": 10,
+          "user": {
+            "login": "holder"
+          },
+          "body": "**fixed** - repaired",
+          "html_url": "https://github.com/example/product/pull/8#discussion_r20"
+        }
+      ],
+      "conversation_comments": [],
+      "expected": {
+        "missing_findings": [
+          {
+            "reviewer": "coderabbitai[bot]",
+            "identity": "cr-comment:v1:alpha",
+            "sources": [
+              100
+            ]
+          }
+        ],
+        "missing_reviews": [],
+        "unidentified_reviews": [],
+        "ignored_authors": []
+      }
+    },
+    {
+      "name": "formatted-body-opening",
+      "repository": "example/product",
+      "pull_request": 7,
+      "connected_reviewers": [
+        "coderabbitai[bot]",
+        "github-actions[bot]",
+        "review-bot"
+      ],
+      "marker_producers": [
+        "holder"
+      ],
+      "reviews": [
+        {
+          "id": 100,
+          "user": {
+            "login": "coderabbitai[bot]"
+          },
+          "state": "COMMENTED",
+          "body": "<details>\n<summary>Other comments (1)</summary><blockquote>\n<details><summary>app.py (1)</summary><blockquote>\nFinding\n<!-- cr-comment:v1:alpha -->\n</blockquote></details>\n</blockquote></details>",
+          "html_url": "https://github.com/example/product/pull/7#pullrequestreview-100",
+          "commit_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      ],
+      "inline_comments": [],
+      "conversation_comments": [
+        {
+          "id": 200,
+          "user": {
+            "login": "holder"
+          },
+          "body": "**fixed** - repaired; [cr-comment:v1:alpha](https://github.com/example/product/pull/7#pullrequestreview-100)"
+        }
+      ],
+      "expected": {
+        "missing_findings": [
+          {
+            "reviewer": "coderabbitai[bot]",
+            "identity": "cr-comment:v1:alpha",
+            "sources": [
+              100
+            ]
+          }
+        ],
+        "missing_reviews": [],
+        "unidentified_reviews": [],
+        "ignored_authors": []
+      }
+    },
+    {
+      "name": "wrong-pr-body-answer",
+      "repository": "example/product",
+      "pull_request": 7,
+      "connected_reviewers": [
+        "coderabbitai[bot]",
+        "github-actions[bot]",
+        "review-bot"
+      ],
+      "marker_producers": [
+        "holder"
+      ],
+      "reviews": [
+        {
+          "id": 100,
+          "user": {
+            "login": "coderabbitai[bot]"
+          },
+          "state": "COMMENTED",
+          "body": "<details>\n<summary>Other comments (1)</summary><blockquote>\n<details><summary>app.py (1)</summary><blockquote>\nFinding\n<!-- cr-comment:v1:alpha -->\n</blockquote></details>\n</blockquote></details>",
+          "html_url": "https://github.com/example/product/pull/7#pullrequestreview-100",
+          "commit_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      ],
+      "inline_comments": [],
+      "conversation_comments": [
+        {
+          "id": 200,
+          "user": {
+            "login": "holder"
+          },
+          "body": "fixed - repaired; [cr-comment:v1:alpha](https://github.com/example/product/pull/8#pullrequestreview-100)"
+        }
+      ],
+      "expected": {
+        "missing_findings": [
+          {
+            "reviewer": "coderabbitai[bot]",
+            "identity": "cr-comment:v1:alpha",
+            "sources": [
+              100
+            ]
+          }
+        ],
+        "missing_reviews": [],
+        "unidentified_reviews": [],
+        "ignored_authors": []
+      }
+    },
+    {
+      "name": "bundled-body-answer",
+      "repository": "example/product",
+      "pull_request": 7,
+      "connected_reviewers": [
+        "coderabbitai[bot]",
+        "github-actions[bot]",
+        "review-bot"
+      ],
+      "marker_producers": [
+        "holder"
+      ],
+      "reviews": [
+        {
+          "id": 100,
+          "user": {
+            "login": "coderabbitai[bot]"
+          },
+          "state": "COMMENTED",
+          "body": "<details>\n<summary>Other comments (1)</summary><blockquote>\n<details><summary>app.py (1)</summary><blockquote>\nFinding\n<!-- cr-comment:v1:alpha -->\n</blockquote></details>\n</blockquote></details>",
+          "html_url": "https://github.com/example/product/pull/7#pullrequestreview-100",
+          "commit_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      ],
+      "inline_comments": [],
+      "conversation_comments": [
+        {
+          "id": 200,
+          "user": {
+            "login": "holder"
+          },
+          "body": "fixed - repaired; [cr-comment:v1:alpha](https://github.com/example/product/pull/7#pullrequestreview-100) and cr-comment:v1:beta"
+        }
+      ],
+      "expected": {
+        "missing_findings": [
+          {
+            "reviewer": "coderabbitai[bot]",
+            "identity": "cr-comment:v1:alpha",
+            "sources": [
+              100
+            ]
+          }
+        ],
+        "missing_reviews": [],
+        "unidentified_reviews": [],
+        "ignored_authors": []
+      }
+    },
+    {
+      "name": "wrong-review-whole-answer",
+      "repository": "example/product",
+      "pull_request": 7,
+      "connected_reviewers": [
+        "coderabbitai[bot]",
+        "github-actions[bot]",
+        "review-bot"
+      ],
+      "marker_producers": [
+        "holder"
+      ],
+      "reviews": [
+        {
+          "id": 100,
+          "user": {
+            "login": "github-actions[bot]"
+          },
+          "state": "COMMENTED",
+          "body": "1 validated finding(s).\n**P1 - Wrong result**",
+          "html_url": "https://github.com/example/product/pull/7#pullrequestreview-100",
+          "commit_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      ],
+      "inline_comments": [],
+      "conversation_comments": [
+        {
+          "id": 200,
+          "user": {
+            "login": "holder"
+          },
+          "body": "fixed - repaired; [unidentified review](https://github.com/example/product/pull/7#pullrequestreview-101)"
+        }
+      ],
+      "expected": {
+        "missing_findings": [],
+        "missing_reviews": [
+          100
+        ],
+        "unidentified_reviews": [
+          100
+        ],
+        "ignored_authors": []
+      }
+    },
+    {
+      "name": "body-disposition-fixed",
+      "repository": "example/product",
+      "pull_request": 7,
+      "connected_reviewers": [
+        "coderabbitai[bot]",
+        "github-actions[bot]",
+        "review-bot"
+      ],
+      "marker_producers": [
+        "holder"
+      ],
+      "reviews": [
+        {
+          "id": 100,
+          "user": {
+            "login": "coderabbitai[bot]"
+          },
+          "state": "COMMENTED",
+          "body": "<details>\n<summary>Other comments (1)</summary><blockquote>\n<details><summary>app.py (1)</summary><blockquote>\nFinding\n<!-- cr-comment:v1:alpha -->\n</blockquote></details>\n</blockquote></details>",
+          "html_url": "https://github.com/example/product/pull/7#pullrequestreview-100",
+          "commit_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      ],
+      "inline_comments": [],
+      "conversation_comments": [
+        {
+          "id": 200,
+          "user": {
+            "login": "holder"
+          },
+          "body": "fixed; [cr-comment:v1:alpha](https://github.com/example/product/pull/7#pullrequestreview-100)"
+        }
+      ],
+      "expected": {
+        "missing_findings": [],
+        "missing_reviews": [],
+        "unidentified_reviews": [],
+        "ignored_authors": []
+      }
+    },
+    {
+      "name": "body-disposition-fixed - nothing else found it",
+      "repository": "example/product",
+      "pull_request": 7,
+      "connected_reviewers": [
+        "coderabbitai[bot]",
+        "github-actions[bot]",
+        "review-bot"
+      ],
+      "marker_producers": [
+        "holder"
+      ],
+      "reviews": [
+        {
+          "id": 100,
+          "user": {
+            "login": "coderabbitai[bot]"
+          },
+          "state": "COMMENTED",
+          "body": "<details>\n<summary>Other comments (1)</summary><blockquote>\n<details><summary>app.py (1)</summary><blockquote>\nFinding\n<!-- cr-comment:v1:alpha -->\n</blockquote></details>\n</blockquote></details>",
+          "html_url": "https://github.com/example/product/pull/7#pullrequestreview-100",
+          "commit_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      ],
+      "inline_comments": [],
+      "conversation_comments": [
+        {
+          "id": 200,
+          "user": {
+            "login": "holder"
+          },
+          "body": "fixed - nothing else found it; [cr-comment:v1:alpha](https://github.com/example/product/pull/7#pullrequestreview-100)"
+        }
+      ],
+      "expected": {
+        "missing_findings": [],
+        "missing_reviews": [],
+        "unidentified_reviews": [],
+        "ignored_authors": []
+      }
+    },
+    {
+      "name": "body-disposition-fixed in #12",
+      "repository": "example/product",
+      "pull_request": 7,
+      "connected_reviewers": [
+        "coderabbitai[bot]",
+        "github-actions[bot]",
+        "review-bot"
+      ],
+      "marker_producers": [
+        "holder"
+      ],
+      "reviews": [
+        {
+          "id": 100,
+          "user": {
+            "login": "coderabbitai[bot]"
+          },
+          "state": "COMMENTED",
+          "body": "<details>\n<summary>Other comments (1)</summary><blockquote>\n<details><summary>app.py (1)</summary><blockquote>\nFinding\n<!-- cr-comment:v1:alpha -->\n</blockquote></details>\n</blockquote></details>",
+          "html_url": "https://github.com/example/product/pull/7#pullrequestreview-100",
+          "commit_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      ],
+      "inline_comments": [],
+      "conversation_comments": [
+        {
+          "id": 200,
+          "user": {
+            "login": "holder"
+          },
+          "body": "fixed in #12; [cr-comment:v1:alpha](https://github.com/example/product/pull/7#pullrequestreview-100)"
+        }
+      ],
+      "expected": {
+        "missing_findings": [],
+        "missing_reviews": [],
+        "unidentified_reviews": [],
+        "ignored_authors": []
+      }
+    },
+    {
+      "name": "body-disposition-yours - in the release report",
+      "repository": "example/product",
+      "pull_request": 7,
+      "connected_reviewers": [
+        "coderabbitai[bot]",
+        "github-actions[bot]",
+        "review-bot"
+      ],
+      "marker_producers": [
+        "holder"
+      ],
+      "reviews": [
+        {
+          "id": 100,
+          "user": {
+            "login": "coderabbitai[bot]"
+          },
+          "state": "COMMENTED",
+          "body": "<details>\n<summary>Other comments (1)</summary><blockquote>\n<details><summary>app.py (1)</summary><blockquote>\nFinding\n<!-- cr-comment:v1:alpha -->\n</blockquote></details>\n</blockquote></details>",
+          "html_url": "https://github.com/example/product/pull/7#pullrequestreview-100",
+          "commit_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      ],
+      "inline_comments": [],
+      "conversation_comments": [
+        {
+          "id": 200,
+          "user": {
+            "login": "holder"
+          },
+          "body": "yours - in the release report; [cr-comment:v1:alpha](https://github.com/example/product/pull/7#pullrequestreview-100)"
+        }
+      ],
+      "expected": {
+        "missing_findings": [],
+        "missing_reviews": [],
+        "unidentified_reviews": [],
+        "ignored_authors": []
+      }
+    },
+    {
+      "name": "body-disposition-declined - the change is unnecessary",
+      "repository": "example/product",
+      "pull_request": 7,
+      "connected_reviewers": [
+        "coderabbitai[bot]",
+        "github-actions[bot]",
+        "review-bot"
+      ],
+      "marker_producers": [
+        "holder"
+      ],
+      "reviews": [
+        {
+          "id": 100,
+          "user": {
+            "login": "coderabbitai[bot]"
+          },
+          "state": "COMMENTED",
+          "body": "<details>\n<summary>Other comments (1)</summary><blockquote>\n<details><summary>app.py (1)</summary><blockquote>\nFinding\n<!-- cr-comment:v1:alpha -->\n</blockquote></details>\n</blockquote></details>",
+          "html_url": "https://github.com/example/product/pull/7#pullrequestreview-100",
+          "commit_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      ],
+      "inline_comments": [],
+      "conversation_comments": [
+        {
+          "id": 200,
+          "user": {
+            "login": "holder"
+          },
+          "body": "declined - the change is unnecessary; [cr-comment:v1:alpha](https://github.com/example/product/pull/7#pullrequestreview-100)"
+        }
+      ],
+      "expected": {
+        "missing_findings": [],
+        "missing_reviews": [],
+        "unidentified_reviews": [],
+        "ignored_authors": []
+      }
+    },
+    {
+      "name": "body-disposition-duplicate of the earlier comment",
+      "repository": "example/product",
+      "pull_request": 7,
+      "connected_reviewers": [
+        "coderabbitai[bot]",
+        "github-actions[bot]",
+        "review-bot"
+      ],
+      "marker_producers": [
+        "holder"
+      ],
+      "reviews": [
+        {
+          "id": 100,
+          "user": {
+            "login": "coderabbitai[bot]"
+          },
+          "state": "COMMENTED",
+          "body": "<details>\n<summary>Other comments (1)</summary><blockquote>\n<details><summary>app.py (1)</summary><blockquote>\nFinding\n<!-- cr-comment:v1:alpha -->\n</blockquote></details>\n</blockquote></details>",
+          "html_url": "https://github.com/example/product/pull/7#pullrequestreview-100",
+          "commit_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      ],
+      "inline_comments": [],
+      "conversation_comments": [
+        {
+          "id": 200,
+          "user": {
+            "login": "holder"
+          },
+          "body": "duplicate of the earlier comment; [cr-comment:v1:alpha](https://github.com/example/product/pull/7#pullrequestreview-100)"
+        }
+      ],
+      "expected": {
+        "missing_findings": [],
+        "missing_reviews": [],
+        "unidentified_reviews": [],
+        "ignored_authors": []
+      }
+    },
+    {
+      "name": "body-disposition-lapsed - the retired rule",
+      "repository": "example/product",
+      "pull_request": 7,
+      "connected_reviewers": [
+        "coderabbitai[bot]",
+        "github-actions[bot]",
+        "review-bot"
+      ],
+      "marker_producers": [
+        "holder"
+      ],
+      "reviews": [
+        {
+          "id": 100,
+          "user": {
+            "login": "coderabbitai[bot]"
+          },
+          "state": "COMMENTED",
+          "body": "<details>\n<summary>Other comments (1)</summary><blockquote>\n<details><summary>app.py (1)</summary><blockquote>\nFinding\n<!-- cr-comment:v1:alpha -->\n</blockquote></details>\n</blockquote></details>",
+          "html_url": "https://github.com/example/product/pull/7#pullrequestreview-100",
+          "commit_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      ],
+      "inline_comments": [],
+      "conversation_comments": [
+        {
+          "id": 200,
+          "user": {
+            "login": "holder"
+          },
+          "body": "lapsed - the retired rule; [cr-comment:v1:alpha](https://github.com/example/product/pull/7#pullrequestreview-100)"
+        }
+      ],
+      "expected": {
+        "missing_findings": [],
+        "missing_reviews": [],
+        "unidentified_reviews": [],
+        "ignored_authors": []
+      }
+    },
+    {
+      "name": "dismissed-submitted-review-still-owes-answer",
+      "repository": "example/product",
+      "pull_request": 7,
+      "connected_reviewers": [
+        "coderabbitai[bot]",
+        "github-actions[bot]",
+        "review-bot"
+      ],
+      "marker_producers": [
+        "holder"
+      ],
+      "reviews": [
+        {
+          "id": 100,
+          "user": {
+            "login": "coderabbitai[bot]"
+          },
+          "state": "DISMISSED",
+          "body": "<details>\n<summary>Other comments (1)</summary><blockquote>\n<details><summary>app.py (1)</summary><blockquote>\nFinding\n<!-- cr-comment:v1:alpha -->\n</blockquote></details>\n</blockquote></details>",
+          "html_url": "https://github.com/example/product/pull/7#pullrequestreview-100",
+          "commit_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      ],
+      "inline_comments": [],
+      "conversation_comments": [],
+      "expected": {
+        "missing_findings": [
+          {
+            "reviewer": "coderabbitai[bot]",
+            "identity": "cr-comment:v1:alpha",
+            "sources": [
+              100
+            ]
+          }
+        ],
+        "missing_reviews": [],
+        "unidentified_reviews": [],
+        "ignored_authors": []
+      }
+    },
+    {
+      "name": "explicit-zero-section-None.",
+      "repository": "example/product",
+      "pull_request": 7,
+      "connected_reviewers": [
+        "coderabbitai[bot]",
+        "github-actions[bot]",
+        "review-bot"
+      ],
+      "marker_producers": [
+        "holder"
+      ],
+      "reviews": [
+        {
+          "id": 100,
+          "user": {
+            "login": "review-bot"
+          },
+          "state": "COMMENTED",
+          "body": "## Findings\nNone.",
+          "html_url": "https://github.com/example/product/pull/7#pullrequestreview-100",
+          "commit_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      ],
+      "inline_comments": [],
+      "conversation_comments": [],
+      "expected": {
+        "missing_findings": [],
+        "missing_reviews": [],
+        "unidentified_reviews": [],
+        "ignored_authors": []
+      }
+    },
+    {
+      "name": "explicit-zero-section-No findings.",
+      "repository": "example/product",
+      "pull_request": 7,
+      "connected_reviewers": [
+        "coderabbitai[bot]",
+        "github-actions[bot]",
+        "review-bot"
+      ],
+      "marker_producers": [
+        "holder"
+      ],
+      "reviews": [
+        {
+          "id": 100,
+          "user": {
+            "login": "review-bot"
+          },
+          "state": "COMMENTED",
+          "body": "## Findings\nNo findings.",
+          "html_url": "https://github.com/example/product/pull/7#pullrequestreview-100",
+          "commit_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      ],
+      "inline_comments": [],
+      "conversation_comments": [],
+      "expected": {
+        "missing_findings": [],
+        "missing_reviews": [],
+        "unidentified_reviews": [],
+        "ignored_authors": []
+      }
+    },
+    {
+      "name": "explicit-zero-section-No findings were found.",
+      "repository": "example/product",
+      "pull_request": 7,
+      "connected_reviewers": [
+        "coderabbitai[bot]",
+        "github-actions[bot]",
+        "review-bot"
+      ],
+      "marker_producers": [
+        "holder"
+      ],
+      "reviews": [
+        {
+          "id": 100,
+          "user": {
+            "login": "review-bot"
+          },
+          "state": "COMMENTED",
+          "body": "## Findings\nNo findings were found.",
+          "html_url": "https://github.com/example/product/pull/7#pullrequestreview-100",
+          "commit_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      ],
+      "inline_comments": [],
+      "conversation_comments": [],
+      "expected": {
+        "missing_findings": [],
+        "missing_reviews": [],
+        "unidentified_reviews": [],
+        "ignored_authors": []
+      }
+    },
+    {
+      "name": "linked-decline-reason",
+      "repository": "example/product",
+      "pull_request": 7,
+      "connected_reviewers": [
+        "coderabbitai[bot]",
+        "github-actions[bot]",
+        "review-bot"
+      ],
+      "marker_producers": [
+        "holder"
+      ],
+      "reviews": [
+        {
+          "id": 100,
+          "user": {
+            "login": "coderabbitai[bot]"
+          },
+          "state": "COMMENTED",
+          "body": "<details>\n<summary>Other comments (1)</summary><blockquote>\n<details><summary>app.py (1)</summary><blockquote>\nFinding\n<!-- cr-comment:v1:alpha -->\n</blockquote></details>\n</blockquote></details>",
+          "html_url": "https://github.com/example/product/pull/7#pullrequestreview-100",
+          "commit_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      ],
+      "inline_comments": [],
+      "conversation_comments": [
+        {
+          "id": 200,
+          "user": {
+            "login": "holder"
+          },
+          "body": "declined - [outside the brief](https://github.com/example/product/issues/9); [cr-comment:v1:alpha](https://github.com/example/product/pull/7#pullrequestreview-100)"
+        }
+      ],
+      "expected": {
+        "missing_findings": [],
+        "missing_reviews": [],
+        "unidentified_reviews": [],
+        "ignored_authors": []
+      }
+    },
+    {
+      "name": "linked-earlier-comment",
+      "repository": "example/product",
+      "pull_request": 7,
+      "connected_reviewers": [
+        "coderabbitai[bot]",
+        "github-actions[bot]",
+        "review-bot"
+      ],
+      "marker_producers": [
+        "holder"
+      ],
+      "reviews": [
+        {
+          "id": 100,
+          "user": {
+            "login": "coderabbitai[bot]"
+          },
+          "state": "COMMENTED",
+          "body": "<details>\n<summary>Other comments (1)</summary><blockquote>\n<details><summary>app.py (1)</summary><blockquote>\nFinding\n<!-- cr-comment:v1:alpha -->\n</blockquote></details>\n</blockquote></details>",
+          "html_url": "https://github.com/example/product/pull/7#pullrequestreview-100",
+          "commit_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      ],
+      "inline_comments": [],
+      "conversation_comments": [
+        {
+          "id": 200,
+          "user": {
+            "login": "holder"
+          },
+          "body": "duplicate of [the earlier comment](https://github.com/example/product/pull/7#discussion_r10); [cr-comment:v1:alpha](https://github.com/example/product/pull/7#pullrequestreview-100)"
+        }
+      ],
+      "expected": {
+        "missing_findings": [],
+        "missing_reviews": [],
+        "unidentified_reviews": [],
+        "ignored_authors": []
+      }
+    },
+    {
+      "name": "linked-retired-rule",
+      "repository": "example/product",
+      "pull_request": 7,
+      "connected_reviewers": [
+        "coderabbitai[bot]",
+        "github-actions[bot]",
+        "review-bot"
+      ],
+      "marker_producers": [
+        "holder"
+      ],
+      "reviews": [
+        {
+          "id": 100,
+          "user": {
+            "login": "coderabbitai[bot]"
+          },
+          "state": "COMMENTED",
+          "body": "<details>\n<summary>Other comments (1)</summary><blockquote>\n<details><summary>app.py (1)</summary><blockquote>\nFinding\n<!-- cr-comment:v1:alpha -->\n</blockquote></details>\n</blockquote></details>",
+          "html_url": "https://github.com/example/product/pull/7#pullrequestreview-100",
+          "commit_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      ],
+      "inline_comments": [],
+      "conversation_comments": [
+        {
+          "id": 200,
+          "user": {
+            "login": "holder"
+          },
+          "body": "lapsed - [the retired rule](https://github.com/example/product/commit/abc); [cr-comment:v1:alpha](https://github.com/example/product/pull/7#pullrequestreview-100)"
+        }
+      ],
+      "expected": {
+        "missing_findings": [],
+        "missing_reviews": [],
+        "unidentified_reviews": [],
+        "ignored_authors": []
+      }
+    },
+    {
+      "name": "empty-duplicate-continuation",
+      "repository": "example/product",
+      "pull_request": 7,
+      "connected_reviewers": [
+        "coderabbitai[bot]",
+        "github-actions[bot]",
+        "review-bot"
+      ],
+      "marker_producers": [
+        "holder"
+      ],
+      "reviews": [
+        {
+          "id": 100,
+          "user": {
+            "login": "coderabbitai[bot]"
+          },
+          "state": "COMMENTED",
+          "body": "<details>\n<summary>Other comments (1)</summary><blockquote>\n<details><summary>app.py (1)</summary><blockquote>\nFinding\n<!-- cr-comment:v1:alpha -->\n</blockquote></details>\n</blockquote></details>",
+          "html_url": "https://github.com/example/product/pull/7#pullrequestreview-100",
+          "commit_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      ],
+      "inline_comments": [],
+      "conversation_comments": [
+        {
+          "id": 200,
+          "user": {
+            "login": "holder"
+          },
+          "body": "duplicate of ;; [cr-comment:v1:alpha](https://github.com/example/product/pull/7#pullrequestreview-100)"
+        }
+      ],
+      "expected": {
+        "missing_findings": [
+          {
+            "reviewer": "coderabbitai[bot]",
+            "identity": "cr-comment:v1:alpha",
+            "sources": [
+              100
+            ]
+          }
+        ],
+        "missing_reviews": [],
+        "unidentified_reviews": [],
+        "ignored_authors": []
+      }
     }
   ]
 }

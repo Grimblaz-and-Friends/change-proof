@@ -1,0 +1,191 @@
+{
+  "schema_version": 1,
+  "provenance": {
+    "kind": "synthetic-derived",
+    "source": "https://github.com/Grimblaz-and-Friends/tradecraft/issues/809#issuecomment-5934093522",
+    "sections": [
+      "Identity and accounting",
+      "Answer contract"
+    ],
+    "pending": "skills/work/references/proof-fixtures/v1-review-body-dispositions.json; holder-owned reconciliation"
+  },
+  "cases": [
+    {
+      "name": "summary",
+      "reviewer": "coderabbitai[bot]",
+      "body": "Walkthrough summary",
+      "inline": [],
+      "answers": [],
+      "exit_code": 0
+    },
+    {
+      "name": "all-inline",
+      "reviewer": "coderabbitai[bot]",
+      "body": "**Actionable comments posted: 1**",
+      "inline": [
+        null
+      ],
+      "answers": [],
+      "exit_code": 0
+    },
+    {
+      "name": "outside-diff-unanswered",
+      "reviewer": "coderabbitai[bot]",
+      "body": "**Outside diff range comments (1)**\n<!-- cr-comment:v1:one -->",
+      "inline": [],
+      "answers": [],
+      "exit_code": 1
+    },
+    {
+      "name": "nitpick-declined",
+      "reviewer": "coderabbitai[bot]",
+      "body": "**Nitpick comments (1)**\n<!-- cr-comment:v1:one -->",
+      "inline": [],
+      "answers": [
+        {
+          "identity": "cr-comment:v1:one",
+          "disposition": "declined — unnecessary"
+        }
+      ],
+      "exit_code": 0
+    },
+    {
+      "name": "identified-fixed",
+      "reviewer": "coderabbitai[bot]",
+      "body": "<!-- cr-comment:v1:one -->",
+      "inline": [],
+      "answers": [
+        {
+          "identity": "cr-comment:v1:one",
+          "disposition": "fixed"
+        }
+      ],
+      "exit_code": 0
+    },
+    {
+      "name": "identified-not-answered-by-review-link",
+      "reviewer": "coderabbitai[bot]",
+      "body": "<!-- cr-comment:v1:one -->",
+      "inline": [],
+      "answers": [
+        {
+          "identity": null,
+          "disposition": "fixed"
+        }
+      ],
+      "exit_code": 1
+    },
+    {
+      "name": "identical-answered-inline",
+      "reviewer": "coderabbitai[bot]",
+      "body": "<!-- cr-comment:v1:one -->",
+      "inline": [
+        "cr-comment:v1:one"
+      ],
+      "answers": [],
+      "exit_code": 0
+    },
+    {
+      "name": "unidentified-whole-review",
+      "reviewer": "coderabbitai[bot]",
+      "body": "**Nitpick comments (1)**",
+      "inline": [],
+      "answers": [
+        {
+          "identity": null,
+          "disposition": "fixed — addressed"
+        }
+      ],
+      "exit_code": 0
+    },
+    {
+      "name": "mixed-whole-answer-insufficient",
+      "reviewer": "coderabbitai[bot]",
+      "body": "**Nitpick comments (2)**\n<!-- cr-comment:v1:one -->",
+      "inline": [],
+      "answers": [
+        {
+          "identity": null,
+          "disposition": "fixed — addressed"
+        }
+      ],
+      "exit_code": 1
+    },
+    {
+      "name": "mixed-separate-answers",
+      "reviewer": "coderabbitai[bot]",
+      "body": "**Nitpick comments (2)**\n<!-- cr-comment:v1:one -->",
+      "inline": [],
+      "answers": [
+        {
+          "identity": null,
+          "disposition": "fixed — addressed"
+        },
+        {
+          "identity": "cr-comment:v1:one",
+          "disposition": "fixed"
+        }
+      ],
+      "exit_code": 0
+    },
+    {
+      "name": "old-lab-all-inline",
+      "reviewer": "github-actions[bot]",
+      "body": "1 validated finding(s).",
+      "inline": [
+        null
+      ],
+      "answers": [],
+      "exit_code": 0
+    },
+    {
+      "name": "old-lab-body-unidentified",
+      "reviewer": "github-actions[bot]",
+      "body": "1 validated finding(s).",
+      "inline": [],
+      "answers": [],
+      "exit_code": 1
+    },
+    {
+      "name": "old-lab-whole-answer",
+      "reviewer": "github-actions[bot]",
+      "body": "1 validated finding(s).",
+      "inline": [],
+      "answers": [
+        {
+          "identity": null,
+          "disposition": "fixed — addressed"
+        }
+      ],
+      "exit_code": 0
+    },
+    {
+      "name": "identified-lab",
+      "reviewer": "github-actions[bot]",
+      "body": "1 validated finding(s).\n<!-- tradecraft-review-finding:v1:36672170816:1 -->",
+      "inline": [],
+      "answers": [
+        {
+          "identity": "tradecraft-review-finding:v1:36672170816:1",
+          "disposition": "declined — unnecessary"
+        }
+      ],
+      "exit_code": 0
+    },
+    {
+      "name": "lab-mixed",
+      "reviewer": "github-actions[bot]",
+      "body": "2 validated finding(s).\n<!-- tradecraft-review-finding:v1:36672170816:1 -->",
+      "inline": [
+        null
+      ],
+      "answers": [
+        {
+          "identity": "tradecraft-review-finding:v1:36672170816:1",
+          "disposition": "fixed"
+        }
+      ],
+      "exit_code": 0
+    }
+  ]
+}
