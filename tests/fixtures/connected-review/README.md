@@ -29,27 +29,28 @@ overlays in the tests. Those evaluations are not recordings of PR #795's gate.
 ## Body findings for #38
 
 `v1-review-body-dispositions.json` is copied verbatim from tradecraft commit
-`1eab7c9c42dd26caced9cb805a6704d20a3e3f1b`, git blob
-`92a693c8952788f25a9a378fb22e64cb00b6796d`, using this GET on 2026-10-01:
+`e957cf9467f6e2b36ac0bc180f517bfab793e203`, git blob
+`d2a2a1d62bd49b9045a78afaeef769b67afad8e7`, with 87 cases, using this GET on
+2026-10-01:
 
 ```text
-gh api --method GET -H "Accept: application/vnd.github.raw" "repos/Grimblaz-and-Friends/tradecraft/contents/skills/work/references/proof-fixtures/v1-review-body-dispositions.json?ref=1eab7c9c42dd26caced9cb805a6704d20a3e3f1b"
+gh api --method GET -H "Accept: application/vnd.github.raw" "repos/Grimblaz-and-Friends/tradecraft/contents/skills/work/references/proof-fixtures/v1-review-body-dispositions.json?ref=e957cf9467f6e2b36ac0bc180f517bfab793e203"
 ```
 
-`test_shared_review_body_dispositions` replays every shared case directly through
-the gate's body-finding check and compares missing findings with their carrying
-review ids, missing whole-review answers, and all unidentified reviews. It does
-not compare `ignored_authors`, a producer diagnostic the gate does not emit.
-The fixture's `.gitattributes` entry preserves its bytes without text conversion.
+`test_shared_review_body_dispositions` replays every case in the file directly
+through the gate's body-finding check without expectation overrides. It compares
+missing findings with their carrying review ids, missing whole-review answers,
+and all unidentified reviews. It does not compare `ignored_authors`, a producer
+diagnostic the gate does not emit. The fixture's `.gitattributes` entry preserves
+its bytes without text conversion.
 
-The replay applies exactly one labelled expectation override for
-`section-without-count-missing-entry`, under the
+This copy replaces tradecraft commit
+`1eab7c9c42dd26caced9cb805a6704d20a3e3f1b`, git blob
+`92a693c8952788f25a9a378fb22e64cb00b6796d`. Its corrected
+`section-without-count-missing-entry` expectation follows the
 [Steward's ruling, comment 5937486813](https://github.com/Grimblaz-and-Friends/change-proof/issues/38#issuecomment-5937486813).
-That CodeRabbit case owes only `cr-comment:v1:alpha` from review 100, with no
-missing or unidentified review. The test cites the ruling in its assertion
-message and fails if the pinned expectation already matches the override.
-#809's corrected file will replace this copy, forcing removal of that override;
-the pinned file itself remains byte for byte unchanged.
+The labelled override and its guard were removed after the guard failed on the
+corrected expectation, demanding removal.
 
 `derived-review-body-examples.json` remains the gate's own synthetic coverage,
 derived directly from tradecraft #809's [settled artifact, comment 5934093522](https://github.com/Grimblaz-and-Friends/tradecraft/issues/809#issuecomment-5934093522),

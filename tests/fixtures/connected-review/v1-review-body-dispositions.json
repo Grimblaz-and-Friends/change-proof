@@ -1677,12 +1677,8 @@
             ]
           }
         ],
-        "missing_reviews": [
-          100
-        ],
-        "unidentified_reviews": [
-          100
-        ],
+        "missing_reviews": [],
+        "unidentified_reviews": [],
         "ignored_authors": []
       }
     },
@@ -2945,6 +2941,829 @@
         ],
         "missing_reviews": [],
         "unidentified_reviews": [],
+        "ignored_authors": []
+      }
+    },
+    {
+      "name": "757-walkthrough-conversation",
+      "repository": "example/product",
+      "pull_request": 7,
+      "connected_reviewers": [
+        "coderabbitai[bot]",
+        "github-actions[bot]",
+        "review-bot"
+      ],
+      "marker_producers": [
+        "holder"
+      ],
+      "reviews": [],
+      "inline_comments": [],
+      "conversation_comments": [
+        {
+          "id": 200,
+          "user": {
+            "login": "coderabbitai[bot]"
+          },
+          "body": "<details>\n<summary>\ud83d\udcdd Walkthrough</summary>\n\n## Walkthrough\n\nThis pull request adds a connected-review runtime and workflow. The runtime checks pull-request eligibility, runs a constrained Claude review, validates and publishes findings, and reports outcomes. Replay and confinement tools, tests, setup guidance, and an architecture decision record accompany the workflow.\n\n</details>\n\n<details>\n<summary>Security review details</summary>\n\n**Security Findings and Attack Paths**\n- _observed_ \u2014 The retained sensitive-data-exposure finding identifies review publication as the sink. Finder fields are checked for structure and anchors, but their text is copied into the review body or comments before POST without a secret-screening step.\n- _inferred_ \u2014 PR content or repository material repeated in a finding can cross into the published review. The OAuth token is available to the CLI process, but available source does not show that restricted finder tools can read or reproduce it.\n\n</details>"
+        }
+      ],
+      "expected": {
+        "missing_findings": [],
+        "missing_reviews": [],
+        "unidentified_reviews": [],
+        "ignored_authors": []
+      }
+    },
+    {
+      "name": "757-walkthrough-review",
+      "repository": "example/product",
+      "pull_request": 7,
+      "connected_reviewers": [
+        "coderabbitai[bot]",
+        "github-actions[bot]",
+        "review-bot"
+      ],
+      "marker_producers": [
+        "holder"
+      ],
+      "reviews": [
+        {
+          "id": 100,
+          "user": {
+            "login": "coderabbitai[bot]"
+          },
+          "state": "COMMENTED",
+          "body": "<details>\n<summary>\ud83d\udcdd Walkthrough</summary>\n\n## Walkthrough\n\nThis pull request adds a connected-review runtime and workflow. The runtime checks pull-request eligibility, runs a constrained Claude review, validates and publishes findings, and reports outcomes. Replay and confinement tools, tests, setup guidance, and an architecture decision record accompany the workflow.\n\n</details>\n\n<details>\n<summary>Security review details</summary>\n\n**Security Findings and Attack Paths**\n- _observed_ \u2014 The retained sensitive-data-exposure finding identifies review publication as the sink. Finder fields are checked for structure and anchors, but their text is copied into the review body or comments before POST without a secret-screening step.\n- _inferred_ \u2014 PR content or repository material repeated in a finding can cross into the published review. The OAuth token is available to the CLI process, but available source does not show that restricted finder tools can read or reproduce it.\n\n</details>",
+          "html_url": "https://github.com/example/product/pull/7#pullrequestreview-100",
+          "commit_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      ],
+      "inline_comments": [],
+      "conversation_comments": [],
+      "expected": {
+        "missing_findings": [],
+        "missing_reviews": [],
+        "unidentified_reviews": [],
+        "ignored_authors": []
+      }
+    },
+    {
+      "name": "coderabbit-security-findings-summary-control",
+      "repository": "example/product",
+      "pull_request": 7,
+      "connected_reviewers": [
+        "coderabbitai[bot]",
+        "github-actions[bot]",
+        "review-bot"
+      ],
+      "marker_producers": [
+        "holder"
+      ],
+      "reviews": [
+        {
+          "id": 100,
+          "user": {
+            "login": "coderabbitai[bot]"
+          },
+          "state": "COMMENTED",
+          "body": "<details><summary>Security Findings</summary>- something risky</details>",
+          "html_url": "https://github.com/example/product/pull/7#pullrequestreview-100",
+          "commit_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      ],
+      "inline_comments": [],
+      "conversation_comments": [],
+      "expected": {
+        "missing_findings": [],
+        "missing_reviews": [],
+        "unidentified_reviews": [],
+        "ignored_authors": []
+      }
+    },
+    {
+      "name": "733-real-shape-outside-diff-unanswered",
+      "repository": "example/product",
+      "pull_request": 7,
+      "connected_reviewers": [
+        "coderabbitai[bot]",
+        "github-actions[bot]",
+        "review-bot"
+      ],
+      "marker_producers": [
+        "holder"
+      ],
+      "reviews": [
+        {
+          "id": 100,
+          "user": {
+            "login": "coderabbitai[bot]"
+          },
+          "state": "COMMENTED",
+          "body": "> **\u26a0\ufe0f Outside diff range comments (1)**\n> \n> <details>\n> <summary><em>\ud83d\udfe0 Major</em> \u00b7 Add <code>proof</code> to the holder-owned statuses in <code>_decision_status</code>. \u00b7 <code>work.py:1009-1011</code></summary><blockquote>\n> \n> `lib/work.py:1009-1011`\n> **Add `proof` to the holder-owned statuses in `_decision_status`.**\n> <details><summary>Proposed fix</summary>\n> ```diff\n> + example\n> ```\n> </details>\n> \n> <!-- cr-comment:v1:7d3d3fcdd8d9891aeabf8880 -->\n> \n> </blockquote></details>",
+          "html_url": "https://github.com/example/product/pull/7#pullrequestreview-100",
+          "commit_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      ],
+      "inline_comments": [],
+      "conversation_comments": [],
+      "expected": {
+        "missing_findings": [
+          {
+            "reviewer": "coderabbitai[bot]",
+            "identity": "cr-comment:v1:7d3d3fcdd8d9891aeabf8880",
+            "sources": [
+              100
+            ]
+          }
+        ],
+        "missing_reviews": [],
+        "unidentified_reviews": [],
+        "ignored_authors": []
+      }
+    },
+    {
+      "name": "733-real-shape-outside-diff-answered",
+      "repository": "example/product",
+      "pull_request": 7,
+      "connected_reviewers": [
+        "coderabbitai[bot]",
+        "github-actions[bot]",
+        "review-bot"
+      ],
+      "marker_producers": [
+        "holder"
+      ],
+      "reviews": [
+        {
+          "id": 100,
+          "user": {
+            "login": "coderabbitai[bot]"
+          },
+          "state": "COMMENTED",
+          "body": "> **\u26a0\ufe0f Outside diff range comments (1)**\n> \n> <details>\n> <summary><em>\ud83d\udfe0 Major</em> \u00b7 Add <code>proof</code> to the holder-owned statuses in <code>_decision_status</code>. \u00b7 <code>work.py:1009-1011</code></summary><blockquote>\n> \n> `lib/work.py:1009-1011`\n> **Add `proof` to the holder-owned statuses in `_decision_status`.**\n> <details><summary>Proposed fix</summary>\n> ```diff\n> + example\n> ```\n> </details>\n> \n> <!-- cr-comment:v1:7d3d3fcdd8d9891aeabf8880 -->\n> \n> </blockquote></details>",
+          "html_url": "https://github.com/example/product/pull/7#pullrequestreview-100",
+          "commit_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      ],
+      "inline_comments": [],
+      "conversation_comments": [
+        {
+          "id": 200,
+          "user": {
+            "login": "holder"
+          },
+          "body": "fixed - repaired; [cr-comment:v1:7d3d3fcdd8d9891aeabf8880](https://github.com/example/product/pull/7#pullrequestreview-100)"
+        }
+      ],
+      "expected": {
+        "missing_findings": [],
+        "missing_reviews": [],
+        "unidentified_reviews": [],
+        "ignored_authors": []
+      }
+    },
+    {
+      "name": "733-real-shape-outside-diff-unidentified",
+      "repository": "example/product",
+      "pull_request": 7,
+      "connected_reviewers": [
+        "coderabbitai[bot]",
+        "github-actions[bot]",
+        "review-bot"
+      ],
+      "marker_producers": [
+        "holder"
+      ],
+      "reviews": [
+        {
+          "id": 100,
+          "user": {
+            "login": "coderabbitai[bot]"
+          },
+          "state": "COMMENTED",
+          "body": "> **\u26a0\ufe0f Outside diff range comments (1)**\n> \n> <details>\n> <summary><em>\ud83d\udfe0 Major</em> \u00b7 Add <code>proof</code> to the holder-owned statuses in <code>_decision_status</code>. \u00b7 <code>work.py:1009-1011</code></summary><blockquote>\n> \n> `lib/work.py:1009-1011`\n> **Add `proof` to the holder-owned statuses in `_decision_status`.**\n> <details><summary>Proposed fix</summary>\n> ```diff\n> + example\n> ```\n> </details>\n> \n> Identity omitted.\n> \n> </blockquote></details>",
+          "html_url": "https://github.com/example/product/pull/7#pullrequestreview-100",
+          "commit_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      ],
+      "inline_comments": [],
+      "conversation_comments": [],
+      "expected": {
+        "missing_findings": [],
+        "missing_reviews": [
+          100
+        ],
+        "unidentified_reviews": [
+          100
+        ],
+        "ignored_authors": []
+      }
+    },
+    {
+      "name": "rule-a-no-divider-before-nitpick",
+      "repository": "example/product",
+      "pull_request": 7,
+      "connected_reviewers": [
+        "coderabbitai[bot]",
+        "github-actions[bot]",
+        "review-bot"
+      ],
+      "marker_producers": [
+        "holder"
+      ],
+      "reviews": [
+        {
+          "id": 100,
+          "user": {
+            "login": "coderabbitai[bot]"
+          },
+          "state": "COMMENTED",
+          "body": "> **\u26a0\ufe0f Outside diff range comments (1)**\n> \n> <details>\n> <summary><em>\ud83d\udfe0 Major</em> \u00b7 Add <code>proof</code> to the holder-owned statuses in <code>_decision_status</code>. \u00b7 <code>work.py:1009-1011</code></summary><blockquote>\n> \n> `lib/work.py:1009-1011`\n> **Add `proof` to the holder-owned statuses in `_decision_status`.**\n> <details><summary>Proposed fix</summary>\n> ```diff\n> + example\n> ```\n> </details>\n> \n> Identity omitted.\n> \n> </blockquote></details>\n\n<details><summary>Nitpick comments (1)</summary>\n<!-- cr-comment:v1:beta -->\n</details>",
+          "html_url": "https://github.com/example/product/pull/7#pullrequestreview-100",
+          "commit_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      ],
+      "inline_comments": [],
+      "conversation_comments": [],
+      "expected": {
+        "missing_findings": [
+          {
+            "reviewer": "coderabbitai[bot]",
+            "identity": "cr-comment:v1:beta",
+            "sources": [
+              100
+            ]
+          }
+        ],
+        "missing_reviews": [
+          100
+        ],
+        "unidentified_reviews": [
+          100
+        ],
+        "ignored_authors": []
+      }
+    },
+    {
+      "name": "rule-b-counted-prose-beside-inline-root",
+      "repository": "example/product",
+      "pull_request": 7,
+      "connected_reviewers": [
+        "coderabbitai[bot]",
+        "github-actions[bot]",
+        "review-bot"
+      ],
+      "marker_producers": [
+        "holder"
+      ],
+      "reviews": [
+        {
+          "id": 100,
+          "user": {
+            "login": "review-bot"
+          },
+          "state": "COMMENTED",
+          "body": "## Findings (1)\nThe loader drops the last row; fix the bounds check.",
+          "html_url": "https://github.com/example/product/pull/7#pullrequestreview-100",
+          "commit_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      ],
+      "inline_comments": [
+        {
+          "id": 10,
+          "pull_request_review_id": 100,
+          "user": {
+            "login": "review-bot"
+          },
+          "body": "inline finding"
+        }
+      ],
+      "conversation_comments": [],
+      "expected": {
+        "missing_findings": [],
+        "missing_reviews": [
+          100
+        ],
+        "unidentified_reviews": [
+          100
+        ],
+        "ignored_authors": []
+      }
+    },
+    {
+      "name": "rule-c-unmatched-backtick-before-live-section",
+      "repository": "example/product",
+      "pull_request": 7,
+      "connected_reviewers": [
+        "coderabbitai[bot]",
+        "github-actions[bot]",
+        "review-bot"
+      ],
+      "marker_producers": [
+        "holder"
+      ],
+      "reviews": [
+        {
+          "id": 100,
+          "user": {
+            "login": "coderabbitai[bot]"
+          },
+          "state": "COMMENTED",
+          "body": "**Actionable comments posted: 0**\n\nA lone ` backtick in prose.\n\n<details><summary>Outside diff range comments (1)</summary>\n`app.py` line 3: fix\n<!-- cr-comment:v1:alpha -->\n`done`\n</details>",
+          "html_url": "https://github.com/example/product/pull/7#pullrequestreview-100",
+          "commit_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      ],
+      "inline_comments": [],
+      "conversation_comments": [],
+      "expected": {
+        "missing_findings": [
+          {
+            "reviewer": "coderabbitai[bot]",
+            "identity": "cr-comment:v1:alpha",
+            "sources": [
+              100
+            ]
+          }
+        ],
+        "missing_reviews": [],
+        "unidentified_reviews": [],
+        "ignored_authors": []
+      }
+    },
+    {
+      "name": "mixed-case-body-answer",
+      "repository": "example/product",
+      "pull_request": 7,
+      "connected_reviewers": [
+        "coderabbitai[bot]",
+        "github-actions[bot]",
+        "review-bot"
+      ],
+      "marker_producers": [
+        "grimblaz"
+      ],
+      "reviews": [
+        {
+          "id": 100,
+          "user": {
+            "login": "CodeRabbitAI[bot]"
+          },
+          "state": "COMMENTED",
+          "body": "<!-- cr-comment:v1:alpha -->",
+          "html_url": "https://github.com/example/product/pull/7#pullrequestreview-100",
+          "commit_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      ],
+      "inline_comments": [],
+      "conversation_comments": [
+        {
+          "id": 200,
+          "user": {
+            "login": "Grimblaz"
+          },
+          "body": "fixed - repaired; [cr-comment:v1:alpha](https://github.com/example/product/pull/7#pullrequestreview-100)"
+        }
+      ],
+      "expected": {
+        "missing_findings": [],
+        "missing_reviews": [],
+        "unidentified_reviews": [],
+        "ignored_authors": []
+      }
+    },
+    {
+      "name": "mixed-case-whole-review-answer",
+      "repository": "example/product",
+      "pull_request": 7,
+      "connected_reviewers": [
+        "coderabbitai[bot]",
+        "github-actions[bot]",
+        "review-bot"
+      ],
+      "marker_producers": [
+        "grimblaz"
+      ],
+      "reviews": [
+        {
+          "id": 100,
+          "user": {
+            "login": "CodeRabbitAI[bot]"
+          },
+          "state": "COMMENTED",
+          "body": "**Actionable comments posted: 1**",
+          "html_url": "https://github.com/example/product/pull/7#pullrequestreview-100",
+          "commit_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      ],
+      "inline_comments": [],
+      "conversation_comments": [
+        {
+          "id": 200,
+          "user": {
+            "login": "Grimblaz"
+          },
+          "body": "fixed - repaired; [unidentified review](https://github.com/example/product/pull/7#pullrequestreview-100)"
+        }
+      ],
+      "expected": {
+        "missing_findings": [],
+        "missing_reviews": [],
+        "unidentified_reviews": [
+          100
+        ],
+        "ignored_authors": []
+      }
+    },
+    {
+      "name": "mixed-case-inline-exemption",
+      "repository": "example/product",
+      "pull_request": 7,
+      "connected_reviewers": [
+        "coderabbitai[bot]",
+        "github-actions[bot]",
+        "review-bot"
+      ],
+      "marker_producers": [
+        "grimblaz"
+      ],
+      "reviews": [
+        {
+          "id": 100,
+          "user": {
+            "login": "CodeRabbitAI[bot]"
+          },
+          "state": "COMMENTED",
+          "body": "<!-- cr-comment:v1:alpha -->",
+          "html_url": "https://github.com/example/product/pull/7#pullrequestreview-100",
+          "commit_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      ],
+      "inline_comments": [
+        {
+          "id": 10,
+          "pull_request_review_id": 100,
+          "user": {
+            "login": "CodeRabbitAI[bot]"
+          },
+          "body": "<!-- cr-comment:v1:alpha -->"
+        },
+        {
+          "id": 11,
+          "in_reply_to_id": 10,
+          "user": {
+            "login": "Grimblaz"
+          },
+          "body": "**fixed** - repaired"
+        }
+      ],
+      "conversation_comments": [],
+      "expected": {
+        "missing_findings": [],
+        "missing_reviews": [],
+        "unidentified_reviews": [],
+        "ignored_authors": []
+      }
+    },
+    {
+      "name": "multiline-symbol-summary-declaration",
+      "repository": "example/product",
+      "pull_request": 7,
+      "connected_reviewers": [
+        "coderabbitai[bot]",
+        "github-actions[bot]",
+        "review-bot"
+      ],
+      "marker_producers": [
+        "holder"
+      ],
+      "reviews": [
+        {
+          "id": 100,
+          "user": {
+            "login": "coderabbitai[bot]"
+          },
+          "state": "COMMENTED",
+          "body": "<details><summary>\u26a0\ufe0f Other\ncomments (1)</summary>\n<!-- cr-comment:v1:alpha -->\n</details>",
+          "html_url": "https://github.com/example/product/pull/7#pullrequestreview-100",
+          "commit_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      ],
+      "inline_comments": [],
+      "conversation_comments": [],
+      "expected": {
+        "missing_findings": [
+          {
+            "reviewer": "coderabbitai[bot]",
+            "identity": "cr-comment:v1:alpha",
+            "sources": [
+              100
+            ]
+          }
+        ],
+        "missing_reviews": [],
+        "unidentified_reviews": [],
+        "ignored_authors": []
+      }
+    },
+    {
+      "name": "multiline-symbol-bold-declaration",
+      "repository": "example/product",
+      "pull_request": 7,
+      "connected_reviewers": [
+        "coderabbitai[bot]",
+        "github-actions[bot]",
+        "review-bot"
+      ],
+      "marker_producers": [
+        "holder"
+      ],
+      "reviews": [
+        {
+          "id": 100,
+          "user": {
+            "login": "coderabbitai[bot]"
+          },
+          "state": "COMMENTED",
+          "body": "> **\u26a0\ufe0f Other\n> comments (1)**\n<!-- cr-comment:v1:alpha -->",
+          "html_url": "https://github.com/example/product/pull/7#pullrequestreview-100",
+          "commit_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      ],
+      "inline_comments": [],
+      "conversation_comments": [],
+      "expected": {
+        "missing_findings": [
+          {
+            "reviewer": "coderabbitai[bot]",
+            "identity": "cr-comment:v1:alpha",
+            "sources": [
+              100
+            ]
+          }
+        ],
+        "missing_reviews": [],
+        "unidentified_reviews": [],
+        "ignored_authors": []
+      }
+    },
+    {
+      "name": "innermost-declared-section-owns-identity",
+      "repository": "example/product",
+      "pull_request": 7,
+      "connected_reviewers": [
+        "coderabbitai[bot]",
+        "github-actions[bot]",
+        "review-bot"
+      ],
+      "marker_producers": [
+        "holder"
+      ],
+      "reviews": [
+        {
+          "id": 100,
+          "user": {
+            "login": "coderabbitai[bot]"
+          },
+          "state": "COMMENTED",
+          "body": "<details><summary>Other comments (1)</summary>\n<details><summary>Nitpick comments (1)</summary>\n<!-- cr-comment:v1:alpha -->\n</details>\n</details>",
+          "html_url": "https://github.com/example/product/pull/7#pullrequestreview-100",
+          "commit_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      ],
+      "inline_comments": [],
+      "conversation_comments": [],
+      "expected": {
+        "missing_findings": [
+          {
+            "reviewer": "coderabbitai[bot]",
+            "identity": "cr-comment:v1:alpha",
+            "sources": [
+              100
+            ]
+          }
+        ],
+        "missing_reviews": [
+          100
+        ],
+        "unidentified_reviews": [
+          100
+        ],
+        "ignored_authors": []
+      }
+    },
+    {
+      "name": "rule-b-counted-comments-missing-entry",
+      "repository": "example/product",
+      "pull_request": 7,
+      "connected_reviewers": [
+        "coderabbitai[bot]",
+        "github-actions[bot]",
+        "review-bot"
+      ],
+      "marker_producers": [
+        "holder"
+      ],
+      "reviews": [
+        {
+          "id": 100,
+          "user": {
+            "login": "coderabbitai[bot]"
+          },
+          "state": "COMMENTED",
+          "body": "<details><summary>Other comments (1)</summary>\n- First\n<!-- cr-comment:v1:alpha -->\n- Second\n</details>",
+          "html_url": "https://github.com/example/product/pull/7#pullrequestreview-100",
+          "commit_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      ],
+      "inline_comments": [],
+      "conversation_comments": [],
+      "expected": {
+        "missing_findings": [
+          {
+            "reviewer": "coderabbitai[bot]",
+            "identity": "cr-comment:v1:alpha",
+            "sources": [
+              100
+            ]
+          }
+        ],
+        "missing_reviews": [
+          100
+        ],
+        "unidentified_reviews": [
+          100
+        ],
+        "ignored_authors": []
+      }
+    },
+    {
+      "name": "rule-b-zero-count-with-prose",
+      "repository": "example/product",
+      "pull_request": 7,
+      "connected_reviewers": [
+        "coderabbitai[bot]",
+        "github-actions[bot]",
+        "review-bot"
+      ],
+      "marker_producers": [
+        "holder"
+      ],
+      "reviews": [
+        {
+          "id": 100,
+          "user": {
+            "login": "coderabbitai[bot]"
+          },
+          "state": "COMMENTED",
+          "body": "<details><summary>Other comments (0)</summary>\nAn unaccounted body entry.\n</details>",
+          "html_url": "https://github.com/example/product/pull/7#pullrequestreview-100",
+          "commit_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      ],
+      "inline_comments": [],
+      "conversation_comments": [],
+      "expected": {
+        "missing_findings": [],
+        "missing_reviews": [
+          100
+        ],
+        "unidentified_reviews": [
+          100
+        ],
+        "ignored_authors": []
+      }
+    },
+    {
+      "name": "rule-a-correct-sections-without-divider",
+      "repository": "example/product",
+      "pull_request": 7,
+      "connected_reviewers": [
+        "coderabbitai[bot]",
+        "github-actions[bot]",
+        "review-bot"
+      ],
+      "marker_producers": [
+        "holder"
+      ],
+      "reviews": [
+        {
+          "id": 100,
+          "user": {
+            "login": "coderabbitai[bot]"
+          },
+          "state": "COMMENTED",
+          "body": "> **Outside diff range comments (1)**\n> <details><summary><em>Major</em> real.py:40</summary>\n> <!-- cr-comment:v1:alpha -->\n> </details>\n<details><summary>Nitpick comments (1)</summary>\n<!-- cr-comment:v1:beta -->\n</details>",
+          "html_url": "https://github.com/example/product/pull/7#pullrequestreview-100",
+          "commit_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      ],
+      "inline_comments": [],
+      "conversation_comments": [],
+      "expected": {
+        "missing_findings": [
+          {
+            "reviewer": "coderabbitai[bot]",
+            "identity": "cr-comment:v1:alpha",
+            "sources": [
+              100
+            ]
+          },
+          {
+            "reviewer": "coderabbitai[bot]",
+            "identity": "cr-comment:v1:beta",
+            "sources": [
+              100
+            ]
+          }
+        ],
+        "missing_reviews": [],
+        "unidentified_reviews": [],
+        "ignored_authors": []
+      }
+    },
+    {
+      "name": "coderabbit-file-group-distinct-identities",
+      "repository": "example/product",
+      "pull_request": 7,
+      "connected_reviewers": [
+        "coderabbitai[bot]",
+        "github-actions[bot]",
+        "review-bot"
+      ],
+      "marker_producers": [
+        "holder"
+      ],
+      "reviews": [
+        {
+          "id": 100,
+          "user": {
+            "login": "coderabbitai[bot]"
+          },
+          "state": "COMMENTED",
+          "body": "<details><summary>Nitpick comments (2)</summary>\n<details><summary>app.py (2)</summary>\n<!-- cr-comment:v1:alpha -->\n<!-- cr-comment:v1:beta -->\n</details>\n</details>",
+          "html_url": "https://github.com/example/product/pull/7#pullrequestreview-100",
+          "commit_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      ],
+      "inline_comments": [],
+      "conversation_comments": [],
+      "expected": {
+        "missing_findings": [
+          {
+            "reviewer": "coderabbitai[bot]",
+            "identity": "cr-comment:v1:alpha",
+            "sources": [
+              100
+            ]
+          },
+          {
+            "reviewer": "coderabbitai[bot]",
+            "identity": "cr-comment:v1:beta",
+            "sources": [
+              100
+            ]
+          }
+        ],
+        "missing_reviews": [],
+        "unidentified_reviews": [],
+        "ignored_authors": []
+      }
+    },
+    {
+      "name": "section-without-count-missing-entry-other-reviewer",
+      "repository": "example/product",
+      "pull_request": 7,
+      "connected_reviewers": [
+        "coderabbitai[bot]",
+        "github-actions[bot]",
+        "review-bot"
+      ],
+      "marker_producers": [
+        "holder"
+      ],
+      "reviews": [
+        {
+          "id": 100,
+          "user": {
+            "login": "review-bot"
+          },
+          "state": "COMMENTED",
+          "body": "## Findings\n- First\n- Second",
+          "html_url": "https://github.com/example/product/pull/7#pullrequestreview-100",
+          "commit_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      ],
+      "inline_comments": [],
+      "conversation_comments": [],
+      "expected": {
+        "missing_findings": [],
+        "missing_reviews": [
+          100
+        ],
+        "unidentified_reviews": [
+          100
+        ],
         "ignored_authors": []
       }
     }

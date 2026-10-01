@@ -646,11 +646,11 @@ def test_derived_shared_protocol_examples(evidence_path):
 SHARED_BODY_CASES = json.loads(
     (FIXTURES / "v1-review-body-dispositions.json").read_bytes()
 )["cases"]
-assert len(SHARED_BODY_CASES) == 67
 
 
 @pytest.mark.parametrize("case", SHARED_BODY_CASES, ids=lambda case: case["name"])
 def test_shared_review_body_dispositions(case):
+    """Replay every case in the pinned shared fixture file without overrides."""
     config = check.load_work_config({
         "schema_version": 1, "product_repositories": [],
         "connected_reviewers": case["connected_reviewers"],
@@ -658,20 +658,6 @@ def test_shared_review_body_dispositions(case):
     })
     expected = case["expected"]
     context = case["name"]
-    if case["name"] == "section-without-count-missing-entry":
-        # The pinned case contradicts CodeRabbit's declaration rule. Its sole
-        # expectation override is authorized by the Steward's ruling:
-        # https://github.com/Grimblaz-and-Friends/change-proof/issues/38#issuecomment-5937486813
-        ruling = "https://github.com/Grimblaz-and-Friends/change-proof/issues/38#issuecomment-5937486813"
-        override = {
-            "missing_findings": [{"reviewer": CR, "identity": "cr-comment:v1:alpha", "sources": [100]}],
-            "missing_reviews": [], "unidentified_reviews": [],
-        }
-        assert {key: expected[key] for key in override} != override, (
-            f"Remove the now-unnecessary expectation override authorized by {ruling}"
-        )
-        expected = override
-        context += f"; labelled Steward expectation override: {ruling}"
     failures, verified = check._check_body_findings(
         case["repository"], case["pull_request"], config,
         case["conversation_comments"], case["reviews"], case["inline_comments"],
