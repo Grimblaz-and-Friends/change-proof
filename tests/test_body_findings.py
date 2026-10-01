@@ -129,15 +129,18 @@ def test_existing_dispositions_answer_one_body_finding(evidence_path, dispositio
 @pytest.mark.parametrize("mutation", (
     "author", "formatted-word", "formatted-line", "bare-declined", "bare-lapsed",
     "fixed-in-without-number", "wrong-identity", "identity-only", "review-only",
-    "wrong-review", "wrong-pr", "wrong-repo", "two-identities", "two-reviews",
+    "wrong-review", "wrong-pr", "wrong-repo", "two-canonical-pairs", "two-reviews",
+    "identity-separated-from-link",
     "fenced-answer", "quoted-answer", "word-prefix",
-    "unbalanced-format", "empty-reason", "bare-duplicate", "yours-wrong-linked-continuation",
+    "unbalanced-format", "empty-reason", "bare-duplicate", "yours-linked-required-phrase",
 ))
 def test_invalid_or_grouped_answers_clear_nothing(evidence_path, mutation):
     transport, _ = body_scenario(evidence_path)
     transport.responses[REVIEW_ENDPOINT][0]["body"] = MARKER
     if mutation == "two-reviews":
         transport.responses[REVIEW_ENDPOINT].append(record(CR, MARKER, id=42))
+    if mutation == "two-canonical-pairs":
+        transport.responses[REVIEW_ENDPOINT][0]["body"] += "\n<!-- cr-comment:v1:other -->"
     reply = answer()
     if mutation == "author":
         reply["user"]["login"] = "stranger"
@@ -154,19 +157,22 @@ def test_invalid_or_grouped_answers_clear_nothing(evidence_path, mutation):
             "wrong-review": reply["body"].replace("review-41", "review-42"),
             "wrong-pr": reply["body"].replace("/pull/17#", "/pull/18#"),
             "wrong-repo": reply["body"].replace(REPO, "other/repo"),
-            "two-identities": reply["body"] + " cr-comment:v1:other",
+            "two-canonical-pairs": reply["body"] + f" [cr-comment:v1:other]({source_url()})",
             "two-reviews": reply["body"] + f" [review]({source_url(42)})",
+            "identity-separated-from-link": f"fixed; {IDENTITY}; [review]({source_url()})",
             "fenced-answer": "```\n" + reply["body"] + "\n```",
             "quoted-answer": "> " + reply["body"],
             "word-prefix": reply["body"].replace("fixed", "fixedly", 1),
             "unbalanced-format": reply["body"].replace("fixed", "fixed**", 1),
             "empty-reason": reply["body"].replace("fixed", "declined —", 1),
             "bare-duplicate": reply["body"].replace("fixed", "duplicate of ", 1),
-            "yours-wrong-linked-continuation": reply["body"].replace(
-                "fixed", f"yours — in the [release checklist]({source_url(555, kind='issuecomment')})", 1,
+            "yours-linked-required-phrase": reply["body"].replace(
+                "fixed", f"yours — in the [release report]({source_url(555, kind='issuecomment')})", 1,
             ),
         }
         reply["body"] = mutations[mutation]
+    if mutation == "yours-linked-required-phrase":
+        assert not check._body_answer(reply["body"]), "The link must follow the literal opening phrase"
     transport.responses[COMMENTS_ENDPOINT].append(reply)
     result, output = execute(transport)
     assert result == 1, output
@@ -211,7 +217,7 @@ def test_finding_answer_accepts_release_report_evidence(evidence_path, release_r
     transport.responses[REVIEW_ENDPOINT][0]["body"] = f"<!-- {identity} -->"
     transport.responses[COMMENTS_ENDPOINT].extend((
         record(OWNER, "Release report.", id=555),
-        answer(identity, disposition=f"yours — in the {release_report}"),
+        answer(identity, disposition=f"yours — in the release report; see {release_report}"),
     ))
     result, output = execute(transport)
     assert result == 0, output
@@ -248,17 +254,36 @@ def test_non_obligation_sources_are_only_evidence(evidence_path, evidence_kind):
     assert "has an authorized conversation disposition" in output
 
 
-@pytest.mark.parametrize("kind,other_id", (("pullrequestreview", 42), ("issuecomment", 41)))
-def test_links_to_two_obligation_sources_answer_nothing(evidence_path, kind, other_id):
+@pytest.mark.parametrize("evidence", ("review-label", "comment-label", "prose", "code-span"))
+def test_identity_evidence_beside_canonical_pair_is_not_grouped(evidence_path, evidence):
+    transport, _ = body_scenario(evidence_path)
+    transport.responses[REVIEW_ENDPOINT][0]["body"] = MARKER
+    transport.responses[REVIEW_ENDPOINT].insert(0, record(CR, "Opening note", id=40))
+    transport.responses[COMMENTS_ENDPOINT].append(record(
+        CR, "**Nitpick comments (1)**\n<!-- cr-comment:v1:other -->", id=41,
+    ))
+    additions = {
+        "review-label": f"[cr-comment:v1:other]({source_url(40)})",
+        "comment-label": f"[cr-comment:v1:other]({source_url(41, kind='issuecomment')})",
+        "prose": "cr-comment:v1:other",
+        "code-span": "`cr-comment:v1:other`",
+    }
+    reply = answer()
+    reply["body"] += "; evidence: " + additions[evidence]
+    transport.responses[COMMENTS_ENDPOINT].append(reply)
+    result, output = execute(transport)
+    assert result == 0, output
+    assert "has an authorized conversation disposition" in output
+
+
+def test_links_to_two_obligation_sources_answer_nothing(evidence_path):
     transport, _ = body_scenario(evidence_path)
     transport.responses[REVIEW_ENDPOINT][0]["body"] = MARKER
     other_identity = "cr-comment:v1:other"
-    endpoint = REVIEW_ENDPOINT if kind == "pullrequestreview" else COMMENTS_ENDPOINT
-    transport.responses[endpoint].append(record(CR, f"<!-- {other_identity} -->", id=other_id))
+    transport.responses[REVIEW_ENDPOINT].append(record(CR, f"<!-- {other_identity} -->", id=42))
     reply = answer()
     # Naming only one identity does not permit linking two obligation sources.
-    # A review and a comment with the same numeric id are distinct sources.
-    reply["body"] += f"; [other source]({source_url(other_id, kind=kind)})"
+    reply["body"] += f"; [other source]({source_url(42)})"
     transport.responses[COMMENTS_ENDPOINT].append(reply)
     result, output = execute(transport)
     assert result == 1, output
@@ -283,7 +308,7 @@ def test_whole_review_answer_accepts_release_report_evidence(evidence_path):
     transport.responses[REVIEW_ENDPOINT][0]["body"] = "**Nitpick comments (1)**"
     transport.responses[COMMENTS_ENDPOINT].extend((
         record(OWNER, "Release report.", id=555),
-        answer(None, disposition=f"yours — in the [release report]({source_url(555, kind='issuecomment')})"),
+        answer(None, disposition=f"yours — in the release report; see [release report]({source_url(555, kind='issuecomment')})"),
     ))
     result, output = execute(transport)
     assert result == 0, output
@@ -484,17 +509,19 @@ def test_findings_heading_declarations_are_reviewer_specific(reviewer, title, de
     assert bool(deficits) == expected
 
 
-def test_reviewer_conversation_findings_use_their_source_comment(evidence_path):
-    transport, _ = body_scenario(evidence_path)
-    transport.responses[COMMENTS_ENDPOINT].append(record(CR, MARKER, id=701))
-    result, output = execute(transport)
-    assert result == 1
-    assert "issuecomment-701" in output
+@pytest.mark.parametrize("reviewer,identity,section", (
+    (CR, IDENTITY, "**Nitpick comments (2)**"),
+    (LAB, LAB_IDENTITY, "## Findings (2)"),
+))
+def test_reviewer_conversation_findings_create_no_obligation(evidence_path, reviewer, identity, section):
+    transport, _ = body_scenario(evidence_path, reviewer)
     transport.responses[COMMENTS_ENDPOINT].append(record(
-        OWNER, f"fixed; [{IDENTITY}]({source_url(701, kind='issuecomment')})", id=702
+        reviewer, f"{section}\n<!-- {identity} -->", id=701,
     ))
     result, output = execute(transport)
     assert result == 0, output
+    assert "body finding" not in output
+    assert "unidentified" not in output
 
 
 @pytest.mark.parametrize("number", (654, 757))
@@ -746,7 +773,7 @@ SHARED_BODY_CASES = json.loads(
 
 @pytest.mark.parametrize("case", SHARED_BODY_CASES, ids=lambda case: case["name"])
 def test_shared_review_body_dispositions(case):
-    """Replay every case in the pinned shared fixture file without overrides."""
+    """Replay every case, labelling any superseded expectation explicitly."""
     config = check.load_work_config({
         "schema_version": 1, "product_repositories": [],
         "connected_reviewers": case["connected_reviewers"],
@@ -754,6 +781,17 @@ def test_shared_review_body_dispositions(case):
     })
     expected = case["expected"]
     context = case["name"]
+    if case["name"] == "bundled-body-answer":
+        # Prose mentioning another identity is evidence, not a grouped answer.
+        # The sole pinned expectation override follows the Steward's ruling:
+        # https://github.com/Grimblaz-and-Friends/change-proof/issues/38#issuecomment-5938424447
+        ruling = "https://github.com/Grimblaz-and-Friends/change-proof/issues/38#issuecomment-5938424447"
+        override = {"missing_findings": [], "missing_reviews": [], "unidentified_reviews": []}
+        assert {key: expected[key] for key in override} != override, (
+            f"{context}: remove the now-unnecessary expectation override authorized by {ruling}"
+        )
+        expected = override
+        context += f"; labelled Steward expectation override: {ruling}"
     failures, verified = check._check_body_findings(
         case["repository"], case["pull_request"], config,
         case["conversation_comments"], case["reviews"], case["inline_comments"],

@@ -1217,10 +1217,11 @@ jobs:
           EXPLICIT_ZERO_FINDINGS = ("None.", "No findings.", "No findings were found.")
           REVIEW_TARGET = re.compile(
               r"https://github\.com/([A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+)/pull/"
-              r"([1-9][0-9]*)#(pullrequestreview|issuecomment)-([1-9][0-9]*)\b"
+              r"([1-9][0-9]*)#pullrequestreview-([1-9][0-9]*)\b"
           )
-          ANSWER_IDENTITY = re.compile(
-              r"(?:cr-comment:v1:[A-Za-z0-9_-]+|tradecraft-review-finding:v1:[1-9][0-9]*:[1-9][0-9]*)"
+          FINDING_ANSWER_PAIR = re.compile(
+              r"\[(cr-comment:v1:[A-Za-z0-9_-]+|tradecraft-review-finding:v1:[1-9][0-9]*:[1-9][0-9]*)\]\("
+              + REVIEW_TARGET.pattern + r"\)"
           )
 
 
@@ -1462,9 +1463,7 @@ jobs:
               # with the bare word and retain that vocabulary's required continuations.
               if re.match(r"(?:fixed|yours|declined|duplicate|lapsed)(?=$|[^\w*`])", first, re.I) is None:
                   return False
-              # A continuation can link its text, as in yours — in the [release report](...).
-              readable = re.sub(r"\[([^\]\r\n]+)\]\([^\r\n)]+\)", r"\1", first)
-              if not _disposition(readable):
+              if not _disposition(first):
                   return False
               normalized = first.lower().replace(chr(0x2014), "-")
               if normalized.startswith(("declined -", "lapsed -")):
@@ -1506,33 +1505,32 @@ jobs:
                          for reply in replies.get(root["id"], [])):
                       answered_inline.update((reviewer, identity) for identity in
                                              _body_identities(str(root.get("body") or ""), reviewer)[0])
-              for kind, records in (("pullrequestreview", reviews), ("issuecomment", comments)):
-                  for item in records:
-                      reviewer = _author(item)
-                      if reviewer not in config.connected_reviewers or item.get("state") == "PENDING":
-                          continue
-                      body = str(item.get("body") or "")
-                      identities, _ = _body_identities(body, reviewer)
-                      own_roots = [root for root in roots if kind == "pullrequestreview"
-                                   and _author(root) == reviewer
-                                   and _is_integer(item.get("id"))
-                                   and _is_integer(root.get("pull_request_review_id"))
-                                   and root.get("pull_request_review_id") == item["id"]]
-                      deficits = _declared_body_deficits(body, reviewer, own_roots)
-                      if not identities and not deficits:
-                          continue
-                      source_id = item.get("id")
-                      if not _is_integer(source_id) or source_id <= 0 or not repo or number is None:
-                          failures.append(Finding(
-                              f"scopable body findings from {reviewer}; source {kind} #{_safe_text(source_id)} is incomplete",
-                              "restore the complete pull-request source record and re-run change-proof",
-                          ))
-                          continue
-                      source = (kind, source_id)
-                      for identity in identities:
-                          obligations.setdefault((reviewer, identity), set()).add(source)
-                      if deficits:
-                          unidentified[source] = (reviewer, deficits)
+              # Conversation comments supply answers, never declarations or findings.
+              for item in reviews:
+                  reviewer = _author(item)
+                  if reviewer not in config.connected_reviewers or item.get("state") == "PENDING":
+                      continue
+                  body = str(item.get("body") or "")
+                  identities, _ = _body_identities(body, reviewer)
+                  own_roots = [root for root in roots if _author(root) == reviewer
+                               and _is_integer(item.get("id"))
+                               and _is_integer(root.get("pull_request_review_id"))
+                               and root.get("pull_request_review_id") == item["id"]]
+                  deficits = _declared_body_deficits(body, reviewer, own_roots)
+                  if not identities and not deficits:
+                      continue
+                  source_id = item.get("id")
+                  if not _is_integer(source_id) or source_id <= 0 or not repo or number is None:
+                      failures.append(Finding(
+                          f"scopable body findings from {reviewer}; source pullrequestreview #{_safe_text(source_id)} is incomplete",
+                          "restore the complete pull-request source record and re-run change-proof",
+                      ))
+                      continue
+                  source = ("pullrequestreview", source_id)
+                  for identity in identities:
+                      obligations.setdefault((reviewer, identity), set()).add(source)
+                  if deficits:
+                      unidentified[source] = (reviewer, deficits)
 
               obligation_sources = set(unidentified)
               for key, sources in obligations.items():
@@ -1548,15 +1546,19 @@ jobs:
                   if not _body_answer(body):
                       continue
                   markup = _review_markup(body)
-                  named = set(ANSWER_IDENTITY.findall(markup))
-                  # Only this pull request's obligation sources are targets. Every other
+                  # Only this pull request's obligation-source reviews are targets. Every other
                   # link is evidence, regardless of its kind or the linked record's prose.
-                  targets = {(match[3], int(match[4])) for match in REVIEW_TARGET.finditer(markup)
+                  targets = {("pullrequestreview", int(match[3])) for match in REVIEW_TARGET.finditer(markup)
                              if match[1] == repo and int(match[2]) == number
-                             and (match[3], int(match[4])) in obligation_sources}
-                  if len(targets) != 1 or len(named) > 1:
+                             and ("pullrequestreview", int(match[3])) in obligation_sources}
+                  if len(targets) != 1:
                       continue
                   source = next(iter(targets))
+                  named = {match[1] for match in FINDING_ANSWER_PAIR.finditer(markup)
+                           if match[2] == repo and int(match[3]) == number
+                           and ("pullrequestreview", int(match[4])) == source}
+                  if len(named) > 1:
+                      continue
                   if named:
                       matches = [key for key, sources in obligations.items()
                                  if key[1] in named and source in sources]
