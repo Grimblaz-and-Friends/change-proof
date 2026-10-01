@@ -77,7 +77,7 @@ REVIEW_NOTICE_PATTERNS = (
 )
 LAB_REVIEWER = "github-actions[bot]"
 LAB_REVIEW_WORKFLOW = ".github/workflows/connected-review.yml"
-REVIEW_ATTEMPT = re.compile(r"<!--\s*connected-review-attempt:\s*([0-9]+)\s*-->\Z")
+CONNECTED_REVIEW_RUN = re.compile(r"<!-- connected-review-attempt:([1-9][0-9]*) -->")
 PATH_DEPARTURES_LEAD_IN = "**Path departures:**"
 SETEXT_UNDERLINE = re.compile(r"^ {0,3}(?:=+|-+)[ \t]*$")
 ATX_HEADING = re.compile(r"^ {0,3}#{1,6}(?:[ \t]+|$)")
@@ -1129,15 +1129,14 @@ def _review_receipt(
     if not isinstance(commit, str) or FULL_SHA.fullmatch(commit) is None:
         return None, "review has no full commit_id"
     body = str(item.get("body") or "")
-    match = REVIEW_ATTEMPT.search(body.rstrip())
+    trailing = next((line for line in reversed(body.splitlines()) if line.strip()), "")
+    match = CONNECTED_REVIEW_RUN.fullmatch(trailing)
     if match is None:
         return None, "review must end with a trailing connected-review-attempt marker naming a positive run id"
     try:
         run_id = int(match.group(1))
     except ValueError:
         return None, "review contains an invalid trailing connected-review-attempt run id"
-    if run_id <= 0:
-        return None, "review's trailing connected-review-attempt marker must name a positive run id"
     run_head, run_credit, error = _lab_review_run(transport, repo, run_id, cache)
     if error is not None:
         return None, error

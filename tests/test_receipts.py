@@ -218,6 +218,47 @@ def test_lab_receipt_requires_a_valid_trailing_run_marker(evidence_path, body):
 
 
 @pytest.mark.parametrize("evidence_path", EVIDENCE_PATHS)
+@pytest.mark.parametrize("marker_line", (
+    f"<!--connected-review-attempt:{RUN_ID} -->",
+    f"<!--  connected-review-attempt:{RUN_ID} -->",
+    f"<!--\tconnected-review-attempt:{RUN_ID} -->",
+    f"<!-- connected-review-attempt:{RUN_ID}-->",
+    f"<!-- connected-review-attempt:{RUN_ID}  -->",
+    f"<!-- connected-review-attempt:{RUN_ID}\t-->",
+    f"<!-- connected-review-attempt: {RUN_ID} -->",
+    f"<!-- connected-review-attempt:{RUN_ID}\n -->",
+    f"Quoted <!-- connected-review-attempt:{RUN_ID} -->",
+    f"<!-- connected-review-attempt:{RUN_ID} --> quoted",
+    f" <!-- connected-review-attempt:{RUN_ID} -->",
+    f"<!-- connected-review-attempt:{RUN_ID} --> ",
+    f"<!-- connected-review-attempt:{RUN_ID} -->\t",
+    "<!-- connected-review-attempt:0 -->",
+    f"<!-- connected-review-attempt:0{RUN_ID} -->",
+))
+def test_lab_receipt_requires_exact_marker_on_last_non_blank_line(evidence_path, marker_line):
+    transport, _ = receipt_scenario(evidence_path)
+    transport.responses[REVIEW_ENDPOINT][0]["body"] = f"Summary\n{marker_line}\n \t\n\n"
+
+    assert_receipt_rejected(transport, "connected-review-attempt")
+    assert not any(endpoint == RUN_ENDPOINT for endpoint, _ in transport.calls)
+
+
+@pytest.mark.parametrize("evidence_path", EVIDENCE_PATHS)
+@pytest.mark.parametrize("line_ending", ("\n", "\r\n"))
+def test_lab_receipt_allows_blank_lines_after_exact_marker(evidence_path, line_ending):
+    transport, _ = receipt_scenario(evidence_path)
+    transport.responses[REVIEW_ENDPOINT][0]["body"] = (
+        f"Summary{line_ending}<!-- connected-review-attempt:{RUN_ID} -->"
+        f"{line_ending}{line_ending} \t{line_ending}"
+    )
+
+    result, output = execute(transport)
+
+    assert result == 0, output
+    assert f"credited by review #{REVIEW_ID}; run #{RUN_ID}" in output
+
+
+@pytest.mark.parametrize("evidence_path", EVIDENCE_PATHS)
 @pytest.mark.parametrize("quoted_marker", (
     "<!-- connected-review-attempt:RUN_ID -->",
     "<!-- connected-review-attempt:2 -->",
@@ -280,7 +321,7 @@ def test_lab_receipt_requires_full_commits_even_when_all_records_agree(evidence_
 
 
 @pytest.mark.parametrize("evidence_path", EVIDENCE_PATHS)
-def test_lab_receipt_allows_whitespace_and_repeated_identical_markers(evidence_path):
+def test_lab_receipt_ignores_earlier_flexible_marker(evidence_path):
     transport, _ = receipt_scenario(evidence_path)
     transport.responses[REVIEW_ENDPOINT][0]["body"] = (
         f"Summary\n<!-- \tconnected-review-attempt: {RUN_ID} \n-->\n"
