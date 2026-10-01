@@ -1,1 +1,2 @@
 * text=auto eol=lf
+tests/fixtures/connected-review/v1-review-body-dispositions.json -text

@@ -665,14 +665,17 @@ def test_every_shared_negative_case_runs_through_the_wire_with_live_facts(
     "comment_name",
     ("tradecraft-733.comment.md", "tradecraft-733-no-bundle.comment.md"),
 )
-def test_exact_tradecraft_composer_comments_pass_against_recorded_github_facts(comment_name):
+def test_original_tradecraft_733_record_now_requires_body_answers(comment_name):
     transport, environ = recorded_scenario("world-tc733.trimmed.json", comment_name)
     output = io.StringIO()
 
     result = check.run(environ, transport=transport, output=output)
 
-    assert result == 0
+    assert result == 1
     rendered = output.getvalue()
+    assert "body finding cr-comment:v1:7d3d3fcdd8d9891aeabf8880" in rendered
+    # Original trimming omitted the review join; labeled overlays supply the positive replay.
+    assert "actionable comments declares 3, accounted 0" in rendered
     assert "evidence path: proof-v1" in rendered
     assert "floor source pull-request-comment #5804738722" in rendered
     assert "floor check #107431978288 ask-declaration" in rendered

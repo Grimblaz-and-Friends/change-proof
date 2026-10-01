@@ -1,0 +1,388 @@
+{
+  "schema_version": 1,
+  "provenance": {
+    "kind": "synthetic-derived",
+    "source": "https://github.com/Grimblaz-and-Friends/tradecraft/issues/809#issuecomment-5934093522",
+    "sections": [
+      "Identity and accounting",
+      "Answer contract"
+    ],
+    "rulings": [
+      "https://github.com/Grimblaz-and-Friends/change-proof/issues/38#issuecomment-5937322711",
+      "https://github.com/Grimblaz-and-Friends/change-proof/issues/38#issuecomment-5937338526",
+      "https://github.com/Grimblaz-and-Friends/change-proof/issues/38#issuecomment-5937356812"
+    ]
+  },
+  "cases": [
+    {
+      "name": "summary",
+      "reviewer": "coderabbitai[bot]",
+      "body": "Walkthrough summary",
+      "inline": [],
+      "answers": [],
+      "exit_code": 0
+    },
+    {
+      "name": "all-inline",
+      "reviewer": "coderabbitai[bot]",
+      "body": "**Actionable comments posted: 1**",
+      "inline": [
+        null
+      ],
+      "answers": [],
+      "exit_code": 0
+    },
+    {
+      "name": "outside-diff-unanswered",
+      "reviewer": "coderabbitai[bot]",
+      "body": "**Outside diff range comments (1)**\n<!-- cr-comment:v1:one -->",
+      "inline": [],
+      "answers": [],
+      "exit_code": 1
+    },
+    {
+      "name": "nitpick-declined",
+      "reviewer": "coderabbitai[bot]",
+      "body": "**Nitpick comments (1)**\n<!-- cr-comment:v1:one -->",
+      "inline": [],
+      "answers": [
+        {
+          "identity": "cr-comment:v1:one",
+          "disposition": "declined — unnecessary"
+        }
+      ],
+      "exit_code": 0
+    },
+    {
+      "name": "identified-fixed",
+      "reviewer": "coderabbitai[bot]",
+      "body": "<!-- cr-comment:v1:one -->",
+      "inline": [],
+      "answers": [
+        {
+          "identity": "cr-comment:v1:one",
+          "disposition": "fixed"
+        }
+      ],
+      "exit_code": 0
+    },
+    {
+      "name": "identified-not-answered-by-review-link",
+      "reviewer": "coderabbitai[bot]",
+      "body": "<!-- cr-comment:v1:one -->",
+      "inline": [],
+      "answers": [
+        {
+          "identity": null,
+          "disposition": "fixed"
+        }
+      ],
+      "exit_code": 1
+    },
+    {
+      "name": "identical-answered-inline",
+      "reviewer": "coderabbitai[bot]",
+      "body": "<!-- cr-comment:v1:one -->",
+      "inline": [
+        "cr-comment:v1:one"
+      ],
+      "answers": [],
+      "exit_code": 0
+    },
+    {
+      "name": "unidentified-whole-review",
+      "reviewer": "coderabbitai[bot]",
+      "body": "**Nitpick comments (1)**",
+      "inline": [],
+      "answers": [
+        {
+          "identity": null,
+          "disposition": "fixed — addressed"
+        }
+      ],
+      "exit_code": 0
+    },
+    {
+      "name": "mixed-whole-answer-insufficient",
+      "reviewer": "coderabbitai[bot]",
+      "body": "**Nitpick comments (2)**\n<!-- cr-comment:v1:one -->",
+      "inline": [],
+      "answers": [
+        {
+          "identity": null,
+          "disposition": "fixed — addressed"
+        }
+      ],
+      "exit_code": 1
+    },
+    {
+      "name": "mixed-separate-answers",
+      "reviewer": "coderabbitai[bot]",
+      "body": "**Nitpick comments (2)**\n<!-- cr-comment:v1:one -->",
+      "inline": [],
+      "answers": [
+        {
+          "identity": null,
+          "disposition": "fixed — addressed"
+        },
+        {
+          "identity": "cr-comment:v1:one",
+          "disposition": "fixed"
+        }
+      ],
+      "exit_code": 0
+    },
+    {
+      "name": "old-lab-all-inline",
+      "reviewer": "github-actions[bot]",
+      "body": "1 validated finding(s).",
+      "inline": [
+        null
+      ],
+      "answers": [],
+      "exit_code": 0
+    },
+    {
+      "name": "old-lab-body-unidentified",
+      "reviewer": "github-actions[bot]",
+      "body": "1 validated finding(s).",
+      "inline": [],
+      "answers": [],
+      "exit_code": 1
+    },
+    {
+      "name": "old-lab-whole-answer",
+      "reviewer": "github-actions[bot]",
+      "body": "1 validated finding(s).",
+      "inline": [],
+      "answers": [
+        {
+          "identity": null,
+          "disposition": "fixed — addressed"
+        }
+      ],
+      "exit_code": 0
+    },
+    {
+      "name": "identified-lab",
+      "reviewer": "github-actions[bot]",
+      "body": "1 validated finding(s).\n<!-- tradecraft-review-finding:v1:36672170816:1 -->",
+      "inline": [],
+      "answers": [
+        {
+          "identity": "tradecraft-review-finding:v1:36672170816:1",
+          "disposition": "declined — unnecessary"
+        }
+      ],
+      "exit_code": 0
+    },
+    {
+      "name": "lab-mixed",
+      "reviewer": "github-actions[bot]",
+      "body": "2 validated finding(s).\n<!-- tradecraft-review-finding:v1:36672170816:1 -->",
+      "inline": [
+        null
+      ],
+      "answers": [
+        {
+          "identity": "tradecraft-review-finding:v1:36672170816:1",
+          "disposition": "fixed"
+        }
+      ],
+      "exit_code": 0
+    },
+    {
+      "name": "duplicate-summary-identified",
+      "reviewer": "coderabbitai[bot]",
+      "body": "<details><summary>Duplicate comments (1)</summary>\n<!-- cr-comment:v1:one -->\n</details>",
+      "inline": [],
+      "answers": [
+        {
+          "identity": "cr-comment:v1:one",
+          "disposition": "fixed"
+        }
+      ],
+      "exit_code": 0
+    },
+    {
+      "name": "duplicate-summary-deficit",
+      "reviewer": "coderabbitai[bot]",
+      "body": "<details><summary>Duplicate comments (2)</summary>\n<!-- cr-comment:v1:one -->\n</details>",
+      "inline": [],
+      "answers": [
+        {
+          "identity": "cr-comment:v1:one",
+          "disposition": "fixed"
+        }
+      ],
+      "exit_code": 1
+    },
+    {
+      "name": "new-label-summary-identified",
+      "reviewer": "coderabbitai[bot]",
+      "body": "<details>\n<summary>Fresh category comments (1)</summary>\n<!-- cr-comment:v1:one -->\n</details>",
+      "inline": [],
+      "answers": [
+        {
+          "identity": "cr-comment:v1:one",
+          "disposition": "fixed"
+        }
+      ],
+      "exit_code": 0
+    },
+    {
+      "name": "new-label-summary-deficit",
+      "reviewer": "coderabbitai[bot]",
+      "body": "<details><summary>\nFresh category comments (2)\n</summary>\n<!-- cr-comment:v1:one -->\n</details>",
+      "inline": [],
+      "answers": [
+        {
+          "identity": "cr-comment:v1:one",
+          "disposition": "fixed"
+        }
+      ],
+      "exit_code": 1
+    },
+    {
+      "name": "security-findings-summary-control",
+      "reviewer": "coderabbitai[bot]",
+      "body": "<details><summary>Security Findings</summary>Unidentified prose.</details>",
+      "inline": [],
+      "answers": [],
+      "exit_code": 0
+    },
+    {
+      "name": "security-findings-bold-control",
+      "reviewer": "coderabbitai[bot]",
+      "body": "**Security Findings**\nUnidentified prose.",
+      "inline": [],
+      "answers": [],
+      "exit_code": 0
+    },
+    {
+      "name": "findings-in-comments-title-control",
+      "reviewer": "coderabbitai[bot]",
+      "body": "<details><summary>Security Findings comments (1)</summary>Unidentified prose.</details>",
+      "inline": [],
+      "answers": [],
+      "exit_code": 0
+    },
+    {
+      "name": "partial-bold-line-control",
+      "reviewer": "coderabbitai[bot]",
+      "body": "Intro **Other comments (1)**\nUnidentified prose.",
+      "inline": [],
+      "answers": [],
+      "exit_code": 0
+    },
+    {
+      "name": "bold-line-suffix-control",
+      "reviewer": "coderabbitai[bot]",
+      "body": "**Other comments (1)** trailing prose\nUnidentified prose.",
+      "inline": [],
+      "answers": [],
+      "exit_code": 0
+    },
+    {
+      "name": "markdown-comments-heading-control",
+      "reviewer": "coderabbitai[bot]",
+      "body": "## Other comments (1)\nUnidentified prose.",
+      "inline": [],
+      "answers": [],
+      "exit_code": 0
+    },
+    {
+      "name": "uncounted-comments-title-control",
+      "reviewer": "coderabbitai[bot]",
+      "body": "**Nitpick comments**\n<details><summary>An entry</summary>Unknown</details>",
+      "inline": [],
+      "answers": [],
+      "exit_code": 0
+    },
+    {
+      "name": "nested-blockquote-bold-deficit",
+      "reviewer": "coderabbitai[bot]",
+      "body": "> > __⚠️ Outside diff range comments (2)__\n<!-- cr-comment:v1:one -->",
+      "inline": [],
+      "answers": [
+        {
+          "identity": "cr-comment:v1:one",
+          "disposition": "fixed"
+        }
+      ],
+      "exit_code": 1
+    },
+    {
+      "name": "incidental-actionable-text-control",
+      "reviewer": "coderabbitai[bot]",
+      "body": "Summary: Actionable comments posted: 1",
+      "inline": [],
+      "answers": [],
+      "exit_code": 0
+    },
+    {
+      "name": "code-span-paragraph-break-marker",
+      "reviewer": "coderabbitai[bot]",
+      "body": "`\n\n<!-- cr-comment:v1:one -->\n`",
+      "inline": [],
+      "answers": [],
+      "exit_code": 1
+    },
+    {
+      "name": "code-span-quoted-paragraph-break-marker",
+      "reviewer": "coderabbitai[bot]",
+      "body": "> `\n> \n> <!-- cr-comment:v1:one -->\n> `",
+      "inline": [],
+      "answers": [],
+      "exit_code": 1
+    },
+    {
+      "name": "unmatched-backtick-marker",
+      "reviewer": "coderabbitai[bot]",
+      "body": "`\n<!-- cr-comment:v1:one -->",
+      "inline": [],
+      "answers": [],
+      "exit_code": 1
+    },
+    {
+      "name": "code-span-paragraph-break-declaration",
+      "reviewer": "coderabbitai[bot]",
+      "body": "``\n\n**Other comments (1)**\n``",
+      "inline": [],
+      "answers": [],
+      "exit_code": 1
+    },
+    {
+      "name": "unmatched-backtick-declaration",
+      "reviewer": "coderabbitai[bot]",
+      "body": "``\n**Other comments (1)**",
+      "inline": [],
+      "answers": [],
+      "exit_code": 1
+    },
+    {
+      "name": "real-multiline-code-span-control",
+      "reviewer": "coderabbitai[bot]",
+      "body": "``\n**Other comments (1)**\n<!-- cr-comment:v1:one -->\n``",
+      "inline": [],
+      "answers": [],
+      "exit_code": 0
+    },
+    {
+      "name": "summary-title-suffix-control",
+      "reviewer": "coderabbitai[bot]",
+      "body": "<details><summary>Other comments (1) trailing prose</summary>Unknown</details>",
+      "inline": [],
+      "answers": [],
+      "exit_code": 0
+    },
+    {
+      "name": "multiple-bold-spans-control",
+      "reviewer": "coderabbitai[bot]",
+      "body": "**⚠️** **Other comments (1)**\nUnknown",
+      "inline": [],
+      "answers": [],
+      "exit_code": 0
+    }
+  ]
+}
