@@ -773,7 +773,7 @@ SHARED_BODY_CASES = json.loads(
 
 @pytest.mark.parametrize("case", SHARED_BODY_CASES, ids=lambda case: case["name"])
 def test_shared_review_body_dispositions(case):
-    """Replay every case, labelling any superseded expectation explicitly."""
+    """Replay every case in the pinned shared fixture file without overrides."""
     config = check.load_work_config({
         "schema_version": 1, "product_repositories": [],
         "connected_reviewers": case["connected_reviewers"],
@@ -781,17 +781,6 @@ def test_shared_review_body_dispositions(case):
     })
     expected = case["expected"]
     context = case["name"]
-    if case["name"] == "bundled-body-answer":
-        # Prose mentioning another identity is evidence, not a grouped answer.
-        # The sole pinned expectation override follows the Steward's ruling:
-        # https://github.com/Grimblaz-and-Friends/change-proof/issues/38#issuecomment-5938424447
-        ruling = "https://github.com/Grimblaz-and-Friends/change-proof/issues/38#issuecomment-5938424447"
-        override = {"missing_findings": [], "missing_reviews": [], "unidentified_reviews": []}
-        assert {key: expected[key] for key in override} != override, (
-            f"{context}: remove the now-unnecessary expectation override authorized by {ruling}"
-        )
-        expected = override
-        context += f"; labelled Steward expectation override: {ruling}"
     failures, verified = check._check_body_findings(
         case["repository"], case["pull_request"], config,
         case["conversation_comments"], case["reviews"], case["inline_comments"],
