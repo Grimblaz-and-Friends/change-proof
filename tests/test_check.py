@@ -188,6 +188,10 @@ def scenario(
         f"{pull}/reviews?per_page=100": list(reviews or []),
         f"{pull}/comments?per_page=100": list(review_comments or []),
     }
+    for revision in (COMMIT_ONE, COMMIT_TWO):
+        responses[compare_endpoint(revision, base_tip)] = comparison(
+            revision, [], status="diverged", merge_base=BASE
+        )
     head_missing = set(head_missing)
     base_missing = set(base_missing)
     if not base_policy:
@@ -2723,6 +2727,667 @@ def test_document_ancestor_compare_failure_is_a_named_use_failure():
     assert "history from" in output
     assert "comparison does not exist" in output
     assert "grant" not in output
+
+
+VERSION_DECLARATION = {"path": "package.json", "field": "version", "increment": "patch"}
+
+
+def merge_side(transport, files, *, first=ANCESTOR, other=BASE_TIP, base=BASE):
+    transport.responses[compare_endpoint(first, other)] = comparison(
+        first, [], status="diverged", merge_base=base
+    )
+    transport.responses[compare_endpoint(base, other)] = {
+        **comparison(base, [], ahead_by=250), "files": copy.deepcopy(files),
+    }
+
+
+def carried_case(evidence, *, files=None, paths=("src/main.ts",), kind="base", version=None):
+    if evidence == "proof-v1":
+        transport, document = proof_scenario()
+        source = {
+            "kind": "issue-comment", "repository": REPO, "id": 32,
+            "url": f"https://github.com/{REPO}/issues/12#issuecomment-32",
+            "author": OWNER, "timestamp": "2026-09-23T12:08:00Z", "revision": ANCESTOR,
+        }
+        transport.responses[f"repos/{REPO}/issues/12/comments?per_page=100"].append(
+            use_note(ANCESTOR, id=32)
+        )
+    else:
+        transport = complete_scenario(comments=[use_note(ANCESTOR)])
+        document = None
+    pull = f"repos/{REPO}/pulls/17"
+    transport.responses[f"{pull}/files?per_page=100"] = [{"filename": path} for path in paths]
+    transport.responses[pull]["changed_files"] = len(paths)
+    files = files if files is not None else [{"filename": "src/other.ts", "status": "modified"}]
+    parents = [ANCESTOR, BASE_TIP] if kind == "merge" else [ANCESTOR]
+    transport.responses[commit_endpoint(COMMIT_ONE)] = {
+        "sha": COMMIT_ONE, "parents": [{"sha": parent} for parent in parents], "files": files,
+    }
+    transport.responses[compare_endpoint(ANCESTOR)] = comparison(ANCESTOR, [COMMIT_ONE])
+    transport.responses[compare_endpoint(COMMIT_ONE, BASE_TIP)] = comparison(
+        COMMIT_ONE, [], status="ahead" if kind == "base" else "diverged",
+        merge_base=COMMIT_ONE if kind == "base" else BASE,
+        ahead_by=250,
+    )
+    if kind == "merge":
+        merge_side(transport, files)
+    if version is not None:
+        endpoint = f"repos/{REPO}/contents/.github/change-proof.json?ref={BASE_TIP}"
+        rules = json.loads(base64.b64decode(transport.responses[endpoint]["content"]))
+        rules["version"] = version
+        transport.responses[endpoint] = contents(rules)
+        if document is not None:
+            document["policy"]["use_rules"]["sha256"] = hashlib.sha256(serialized_policy(rules)).hexdigest()
+    if document is not None:
+        raw_paths = list(dict.fromkeys(
+            item[name] for item in files for name in ("filename", "previous_filename") if name in item
+        ))
+        document["use"] = {
+            "required": True, "classification": "required", "evidence_head": ANCESTOR,
+            "applicability": "ancestor", "source": source,
+            "intervening_commits": [{"sha": COMMIT_ONE, "paths": raw_paths}],
+            "reason": "earlier-head use remains applicable",
+        }
+        replace_proof_document(transport, document)
+    return transport, document
+
+
+@pytest.fixture(params=("legacy-markers", "proof-v1"))
+def evidence_path(request):
+    return request.param
+
+
+@pytest.mark.parametrize("kind", ("base", "merge", "owned"))
+@pytest.mark.parametrize("path", ("src/other.ts", "src/main.ts", "docs/guide.md"))
+def test_carried_use_classifies_each_commit_by_base_membership_or_merge(evidence_path, kind, path):
+    transport, _ = carried_case(evidence_path, files=[{"filename": path}], kind=kind)
+    result, output = execute(transport)
+    allowed = path == "docs/guide.md" or (kind != "owned" and path == "src/other.ts")
+    assert result == (0 if allowed else 1)
+    assert f"evidence path: {evidence_path}" in output
+    if not allowed:
+        assert f"{COMMIT_ONE} changes a use-bought path {path}" in output
+        assert ANCESTOR in output
+    if kind == "merge" or path == "docs/guide.md":
+        assert (compare_endpoint(COMMIT_ONE, BASE_TIP), False) not in transport.calls
+
+
+def test_base_tip_equality_proves_membership_without_another_compare(evidence_path):
+    transport, document = carried_case(evidence_path)
+    transport.responses[f"repos/{REPO}/git/ref/heads/{BASE_REF}"]["object"]["sha"] = COMMIT_ONE
+    for path in (".github/change-proof.json", ".tradecraft/work.json"):
+        transport.responses[f"repos/{REPO}/contents/{path}?ref={COMMIT_ONE}"] = transport.responses[
+            f"repos/{REPO}/contents/{path}?ref={BASE_TIP}"
+        ]
+    result, output = execute(transport)
+    assert result == 0, output
+    assert (compare_endpoint(COMMIT_ONE, COMMIT_ONE), False) not in transport.calls
+
+
+@pytest.mark.parametrize("response", (
+    check.ProofError("reachability unreadable"), [], {},
+    {"status": "ahead", "merge_base_commit": {"sha": BASE}},
+    {"status": "ahead", "merge_base_commit": {"sha": "short"}},
+    {"status": "ahead"}, {"status": [], "merge_base_commit": {"sha": COMMIT_ONE}},
+    {"status": "behind", "merge_base_commit": {"sha": COMMIT_ONE}},
+))
+def test_unproved_base_membership_cannot_relax_a_use_bought_commit(evidence_path, response):
+    transport, _ = carried_case(evidence_path)
+    transport.responses[compare_endpoint(COMMIT_ONE, BASE_TIP)] = response
+    result, output = execute(transport)
+    assert result == 1
+    assert f"{COMMIT_ONE} changes a use-bought path src/other.ts" in output
+
+
+@pytest.mark.parametrize("parents", (None, [], {}, [{"sha": "short"}], [None],
+    [{"sha": ANCESTOR}, {"sha": ANCESTOR}], [{"sha": ANCESTOR}, {"sha": "short"}]))
+def test_missing_or_malformed_parents_cannot_prove_merge_relaxation(evidence_path, parents):
+    transport, _ = carried_case(evidence_path, kind="owned")
+    transport.responses[commit_endpoint(COMMIT_ONE)]["parents"] = parents
+    result, output = execute(transport)
+    assert result == 1
+    assert "src/other.ts" in output
+
+
+def test_change_owned_edit_stales_use_even_when_a_later_commit_reverts_it(evidence_path):
+    transport, document = carried_case(evidence_path, kind="owned")
+    transport.responses[compare_endpoint(ANCESTOR)] = comparison(ANCESTOR, [COMMIT_ONE, COMMIT_TWO])
+    transport.responses[commit_endpoint(COMMIT_TWO)] = {
+        "parents": [{"sha": COMMIT_ONE}], "files": [{"filename": "src/other.ts"}],
+    }
+    if document is not None:
+        document["use"]["intervening_commits"].append({"sha": COMMIT_TWO, "paths": ["src/other.ts"]})
+        replace_proof_document(transport, document)
+    result, output = execute(transport)
+    assert result == 1
+    assert f"{COMMIT_ONE} changes a use-bought path src/other.ts" in output
+    assert (commit_endpoint(COMMIT_TWO), True) not in transport.calls
+
+
+@pytest.mark.parametrize("overlapping", (True, False))
+def test_merge_overlap_reads_previous_filename_and_later_commit_pages(evidence_path, overlapping):
+    old_path = "src/main.ts" if overlapping else "src/Main.ts"
+    files = [{"filename": "docs/new.md", "previous_filename": old_path, "status": "renamed"}]
+    transport, _ = carried_case(evidence_path, files=files, paths=("src\\main.ts",), kind="merge")
+    record = transport.responses[commit_endpoint(COMMIT_ONE)]
+    transport.responses[commit_endpoint(COMMIT_ONE)] = [
+        {**record, "files": []}, {"files": files},
+    ]
+    result, output = execute(transport)
+    assert result == (1 if overlapping else 0), output
+    assert (commit_endpoint(COMMIT_ONE), True) in transport.calls
+    if overlapping:
+        assert f"changes a use-bought path {old_path}" in output
+
+
+def test_relaxed_history_still_requires_changed_false_without_history_reads(evidence_path):
+    transport, _ = carried_case(evidence_path)
+    issue = 12 if evidence_path == "proof-v1" else 17
+    records = transport.responses[f"repos/{REPO}/issues/{issue}/comments?per_page=100"]
+    records[-1] = use_note(ANCESTOR, changed=True, id=32)
+    result, output = execute(transport)
+    assert result == 1
+    assert (compare_endpoint(ANCESTOR), False) not in transport.calls
+
+
+@pytest.mark.parametrize("version", (None, "package.json", [], {},
+    {"path": "package.json", "field": "version"},
+    {**VERSION_DECLARATION, "extra": True},
+    *({**VERSION_DECLARATION, "path": value} for value in (
+        None, 1, [], "", " ", "/package.json", "C:package.json", "C:/package.json",
+        "dir\\package.json", "a//b", "a/./b", "a/../b", "../package.json",
+        "a/", "a\x00b", "a\nb", "a\x7fb",
+    )),
+    *({**VERSION_DECLARATION, "field": value} for value in (None, 1, [], "", " \t")),
+    *({**VERSION_DECLARATION, "increment": value} for value in (None, 1, [], "", "PATCH", "build")),
+))
+def test_malformed_trusted_version_declaration_fails_policy(version):
+    policy = {"schema_version": 1, "rules": [{"include": ["src/**"], "exclude": []}], "version": version}
+    with pytest.raises(check.ProofError, match="version"):
+        check.load_use_rules(policy)
+    result, output = execute(complete_scenario(base_rules=policy))
+    assert result == 1
+    assert "change-proof: ERROR" in output and "version" in output
+
+
+@pytest.mark.parametrize("increment", ("major", "minor", "patch"))
+def test_optional_version_policy_preserves_schema_and_rule_matching(increment):
+    policy = {"schema_version": 1, "rules": [{"include": ["src/**"], "exclude": []}], "unknown": True}
+    assert check.load_use_rules(policy) is policy
+    assert check.use_required(["src/main.ts"], policy)
+    policy["version"] = {**VERSION_DECLARATION, "increment": increment}
+    assert check.load_use_rules(policy) is policy
+    assert check.use_required(["src/main.ts"], policy)
+    assert not check.use_required(["docs/guide.md"], policy)
+
+
+def install_version_contents(transport, before, after):
+    transport.responses[f"repos/{REPO}/contents/package.json?ref={ANCESTOR}"] = contents(before)
+    transport.responses[f"repos/{REPO}/contents/package.json?ref={COMMIT_ONE}"] = contents(after)
+
+
+@pytest.mark.parametrize("kind", ("base", "merge", "owned"))
+@pytest.mark.parametrize("before,after,qualifies", (
+    ({"version": "1", "name": "app"}, {"version": "2", "name": "app"}, True),
+    ({"name": "app"}, {"name": "app", "version": "2"}, True),
+    ({"version": "1", "name": "app"}, {"name": "app"}, True),
+    ({"version": "1", "name": "app"}, {"version": "2", "name": "other"}, False),
+    ({"version": "1", "nested": {"version": "1"}}, {"version": "2", "nested": {"version": "2"}}, False),
+    ({"version": "1", "items": [1, 2]}, {"version": "2", "items": [2, 1]}, False),
+    ({"version": "1", "nested": [True]}, {"version": "2", "nested": [1]}, False),
+    ({"version": "1", "nested": {"v": 1}}, {"version": "2", "nested": {"v": True}}, False),
+    ({"version": "1", "value": 1}, {"value": 1.0, "version": "2"}, True),
+))
+def test_version_exemption_removes_only_the_declared_top_level_key(evidence_path, kind, before, after, qualifies):
+    transport, _ = carried_case(evidence_path, kind=kind, paths=("package.json",),
+        files=[{"filename": "package.json", "status": "modified"}], version=VERSION_DECLARATION)
+    install_version_contents(transport, before, after)
+    result, output = execute(transport)
+    assert result == (0 if qualifies and kind != "owned" else 1), output
+    extra_reads = [endpoint for endpoint, _ in transport.calls if "/contents/package.json?ref=" in endpoint]
+    if kind == "owned":
+        assert extra_reads == []
+    else:
+        assert extra_reads == [f"repos/{REPO}/contents/package.json?ref={COMMIT_ONE}",
+            f"repos/{REPO}/contents/package.json?ref={ANCESTOR}"]
+
+
+def test_version_only_commit_does_not_exempt_another_overlapping_file(evidence_path):
+    transport, _ = carried_case(evidence_path, paths=("package.json", "src/main.ts"),
+        files=[{"filename": "package.json", "status": "modified"}, {"filename": "src/main.ts"}],
+        version=VERSION_DECLARATION)
+    install_version_contents(transport, {"version": "1"}, {"version": "2"})
+    result, output = execute(transport)
+    assert result == 1
+    assert f"{COMMIT_ONE} changes a use-bought path src/main.ts" in output
+
+
+@pytest.mark.parametrize("head_version", (VERSION_DECLARATION,
+    {**VERSION_DECLARATION, "path": "head-only.json"}, {"malformed": True}))
+@pytest.mark.parametrize("trusted_version", (True, False))
+def test_head_version_declaration_has_no_authority(evidence_path, head_version, trusted_version):
+    transport, _ = carried_case(evidence_path, paths=("package.json",),
+        files=[{"filename": "package.json", "status": "modified"}],
+        version=VERSION_DECLARATION if trusted_version else None)
+    endpoint = f"repos/{REPO}/contents/.github/change-proof.json?ref={HEAD}"
+    policy = json.loads(base64.b64decode(transport.responses[endpoint]["content"]))
+    policy["version"] = head_version
+    transport.responses[endpoint] = contents(policy)
+    install_version_contents(transport, {"version": "1"}, {"version": "2"})
+    result, output = execute(transport)
+    assert result == (0 if trusted_version else 1), output
+    assert not any("/contents/head-only.json" in endpoint for endpoint, _ in transport.calls)
+    if not trusted_version:
+        assert not any("/contents/package.json" in endpoint for endpoint, _ in transport.calls)
+
+
+def test_bootstrap_policy_failure_grants_no_head_version_exemption(evidence_path):
+    transport, _ = carried_case(evidence_path, paths=("package.json",),
+        files=[{"filename": "package.json", "status": "modified"}], version=VERSION_DECLARATION)
+    endpoint = f"repos/{REPO}/contents/.github/change-proof.json"
+    transport.responses[f"{endpoint}?ref={HEAD}"] = transport.responses[f"{endpoint}?ref={BASE_TIP}"]
+    transport.responses[f"{endpoint}?ref={BASE_TIP}"] = check.GitHubNotFound("no trusted policy")
+    result, output = execute(transport)
+    assert result == 1
+    assert "trusted policy on the pull request base branch tip" in output
+    assert not any("/contents/package.json" in endpoint for endpoint, _ in transport.calls)
+
+
+@pytest.mark.parametrize("file", (
+    {"filename": "package.json", "status": "added"},
+    {"filename": "package.json", "status": "removed"},
+    {"filename": "package.json"},
+    {"filename": "package.json", "previous_filename": "old.json", "status": "renamed"},
+    {"filename": "package.json", "status": "renamed"},
+    {"filename": "package.json", "previous_filename": "old.json", "status": "modified"},
+    {"filename": "other.json", "previous_filename": "package.json", "status": "renamed"},
+))
+def test_missing_deleted_or_renamed_version_file_cannot_be_exempted(evidence_path, file):
+    transport, _ = carried_case(evidence_path, paths=("package.json",), files=[file], version=VERSION_DECLARATION)
+    install_version_contents(transport, {"version": "1"}, {"version": "2"})
+    result, output = execute(transport)
+    assert result == 1
+    assert "use-bought path package.json" in output
+    assert not any("/contents/package.json" in endpoint for endpoint, _ in transport.calls)
+
+
+@pytest.mark.parametrize("parents", (None, [], [{"sha": "short"}]))
+def test_version_exemption_requires_a_valid_first_parent(evidence_path, parents):
+    transport, _ = carried_case(evidence_path, paths=("package.json",),
+        files=[{"filename": "package.json", "status": "modified"}], version=VERSION_DECLARATION)
+    transport.responses[commit_endpoint(COMMIT_ONE)]["parents"] = parents
+    result, output = execute(transport)
+    assert result == 1
+    assert "use-bought path package.json" in output
+    assert not any("/contents/package.json" in endpoint for endpoint, _ in transport.calls)
+
+
+def test_duplicate_version_file_records_cannot_prove_an_ordinary_modification(evidence_path):
+    file = {"filename": "package.json", "status": "modified"}
+    transport, _ = carried_case(evidence_path, paths=("package.json",), files=[file, file],
+        version=VERSION_DECLARATION)
+    install_version_contents(transport, {"version": "1"}, {"version": "2"})
+    result, output = execute(transport)
+    assert result == 1
+    assert "use-bought path package.json" in output
+    assert not any("/contents/package.json" in endpoint for endpoint, _ in transport.calls)
+
+
+def raw_contents(value):
+    return {"encoding": "base64", "content": base64.b64encode(value).decode()}
+
+
+@pytest.mark.parametrize("response", (
+    check.GitHubNotFound("missing version file"), check.ProofError("contents unreadable"),
+    {"encoding": "utf8", "content": "{}"}, {"encoding": "base64", "content": "%%%"},
+    contents([]), contents(None), contents("text"), raw_contents(b"not JSON"), raw_contents(b"\xff"),
+    raw_contents(b'{"version":"2","name":1,"name":2}'),
+    raw_contents(b'{"version":"2","nested":{"v":1,"v":2}}'),
+    raw_contents(b'{"version":"1","version":"2"}'),
+    raw_contents(b'{"version":"2","v":NaN}'), raw_contents(b'{"version":"2","v":Infinity}'),
+    raw_contents(b'{"version":NaN}'), raw_contents(b'{"version":-Infinity}'),
+    raw_contents(b'{"version":1e9999999999999999999999999999}'),
+))
+@pytest.mark.parametrize("revision", (ANCESTOR, COMMIT_ONE))
+def test_unreadable_or_ambiguous_version_contents_cannot_grant_exemption(evidence_path, response, revision):
+    transport, _ = carried_case(evidence_path, paths=("package.json",),
+        files=[{"filename": "package.json", "status": "modified"}], version=VERSION_DECLARATION)
+    install_version_contents(transport, {"version": "1"}, {"version": "2"})
+    transport.responses[f"repos/{REPO}/contents/package.json?ref={revision}"] = response
+    result, output = execute(transport)
+    assert result == 1
+    assert f"{COMMIT_ONE} changes a use-bought path package.json" in output
+
+
+def test_version_reads_use_first_parent_and_ignore_response_urls(evidence_path):
+    transport, _ = carried_case(evidence_path, kind="merge", paths=("package.json",),
+        files=[{"filename": "package.json", "status": "modified"}], version=VERSION_DECLARATION)
+    install_version_contents(transport, {"version": "1", "name": "app"}, {"version": "2", "name": "app"})
+    current = transport.responses[f"repos/{REPO}/contents/package.json?ref={COMMIT_ONE}"]
+    current.update({"download_url": "https://attacker.example/file", "url": "https://attacker.example/api"})
+    current["content"] = "\n".join(current["content"][i:i+16] for i in range(0, len(current["content"]), 16))
+    transport.responses[f"repos/{REPO}/contents/package.json?ref={BASE_TIP}"] = contents({"name": "other"})
+    result, output = execute(transport)
+    assert result == 0, output
+    assert not any("attacker.example" in endpoint or endpoint == f"repos/{REPO}/contents/package.json?ref={BASE_TIP}"
+        for endpoint, _ in transport.calls)
+
+
+def test_version_path_outside_overlap_needs_no_contents_reads(evidence_path):
+    transport, _ = carried_case(evidence_path,
+        files=[{"filename": "package.json", "status": "modified"}], version=VERSION_DECLARATION)
+    result, output = execute(transport)
+    assert result == 0, output
+    assert not any("/contents/package.json" in endpoint for endpoint, _ in transport.calls)
+
+
+def test_declared_path_is_encoded_and_needs_no_json_suffix(evidence_path):
+    path = "meta/release #1"
+    declaration = {"path": path, "field": "release.version", "increment": "minor"}
+    transport, _ = carried_case(evidence_path, paths=("src/main.ts", path),
+        files=[{"filename": path, "status": "modified"}], version=declaration)
+    policy_endpoint = f"repos/{REPO}/contents/.github/change-proof.json?ref={BASE_TIP}"
+    policy = json.loads(base64.b64decode(transport.responses[policy_endpoint]["content"]))
+    policy["rules"][0]["include"].append(path)
+    transport.responses[policy_endpoint] = contents(policy)
+    for revision, value in ((ANCESTOR, "1"), (COMMIT_ONE, "2")):
+        transport.responses[f"repos/{REPO}/contents/meta/release%20%231?ref={revision}"] = contents(
+            {"release.version": value, "other": {"version": "same"}}
+        )
+    result, output = execute(transport)
+    assert result == 0, output
+    assert (f"repos/{REPO}/contents/meta/release%20%231?ref={ANCESTOR}", False) in transport.calls
+
+
+@pytest.mark.parametrize("mutation", ("omit-path", "classification"))
+def test_relaxed_proof_keeps_the_original_intervening_record_contract(mutation):
+    transport, document = carried_case("proof-v1", paths=("package.json",),
+        files=[{"filename": "package.json", "status": "modified"}], version=VERSION_DECLARATION)
+    install_version_contents(transport, {"version": "1"}, {"version": "2"})
+    result, output = execute(transport)
+    assert result == 0, output
+    assert document["use"]["intervening_commits"] == [{"sha": COMMIT_ONE, "paths": ["package.json"]}]
+    if mutation == "omit-path":
+        document["use"]["intervening_commits"][0]["paths"] = []
+    else:
+        document["use"]["intervening_commits"][0]["classification"] = "base"
+    replace_proof_document(transport, document)
+    result, output = execute(transport)
+    assert result == 1
+
+
+def test_empty_commit_page_list_cannot_carry_use(evidence_path):
+    transport, _ = carried_case(evidence_path)
+    transport.responses[commit_endpoint(COMMIT_ONE)] = []
+    result, output = execute(transport)
+    assert result == 1
+    assert "omitted files" in output
+
+
+@pytest.mark.parametrize("paths", (("src/main.ts",), ("src/other.ts",)))
+@pytest.mark.parametrize("on_base", (False, True))
+def test_merge_owned_resolution_refuses_even_when_restored_out_of_diff(evidence_path, paths, on_base):
+    files = [{"filename": "src/main.ts"}, {"filename": "src/imported.ts"}]
+    transport, _ = carried_case(evidence_path, kind="merge", paths=paths, files=files)
+    merge_side(transport, [{"filename": "src/imported.ts"}])
+    if on_base:
+        transport.responses[compare_endpoint(COMMIT_ONE, BASE_TIP)] = comparison(COMMIT_ONE, [])
+    result, output = execute(transport)
+    assert result == 1
+    assert f"{COMMIT_ONE} changes a use-bought path src/main.ts" in output
+    assert "use-bought paths src/main.ts, src/imported.ts" not in output
+    assert (compare_endpoint(COMMIT_ONE, BASE_TIP), False) not in transport.calls
+
+
+@pytest.mark.parametrize("path", ("src/other.ts", "package.json"))
+@pytest.mark.parametrize("overlapping", (False, True))
+def test_merge_from_ancestor_of_use_head_cannot_hide_owned_edits(evidence_path, path, overlapping):
+    transport, _ = carried_case(evidence_path, kind="merge",
+        paths=("src/main.ts", path) if overlapping else ("src/main.ts",),
+        files=[{"filename": path, "status": "modified"}], version=VERSION_DECLARATION)
+    transport.responses[commit_endpoint(COMMIT_ONE)]["parents"] = [
+        {"sha": ANCESTOR}, {"sha": OLDER_ANCESTOR},
+    ]
+    transport.responses[compare_endpoint(OLDER_ANCESTOR, BASE_TIP)] = comparison(OLDER_ANCESTOR, [])
+    transport.responses[compare_endpoint(ANCESTOR, OLDER_ANCESTOR)] = comparison(
+        ANCESTOR, [], status="behind", merge_base=OLDER_ANCESTOR
+    )
+    result, output = execute(transport)
+    assert result == 1
+    assert f"{COMMIT_ONE} changes a use-bought path {path}" in output
+    assert not any("/contents/package.json" in endpoint for endpoint, _ in transport.calls)
+    assert (compare_endpoint(OLDER_ANCESTOR, OLDER_ANCESTOR), False) not in transport.calls
+
+
+def test_unrelated_merge_parent_grants_no_overlap_relaxation(evidence_path):
+    transport, _ = carried_case(evidence_path, kind="merge")
+    transport.responses[commit_endpoint(COMMIT_ONE)]["parents"][1]["sha"] = COMMIT_TWO
+    merge_side(transport, [{"filename": "src/other.ts"}], other=COMMIT_TWO)
+    # scenario supplies a valid negative COMMIT_TWO...BASE_TIP comparison.
+    result, output = execute(transport)
+    assert result == 1
+    assert "use-bought path src/other.ts" in output
+    assert (compare_endpoint(ANCESTOR, COMMIT_TWO), False) not in transport.calls
+
+
+def test_side_edit_reverted_before_parent_tip_supplies_no_provenance(evidence_path):
+    transport, _ = carried_case(evidence_path, kind="merge")
+    side = transport.responses[compare_endpoint(BASE, BASE_TIP)]
+    side["files"] = []
+    side["commits"] = [{"sha": COMMIT_TWO}]
+    transport.responses[commit_endpoint(COMMIT_TWO)] = {"files": [{"filename": "src/other.ts"}]}
+    result, output = execute(transport)
+    assert result == 1
+    assert "use-bought path src/other.ts" in output
+    assert (commit_endpoint(COMMIT_TWO), True) not in transport.calls
+
+
+@pytest.mark.parametrize("allowed", (False, True))
+def test_multi_parent_merge_requires_provenance_for_each_relaxed_path(evidence_path, allowed):
+    other = "5" * 40
+    side_base = "6" * 40
+    transport, _ = carried_case(evidence_path, kind="merge", files=[{"filename": "src/other.ts"}])
+    transport.responses[commit_endpoint(COMMIT_ONE)]["parents"].append({"sha": other})
+    transport.responses[compare_endpoint(other, BASE_TIP)] = comparison(other, [])
+    merge_side(transport, [{"filename": "src/unrelated.ts"}])
+    merge_side(transport, [{"filename": "src/other.ts" if allowed else "src/elsewhere.ts"}],
+        other=other, base=side_base)
+    if allowed:
+        transport.responses[compare_endpoint(ANCESTOR, BASE_TIP)] = check.ProofError("first side unreadable")
+    result, output = execute(transport)
+    assert result == (0 if allowed else 1), output
+    if not allowed:
+        assert "use-bought path src/other.ts" in output
+
+
+def test_affirmed_net_diff_residual_remains_net_diff_overlap(evidence_path):
+    transport, _ = carried_case(evidence_path, kind="merge", files=[{"filename": "src/other.ts"}])
+    transport.responses[compare_endpoint(BASE, ANCESTOR)] = {
+        **comparison(BASE, []), "files": [{"filename": "src/other.ts"}],
+    }
+    # Both sides changed this path, but the merge restored base-tip content and
+    # the current PR diff omits it. The affirmed rule keeps that net overlap.
+    result, output = execute(transport)
+    assert result == 0, output
+    assert "use-buying paths do not overlap" in output
+    assert (compare_endpoint(BASE, ANCESTOR), False) not in transport.calls
+
+
+@pytest.mark.parametrize("endpoint,response", (
+    ("parents", check.ProofError("parents comparison unavailable")),
+    ("parents", []), ("parents", {}),
+    ("parents", {"status": "ahead", "merge_base_commit": {"sha": "short"}}),
+    ("parents", {"status": "unknown", "merge_base_commit": {"sha": BASE}}),
+    ("parents", {"status": "ahead", "merge_base_commit": {"sha": None}}),
+    ("side", check.ProofError("side comparison unavailable")),
+    ("side", []), ("side", {}),
+    ("side", {"status": "behind", "merge_base_commit": {"sha": BASE}, "files": [{"filename": "src/other.ts"}]}),
+    ("side", {"status": "ahead", "merge_base_commit": {"sha": ANCESTOR}, "files": [{"filename": "src/other.ts"}]}),
+    ("side", {"status": "ahead", "merge_base_commit": {"sha": BASE}}),
+    ("side", {"status": "ahead", "merge_base_commit": {"sha": BASE}, "files": {}}),
+    ("side", {"status": "ahead", "merge_base_commit": {"sha": BASE}, "files": [None, {}, {"filename": 12}]}),
+    ("side", {"status": "ahead", "merge_base_commit": {"sha": BASE}, "files": [{"filename": "src/other.ts", "previous_filename": None}]}),
+))
+def test_unproved_parent_side_cannot_relax_a_merge_path(evidence_path, endpoint, response):
+    transport, _ = carried_case(evidence_path, kind="merge")
+    target = compare_endpoint(ANCESTOR, BASE_TIP) if endpoint == "parents" else compare_endpoint(BASE, BASE_TIP)
+    transport.responses[target] = response
+    if endpoint == "parents" and isinstance(response, dict) and response.get("merge_base_commit", {}).get("sha") == "short":
+        transport.responses[compare_endpoint("short", BASE_TIP)] = {
+            **comparison("short", []), "files": [{"filename": "src/other.ts"}],
+        }
+    result, output = execute(transport)
+    assert result == 1
+    assert f"{COMMIT_ONE} changes a use-bought path src/other.ts" in output
+
+
+@pytest.mark.parametrize("present", (False, True))
+def test_capped_side_files_prove_only_paths_actually_returned(evidence_path, present):
+    transport, _ = carried_case(evidence_path, kind="merge")
+    files = [{"filename": f"docs/file-{index}.md"} for index in range(300)]
+    if present:
+        files[-1] = {"filename": "src/other.ts"}
+    transport.responses[compare_endpoint(BASE, BASE_TIP)]["files"] = files
+    result, output = execute(transport)
+    assert result == (0 if present else 1), output
+
+
+@pytest.mark.parametrize("proven", (False, True))
+def test_version_resolution_requires_imported_version_path(evidence_path, proven):
+    transport, _ = carried_case(evidence_path, kind="merge", paths=("package.json",),
+        files=[{"filename": "package.json", "status": "modified"}], version=VERSION_DECLARATION)
+    if not proven:
+        transport.responses[compare_endpoint(BASE, BASE_TIP)]["files"] = []
+    install_version_contents(transport, {"version": "1"}, {"version": "2"})
+    result, output = execute(transport)
+    assert result == (0 if proven else 1), output
+    if proven:
+        assert "version-only exemption (package.json)" in output
+    else:
+        assert "use-bought path package.json" in output
+        assert not any("/contents/package.json" in endpoint for endpoint, _ in transport.calls)
+
+
+def test_refusal_names_every_refusing_path_and_stops_at_first_commit(evidence_path):
+    files = [{"filename": "package.json", "status": "modified"}, {"filename": "src/main.ts"}]
+    transport, document = carried_case(evidence_path, kind="merge", files=files,
+        paths=("package.json", "src/main.ts"), version=VERSION_DECLARATION)
+    install_version_contents(transport, {"version": "1", "other": False}, {"version": "2", "other": True})
+    transport.responses[compare_endpoint(ANCESTOR)] = comparison(ANCESTOR, [COMMIT_ONE, COMMIT_TWO])
+    if document is not None:
+        document["use"]["intervening_commits"].append({"sha": COMMIT_TWO, "paths": ["src/later.ts"]})
+        replace_proof_document(transport, document)
+    result, output = execute(transport)
+    assert result == 1
+    assert f"{COMMIT_ONE} changes use-bought paths package.json, src/main.ts" in output
+    assert (commit_endpoint(COMMIT_TWO), True) not in transport.calls
+
+
+def test_carried_verdict_explains_every_intervening_commit(evidence_path):
+    version_commit = "5" * 40
+    transport, document = carried_case(evidence_path, files=[{"filename": "docs/guide.md"}],
+        paths=("src/main.ts", "package.json"), version=VERSION_DECLARATION)
+    history = [COMMIT_ONE, COMMIT_TWO, version_commit]
+    transport.responses[compare_endpoint(ANCESTOR)] = comparison(ANCESTOR, history)
+    transport.responses[commit_endpoint(COMMIT_TWO)] = {
+        "parents": [{"sha": COMMIT_ONE}], "files": [{"filename": "src/other.ts"}],
+    }
+    transport.responses[compare_endpoint(COMMIT_TWO, BASE_TIP)] = comparison(COMMIT_TWO, [])
+    transport.responses[commit_endpoint(version_commit)] = {
+        "parents": [{"sha": COMMIT_TWO}], "files": [{"filename": "package.json", "status": "modified"}],
+    }
+    transport.responses[compare_endpoint(version_commit, BASE_TIP)] = comparison(version_commit, [])
+    transport.responses[f"repos/{REPO}/contents/package.json?ref={version_commit}"] = contents({"version": "2"})
+    transport.responses[f"repos/{REPO}/contents/package.json?ref={COMMIT_TWO}"] = contents({"version": "1"})
+    if document is not None:
+        document["use"]["intervening_commits"] = [
+            {"sha": COMMIT_ONE, "paths": ["docs/guide.md"]},
+            {"sha": COMMIT_TWO, "paths": ["src/other.ts"]},
+            {"sha": version_commit, "paths": ["package.json"]},
+        ]
+        replace_proof_document(transport, document)
+    result, output = execute(transport)
+    assert result == 0, output
+    assert f"verified: intervening commit {COMMIT_ONE} carries use: changes no use-buying path" in output
+    assert f"verified: intervening commit {COMMIT_TWO} carries use: use-buying paths do not overlap" in output
+    assert f"verified: intervening commit {version_commit} carries use: version-only exemption (package.json)" in output
+
+
+def test_carried_commit_can_explain_both_overlap_and_version_exemption(evidence_path):
+    transport, _ = carried_case(evidence_path, kind="merge", paths=("package.json",),
+        files=[{"filename": "src/other.ts"}, {"filename": "package.json", "status": "modified"}],
+        version=VERSION_DECLARATION)
+    install_version_contents(transport, {"version": "1"}, {"version": "2"})
+    result, output = execute(transport)
+    assert result == 0, output
+    assert "changed paths (src/other.ts); version-only exemption (package.json)" in output
+
+
+def test_caches_shared_commit_provenance_and_version_reads_across_candidates():
+    other = "5" * 40
+    transport, _ = carried_case("legacy-markers", kind="merge", paths=("package.json",),
+        files=[{"filename": "package.json", "status": "modified"}], version=VERSION_DECLARATION)
+    transport.responses[f"repos/{REPO}/issues/17/comments?per_page=100"] = [
+        use_note(OLDER_ANCESTOR, id=10), use_note(ANCESTOR, id=20),
+    ]
+    for source in (ANCESTOR, OLDER_ANCESTOR):
+        transport.responses[compare_endpoint(source)] = comparison(source, [COMMIT_ONE, COMMIT_TWO])
+    transport.responses[commit_endpoint(COMMIT_ONE)]["parents"][1]["sha"] = other
+    transport.responses[compare_endpoint(other, BASE_TIP)] = comparison(other, [])
+    merge_side(transport, [{"filename": "package.json", "status": "modified"}], other=other)
+    transport.responses[commit_endpoint(COMMIT_TWO)] = check.ProofError("later commit unreadable")
+    install_version_contents(transport, {"version": "1"}, {"version": "2"})
+    result, output = execute(transport)
+    assert result == 1 and "later commit unreadable" in output
+    for call in (
+        (commit_endpoint(COMMIT_ONE), True), (commit_endpoint(COMMIT_TWO), True),
+        (compare_endpoint(other, BASE_TIP), False),
+        (compare_endpoint(ANCESTOR, other), False), (compare_endpoint(BASE, other), False),
+        (f"repos/{REPO}/contents/package.json?ref={COMMIT_ONE}", False),
+        (f"repos/{REPO}/contents/package.json?ref={ANCESTOR}", False),
+    ):
+        assert transport.calls.count(call) == 1
+    assert (compare_endpoint(OLDER_ANCESTOR), False) in transport.calls
+
+
+@pytest.mark.parametrize("failure", ("membership", "parents", "side", "version", "commit"))
+def test_failed_ancestor_reads_are_memoized_across_candidates(failure):
+    version = VERSION_DECLARATION if failure == "version" else None
+    path = "package.json" if version else "src/other.ts"
+    transport, _ = carried_case("legacy-markers", kind="merge", paths=("src/main.ts", path),
+        files=[{"filename": path, "status": "modified"}], version=version)
+    transport.responses[f"repos/{REPO}/issues/17/comments?per_page=100"] = [
+        use_note(OLDER_ANCESTOR, id=10), use_note(ANCESTOR, id=20),
+    ]
+    transport.responses[compare_endpoint(OLDER_ANCESTOR)] = comparison(OLDER_ANCESTOR, [COMMIT_ONE])
+    if failure == "membership":
+        transport.responses[commit_endpoint(COMMIT_ONE)]["parents"][1]["sha"] = COMMIT_TWO
+        endpoint = compare_endpoint(COMMIT_TWO, BASE_TIP)
+    elif failure == "parents":
+        endpoint = compare_endpoint(ANCESTOR, BASE_TIP)
+    elif failure == "side":
+        endpoint = compare_endpoint(BASE, BASE_TIP)
+    elif failure == "version":
+        endpoint = f"repos/{REPO}/contents/package.json?ref={COMMIT_ONE}"
+    else:
+        endpoint = commit_endpoint(COMMIT_ONE)
+    transport.responses[endpoint] = check.ProofError("read failed")
+    result, output = execute(transport)
+    assert result == 1
+    assert transport.calls.count((endpoint, failure == "commit")) == 1
+    assert (compare_endpoint(OLDER_ANCESTOR), False) in transport.calls
+
+
+def test_ancestor_read_cache_does_not_outlive_an_evaluation(evidence_path):
+    transport, _ = carried_case(evidence_path, kind="merge")
+    result, output = execute(transport)
+    assert result == 0, output
+    transport.responses[compare_endpoint(BASE, BASE_TIP)]["files"] = []
+    result, output = execute(transport)
+    assert result == 1
+    assert "use-bought path src/other.ts" in output
+    assert transport.calls.count((commit_endpoint(COMMIT_ONE), True)) == 2
+    assert transport.calls.count((compare_endpoint(BASE, BASE_TIP), False)) == 2
 
 
 def test_missing_work_issue_is_a_named_source_failure_not_a_gate_error():
