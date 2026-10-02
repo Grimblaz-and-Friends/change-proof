@@ -41,7 +41,7 @@ After a note or disposition lands, or after the pull-request body is edited to a
 gh api -X POST repos/OWNER/REPO/actions/runs/<run-id>/rerun
 ```
 
-A workflow's token cannot re-run workflow runs, and this design grants no write permission. A `no-use` note stays pinned to the current head. A `use` note for an earlier head counts only when it says `changed=false`, GitHub's single compare response proves that head is an ancestor of the current head and contains every intervening commit, and every such commit changes no path that the base branch's current-tip policy says buys a use; otherwise the use note must be posted again for the current head. Each intervening commit is classified separately, including both names of a rename, so a bought change still stales the note if a later commit reverts it.
+A workflow's token cannot re-run workflow runs, and this design grants no write permission. A `no-use` note stays pinned to the current head. A `use` note for an earlier head counts only with `changed=false` and complete, proved ancestry. Base-reachable commits and merges stale that use only on use-buying paths the pull request also changes, with an exemption for a proved change confined to the trusted policy's declared version field. Every other intervening commit still stales use on any use-buying path. Each commit is judged separately, including both names of a rename, so a later revert cannot erase an earlier refusing edit. The evidence contract below specifies the reads and failure behavior.
 
 ## Caller-owned configuration
 
@@ -76,6 +76,20 @@ The checker resolves the pull request's base ref to the base branch's current ti
 A caller's exclude list must cover test-support modules kept beside production code, not only test files, because a module named like `Suite.test-helpers.ts` matches no test-file pattern and would buy a use.
 
 Matching slash-normalizes each changed path, then applies Python's case-sensitive `fnmatch.fnmatchcase`: a path buys use when it matches an `include` and no `exclude` in at least one rule. Before classification, the checker compares the retrieved file-record count with the pull request's `changed_files` count and fails when they differ.
+
+The same policy may add an optional top-level `version` object; `schema_version` stays 1. For example, add this member to the use-rules object:
+
+```json
+{
+  "version": {
+    "path": "package.json",
+    "field": "version",
+    "increment": "patch"
+  }
+}
+```
+
+`version` must carry exactly `path`, `field` and `increment`. The path is a nonempty repository-relative POSIX file path: absolute or drive-prefixed paths, backslashes, control characters and empty, `.` or `..` components are invalid. The field is a nonblank literal top-level JSON key, not an instruction to traverse a dotted path or JSON pointer. The increment must be `major`, `minor` or `patch`; the gate validates it but applies no increment and imposes no semantic-version format. The file must contain a JSON object for an exemption, though its name need not end in `.json`. A malformed trusted declaration fails the policy. An absent declaration grants no version exemption. Only the base-tip declaration has authority; an added, changed or malformed head declaration cannot grant one, including during the existing bootstrap failure. This repository has no version file and declares none.
 
 `.tradecraft/work.json` supplies the identities that may produce evidence and the connected reviewers that must run. Replace `your-github-login` with each login authorized to post use notes and dispositions.
 
@@ -138,9 +152,15 @@ When the paths buy use, a `marker_producers` login posts the practice's exact `u
 <!-- tradecraft:use:v1 head=SHA status=pass changed=CHANGED staffing_status=STAFFING_STATUS [same_vendor_reason=REASON] -->
 ```
 
-`CHANGED` is `true` or `false`; `STAFFING_STATUS` is `qualified` or `degraded`; and a degraded run carries the nonempty hyphenated `same_vendor_reason` while a qualified run does not. A note naming the current pull-request head may carry either `CHANGED` value. A note naming an earlier head applies only with `changed=false`. The single, unpaginated GitHub comparison must report `ahead` or `identical`, name the note head as its merge base, and return as many intervening commits as its `ahead_by` value. That candidate is not applicable when the status or merge base does not prove ancestry, when `ahead_by` is missing or differs from the returned commit count, when a returned commit lacks a full revision, or when any returned commit changes a use-bought path. Each returned commit is read through the paginated `repos/{repo}/commits/{sha}?per_page=100` endpoint, and both `filename` and `previous_filename` are classified under the policy read from the base branch's current tip. If reading a candidate's comparison or commit pages fails—including a GET failure, invalid JSON, or a page that omits `files`—that candidate is not applicable and the checker continues to the next older eligible note. If no candidate applies, the check fails with the latest candidate's reason and the remedy to post at the current head. A `no-use` note never carries forward.
+`CHANGED` is `true` or `false`; `STAFFING_STATUS` is `qualified` or `degraded`; and a degraded run carries the nonempty hyphenated `same_vendor_reason` while a qualified run does not. A note naming the current pull-request head may carry either `CHANGED` value. A note naming an earlier head applies only with `changed=false`. The single, unpaginated GitHub comparison must report `ahead` or `identical`, name the note head as its merge base, and return as many intervening commits as its `ahead_by` value. A status or merge base that does not prove ancestry, a missing or mismatched `ahead_by`, or a commit without a full revision refuses the candidate. Each returned commit is read through the paginated `repos/{repo}/commits/{sha}?per_page=100` endpoint, and both `filename` and `previous_filename` are classified under the trusted base-tip policy.
 
-For a carried use note, the `verified:` line names its head and every intervening commit read. When an intervening commit buys a use, the stale finding names the note head and the first such commit.
+A commit reachable from the fixed, resolved base tip, or a merge with more than one valid parent, is judged by overlap: it refuses only when a use-buying path is also in the complete current pull-request changed-path list. Both rename names participate, with slash normalization and case-sensitive equality. Equality with the base tip establishes reachability directly; otherwise a `COMMIT...BASE_TIP` comparison must report `ahead` or `identical` with that commit as its merge base. Its commit-list length does not establish history completeness; the original ancestor-to-head comparison does. Failed or malformed membership reads grant no relaxation. Every other commit refuses on any use-buying path, even one absent from the final pull-request diff.
+
+In the overlap branch alone, an ordinary modification of the declared version file is exempt when contents GETs at that commit and its first parent both yield unambiguous JSON objects equal after removing only the declared top-level key. Formatting and object-key order do not matter; array order, nested keys and other values do, including booleans versus numbers. Adding, changing or removing the declared key may qualify. Missing, renamed, deleted, unreadable or non-JSON files, duplicate keys, invalid numeric constants and missing first parents grant no exemption. Another overlapping use-buying file in the same commit still refuses. A separate version-bump commit belonging to the change remains under the ordinary rule; a catch-up's own version edit must be inside the merge commit to qualify.
+
+Failed ancestry or commit-file reads—including a GET failure, invalid JSON, or a page that omits `files`—refuse that candidate. The marker path continues to the next older eligible note; the document path reports failure for its selected source. If no marker candidate applies, the check reports the latest candidate's reason and the remedy to post at the current head. A `no-use` note never carries forward. Proof-v1 intervening records remain exactly `{sha, paths}`, retaining all fetched paths, including an exempted version path; the gate derives classification itself.
+
+For a carried marker note, the `verified:` line names its head and every intervening commit read. A stale finding names the evidence head, the first refusing commit and its offending path in either evidence path.
 
 When the paths do not buy use, a marker producer posts the practice's exact `no-use` marker followed in the same comment by its line and reason:
 
@@ -191,7 +211,7 @@ A connected reviewer has run when at least one review, inline review comment, or
 
 ## Boundary and tests
 
-The checker job never checks out caller content, executes caller code, writes to the caller, or sends a method other than GET; it has exactly `contents: read`, `issues: read`, `pull-requests: read`, `checks: read`, and `actions: read`. The only caller files it reads are `.github/change-proof.json` and `.tradecraft/work.json` at the pull-request head and resolved base-branch tip. Changed paths, comments, reviews, inline comments, check runs, workflow runs, and run jobs are GitHub API records. The two added scopes let the job re-derive check and workflow identity in private repositories; they add no write authority.
+The checker job never checks out caller content, executes caller code, writes to the caller, or sends a method other than GET; it has exactly `contents: read`, `issues: read`, `pull-requests: read`, `checks: read`, and `actions: read`. It reads `.github/change-proof.json` and `.tradecraft/work.json` at the pull-request head and resolved base-branch tip. When the trusted base-tip policy declares a version file, ancestor-use verification may also read that one file at an intervening commit and its first parent to determine whether only the declared top-level field changed. Changed paths, commit parents, comparisons, comments, reviews, inline comments, check runs, workflow runs, and run jobs are GitHub API records. The two added scopes let the job re-derive check and workflow identity in private repositories; they add no write authority.
 
 Trusted policy comes from the resolved base-branch tip. The gate also fetches the head copies to report policy changes. A proof document's policy descriptor is verified only when it names either fetched copy at the same repository, path, and revision. A differing digest for either fetched copy remains `declared:` and produces a non-fatal `diagnostic:` naming tradecraft #742; the gate still applies the fetched base-tip policy, so a missing reviewer or false use classification still fails. A descriptor for another producer path or revision is declared as not among the gate's fetched bytes. Missing base policy remains a bootstrap failure.
 

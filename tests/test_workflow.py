@@ -213,3 +213,27 @@ def test_readme_caller_example_names_its_job_and_reports_the_documented_context(
         )
     )
     assert required["jobs"]["change-proof"]["name"] != caller_job_name
+
+
+def test_readme_optional_version_example_loads_with_the_documented_use_rules():
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    section = readme.split("## Caller-owned configuration\n", 1)[1].split("\n## ", 1)[0]
+    examples = [json.loads(block) for block in re.findall(
+        r"^```json\n(.*?)^```$", section, flags=re.MULTILINE | re.DOTALL
+    )]
+    policy = next(example for example in examples if "rules" in example)
+    version = next(example["version"] for example in examples if "version" in example)
+    policy["version"] = version
+    assert check.load_use_rules(policy)["version"] == {
+        "path": "package.json", "field": "version", "increment": "patch"
+    }
+    assert "version" not in json.loads((ROOT / ".github/change-proof.json").read_text(encoding="utf-8"))
+
+
+def test_readme_boundary_covers_only_the_trusted_declared_extra_file():
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    boundary = readme.split("## Boundary and tests\n", 1)[1].lstrip().split("\n\n", 1)[0]
+    assert "that one file at an intervening commit and its first parent" in boundary
+    assert "trusted base-tip policy declares a version file" in boundary
+    assert "commit parents, comparisons" in boundary
+    assert "never checks out caller content, executes caller code, writes to the caller" in boundary

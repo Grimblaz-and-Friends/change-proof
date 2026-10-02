@@ -5,6 +5,7 @@ from __future__ import annotations
 import base64
 from dataclasses import dataclass
 from datetime import datetime, timezone
+from decimal import Decimal, DecimalException
 import fnmatch
 import hashlib
 import json
@@ -138,6 +139,13 @@ class MarkerRecord:
 class WorkConfig:
     connected_reviewers: frozenset[str]
     marker_producers: frozenset[str]
+
+
+@dataclass(frozen=True)
+class CommitRecord:
+    paths: list[str]
+    files: list[dict[str, object]]
+    parents: tuple[str, ...] | None
 
 
 @dataclass(frozen=True)
@@ -388,7 +396,7 @@ def _author(item: dict[str, object]) -> str:
 
 
 def _json_file_record(
-    transport, repo: str, path: str, head: str
+    transport, repo: str, path: str, head: str, *, strict: bool = False
 ) -> tuple[dict[str, object], bytes]:
     quoted_path = urllib.parse.quote(path, safe="/")
     quoted_head = urllib.parse.quote(head, safe="")
@@ -397,9 +405,15 @@ def _json_file_record(
     if response.get("encoding") != "base64" or not isinstance(response.get("content"), str):
         raise ProofError(f"{path} must be a base64 GitHub contents response")
     try:
-        content = base64.b64decode(response["content"], validate=False)
-        value = json.loads(content.decode("utf-8"))
-    except (ValueError, UnicodeError) as exc:
+        encoded = response["content"]
+        content = base64.b64decode("".join(encoded.split()) if strict else encoded, validate=strict)
+        options = {
+            "object_pairs_hook": _unique_json_object,
+            "parse_constant": _invalid_json_constant,
+            "parse_float": Decimal,
+        } if strict else {}
+        value = json.loads(content.decode("utf-8"), **options)
+    except (ValueError, UnicodeError, DecimalException) as exc:
         raise ProofError(f"{path} must contain UTF-8 JSON") from exc
     return _object(value, path), content
 
@@ -437,6 +451,26 @@ def load_use_rules(value: object) -> dict[str, object]:
             or not isinstance(rule.get("exclude"), list)
         ):
             raise ProofError("each use rule must carry include and exclude lists")
+    if "version" in rules_object:
+        version = rules_object["version"]
+        if not isinstance(version, dict) or set(version) != {"path", "field", "increment"}:
+            raise ProofError("version must be an object carrying exactly path, field and increment")
+        path = version["path"]
+        if (
+            not isinstance(path, str)
+            or not path.strip()
+            or "\\" in path
+            or re.match(r"^[A-Za-z]:", path)
+            or any(ord(character) < 32 or 127 <= ord(character) < 160 for character in path)
+            or any(part in {"", ".", ".."} for part in path.split("/"))
+        ):
+            raise ProofError("version.path must be a repository-relative POSIX file path")
+        if not isinstance(version["field"], str) or not version["field"].strip():
+            raise ProofError("version.field must name a nonblank literal top-level JSON key")
+        if not isinstance(version["increment"], str) or version["increment"] not in {
+            "major", "minor", "patch"
+        }:
+            raise ProofError("version.increment must be major, minor or patch")
     return rules_object
 
 
@@ -857,22 +891,98 @@ def _valid_use(marker: MarkerRecord, head: str) -> bool:
     return reason is None
 
 
-def _commit_files(transport, repo: str, revision: str) -> list[str]:
+def _commit_record(transport, repo: str, revision: str) -> CommitRecord:
     endpoint = f"repos/{repo}/commits/{revision}?per_page=100"
     value = transport.get(endpoint, paginate=True)
     pages = value if isinstance(value, list) else [value]
+    if not pages:
+        raise ProofError(f"GitHub commit GET omitted files for {revision}")
     paths: list[str] = []
+    all_files: list[dict[str, object]] = []
+    parents: tuple[str, ...] | None = None
+    first = _object(pages[0], endpoint)
+    raw_parents = first.get("parents")
+    if isinstance(raw_parents, list) and all(
+        isinstance(parent, dict)
+        and isinstance(parent.get("sha"), str)
+        and FULL_SHA.fullmatch(parent["sha"]) is not None
+        for parent in raw_parents
+    ):
+        revisions = tuple(parent["sha"] for parent in raw_parents)
+        if len(set(revisions)) == len(revisions):
+            parents = revisions
     for page in pages:
         commit = _object(page, endpoint)
         if "files" not in commit:
             raise ProofError(f"GitHub commit GET omitted files for {revision}")
         files = _records(commit["files"], endpoint)
+        all_files.extend(files)
         for item in files:
             for field in ("filename", "previous_filename"):
                 path = item.get(field)
                 if isinstance(path, str) and path not in paths:
                     paths.append(path)
-    return paths
+    return CommitRecord(paths, all_files, parents)
+
+
+def _base_reachable(transport, repo: str, revision: str, base_tip: str) -> bool:
+    if revision == base_tip:
+        return True
+    endpoint = f"repos/{repo}/compare/{revision}...{base_tip}"
+    try:
+        comparison = _object(transport.get(endpoint), endpoint)
+    except (OSError, UnicodeError, ValueError, ProofError):
+        return False
+    merge_base = comparison.get("merge_base_commit")
+    return (
+        comparison.get("status") in ("ahead", "identical")
+        and isinstance(merge_base, dict)
+        and merge_base.get("sha") == revision
+    )
+
+
+def _json_equal(left: object, right: object) -> bool:
+    if isinstance(left, bool) or isinstance(right, bool):
+        return type(left) is type(right) and left == right
+    if isinstance(left, dict) and isinstance(right, dict):
+        return left.keys() == right.keys() and all(
+            _json_equal(value, right[key]) for key, value in left.items()
+        )
+    if isinstance(left, list) and isinstance(right, list):
+        return len(left) == len(right) and all(
+            _json_equal(a, b) for a, b in zip(left, right)
+        )
+    return left == right
+
+
+def _version_only(
+    transport, repo: str, revision: str, commit: CommitRecord, version: dict[str, object]
+) -> bool:
+    path = version["path"]
+    matching = [
+        item for item in commit.files
+        if any(
+            isinstance(item.get(name), str) and item[name].replace("\\", "/") == path
+            for name in ("filename", "previous_filename")
+        )
+    ]
+    if (
+        not commit.parents
+        or len(matching) != 1
+        or matching[0].get("status") != "modified"
+        or "previous_filename" in matching[0]
+    ):
+        return False
+    try:
+        current, _ = _json_file_record(transport, repo, path, revision, strict=True)
+        previous, _ = _json_file_record(transport, repo, path, commit.parents[0], strict=True)
+    except (OSError, UnicodeError, ValueError, ProofError):
+        return False
+    field = version["field"]
+    return _json_equal(
+        {key: value for key, value in current.items() if key != field},
+        {key: value for key, value in previous.items() if key != field},
+    )
 
 
 def _ancestor_application(
@@ -881,6 +991,8 @@ def _ancestor_application(
     ancestor: str,
     head: str,
     rules: dict[str, object],
+    base_tip: str | None = None,
+    changed_paths: list[str] | None = None,
 ) -> dict[str, object]:
     quoted_ancestor = urllib.parse.quote(ancestor, safe="")
     quoted_head = urllib.parse.quote(head, safe="")
@@ -914,22 +1026,38 @@ def _ancestor_application(
                 "applicable": False,
                 "reason": f"intervening commit from {ancestor} has no full revision",
             }
-        paths = _commit_files(transport, repo, revision)
+        record = _commit_record(transport, repo, revision)
+        paths = record.paths
         intervening.append(revision)
         intervening_records.append({"sha": revision, "paths": paths})
-        if use_required(paths, rules):
+        refusing = [path for path in paths if use_required([path], rules)]
+        if refusing and base_tip is not None and FULL_SHA.fullmatch(base_tip) is not None:
+            overlap = (record.parents is not None and len(record.parents) > 1) or _base_reachable(
+                transport, repo, revision, base_tip
+            )
+            if overlap:
+                changed = {path.replace("\\", "/") for path in changed_paths or []}
+                refusing = [path for path in refusing if path.replace("\\", "/") in changed]
+                version = rules.get("version")
+                if (
+                    isinstance(version, dict)
+                    and version["path"] in {path.replace("\\", "/") for path in refusing}
+                    and _version_only(transport, repo, revision, record, version)
+                ):
+                    refusing = [path for path in refusing if path.replace("\\", "/") != version["path"]]
+        if refusing:
             return {
                 "applicable": False,
                 "reason": (
                     f"use evidence at {ancestor} is stale because intervening commit "
-                    f"{revision} changes a use-bought path"
+                    f"{revision} changes a use-bought path {_safe_text(refusing[0])}"
                 ),
                 "intervening_commits": intervening,
                 "intervening_records": intervening_records,
             }
     return {
         "applicable": True,
-        "reason": "every intervening commit changes only paths outside the use-bought policy",
+        "reason": "no intervening commit invalidates the earlier-head use under the trusted policy",
         "intervening_commits": intervening,
         "intervening_records": intervening_records,
     }
@@ -941,6 +1069,8 @@ def _ancestor_use(
     head: str,
     rules: dict[str, object],
     authorized: list[MarkerRecord],
+    base_tip: str | None = None,
+    changed_paths: list[str] | None = None,
 ) -> tuple[MarkerRecord | None, list[str], str | None]:
     candidates = []
     for marker in authorized:
@@ -963,7 +1093,7 @@ def _ancestor_use(
         evidence_head = marker.attributes["head"]
         try:
             application = _ancestor_application(
-                transport, repo, evidence_head, head, rules
+                transport, repo, evidence_head, head, rules, base_tip, changed_paths
             )
         except (OSError, UnicodeError, ValueError, ProofError) as exc:
             detail = str(exc) or type(exc).__name__
@@ -2209,6 +2339,7 @@ def evaluate_document(
     policy_bytes: dict[tuple[str, str], bytes],
     current_run_id: int | None,
     current_run_attempt: int | None,
+    base_tip: str | None = None,
 ) -> tuple[list[Finding], list[str], list[str], list[str], list[str], list[str], list[str]]:
     failures: list[Finding] = []
     verified: list[str] = [f"selected proof-v1 comment #{comment_id}"]
@@ -2478,7 +2609,7 @@ def evaluate_document(
                     detail = "ancestor use evidence requires an ancestor use marker with changed=false"
                     remedy = (
                         "post current-head use evidence, or post an ancestor marker with "
-                        "changed=false after confirming no use-bought change"
+                        "changed=false after confirming the intervening history remains applicable"
                     )
                 else:
                     detail = source_error or "marker is invalid or unauthorized"
@@ -2501,7 +2632,7 @@ def evaluate_document(
             else:
                 try:
                     application = _ancestor_application(
-                        transport, repo, evidence_head, head, rules
+                        transport, repo, evidence_head, head, rules, base_tip, paths
                     )
                 except (OSError, UnicodeError, ValueError, ProofError) as exc:
                     application = {
@@ -2521,7 +2652,7 @@ def evaluate_document(
                 ):
                     failures.append(Finding(
                         f"applicable complete ancestor-use history: {application.get('reason')}",
-                        "post current-head use evidence or recompose proof with the complete use-free history",
+                        "post current-head use evidence or recompose proof with the complete applicable history",
                     ))
                 else:
                     verified.append(
@@ -2736,6 +2867,7 @@ def evaluate(
     transport=None,
     repo: str = "",
     number: int | None = None,
+    base_tip: str | None = None,
 ) -> tuple[list[Finding], list[str]]:
     failures: list[Finding] = []
     verified: list[str] = []
@@ -2756,7 +2888,7 @@ def evaluate(
             rejected_reason: str | None = None
             if transport is not None and repo:
                 ancestor_marker, intervening, rejected_reason = _ancestor_use(
-                    transport, repo, head, rules, authorized
+                    transport, repo, head, rules, authorized, base_tip, paths
                 )
             if ancestor_marker is not None:
                 evidence_head = ancestor_marker.attributes["head"]
@@ -3172,6 +3304,7 @@ def run(
                                 policy_bytes,
                                 current_run_id,
                                 current_run_attempt,
+                                base_tip if not absent_on_base else None,
                             )
                             if work_comments_error is not None:
                                 document_failures.insert(0, Finding(
@@ -3200,6 +3333,7 @@ def run(
                         github,
                         repo,
                         number,
+                        base_tip if not absent_on_base else None,
                     )
                     failures.extend(evidence_failures)
                     verified.extend(evidence_verified)
