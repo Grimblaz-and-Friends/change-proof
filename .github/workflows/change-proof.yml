@@ -1016,6 +1016,110 @@ jobs:
               )
 
 
+          class AncestorReads:
+              """Memoize ancestor verification reads and judgments for one evaluation."""
+
+              def __init__(self, transport, repo: str, base_tip: str | None):
+                  self.transport = transport
+                  self.repo = repo
+                  self.base_tip = base_tip
+                  self.responses: dict[tuple[str, bool], object] = {}
+                  self.commits: dict[str, CommitRecord | Exception] = {}
+                  self.membership: dict[tuple[str, str | None], bool] = {}
+                  self.imported: dict[str, frozenset[str]] = {}
+                  self.versions: dict[tuple[str, str, str], bool] = {}
+
+              def get(self, endpoint: str, *, paginate: bool = False) -> object:
+                  key = (endpoint, paginate)
+                  if key not in self.responses:
+                      try:
+                          self.responses[key] = self.transport.get(endpoint, paginate=paginate)
+                      except (OSError, UnicodeError, ValueError, ProofError) as exc:
+                          self.responses[key] = exc
+                  result = self.responses[key]
+                  if isinstance(result, Exception):
+                      raise result
+                  return result
+
+              def commit(self, revision: str) -> CommitRecord:
+                  if revision not in self.commits:
+                      try:
+                          self.commits[revision] = _commit_record(self, self.repo, revision)
+                      except (OSError, UnicodeError, ValueError, ProofError) as exc:
+                          self.commits[revision] = exc
+                  result = self.commits[revision]
+                  if isinstance(result, Exception):
+                      raise result
+                  return result
+
+              def reachable(self, revision: str) -> bool:
+                  key = (revision, self.base_tip)
+                  if key not in self.membership:
+                      self.membership[key] = (
+                          self.base_tip is not None
+                          and FULL_SHA.fullmatch(self.base_tip) is not None
+                          and _base_reachable(self, self.repo, revision, self.base_tip)
+                      )
+                  return self.membership[key]
+
+              def comparison(self, first: str, other: str) -> dict[str, object]:
+                  endpoint = f"repos/{self.repo}/compare/{first}...{other}"
+                  return _object(self.get(endpoint), endpoint)
+
+              def imported_paths(self, revision: str, commit: CommitRecord) -> frozenset[str]:
+                  if revision not in self.imported:
+                      self.imported[revision] = _merge_imported_paths(self, commit)
+                  return self.imported[revision]
+
+              def version_only(self, revision: str, commit: CommitRecord, version: dict[str, object]) -> bool:
+                  key = (revision, version["path"], version["field"])
+                  if key not in self.versions:
+                      self.versions[key] = _version_only(self, self.repo, revision, commit, version)
+                  return self.versions[key]
+
+
+          def _merge_imported_paths(reads: AncestorReads, commit: CommitRecord) -> frozenset[str]:
+              """Read provenance for a commit already established to be a merge."""
+              imported: set[str] = set()
+              first = commit.parents[0]
+              for other in commit.parents[1:]:
+                  if not reads.reachable(other):
+                      continue
+                  try:
+                      parents = reads.comparison(first, other)
+                      if parents.get("status") not in ("ahead", "behind", "diverged", "identical"):
+                          continue
+                      merge_base = parents.get("merge_base_commit")
+                      base = merge_base.get("sha") if isinstance(merge_base, dict) else None
+                      if not isinstance(base, str) or FULL_SHA.fullmatch(base) is None or base == other:
+                          continue
+                      side = reads.comparison(base, other)
+                      side_base = side.get("merge_base_commit")
+                      if (
+                          side.get("status") not in ("ahead", "identical")
+                          or not isinstance(side_base, dict)
+                          or side_base.get("sha") != base
+                          or not isinstance(side.get("files"), list)
+                      ):
+                          continue
+                  except (OSError, UnicodeError, ValueError, ProofError):
+                      continue
+                  for item in side["files"]:
+                      if (
+                          not isinstance(item, dict)
+                          or not isinstance(item.get("filename"), str)
+                          or not item["filename"]
+                          or ("previous_filename" in item and (
+                              not isinstance(item["previous_filename"], str) or not item["previous_filename"]
+                          ))
+                      ):
+                          continue
+                      imported.add(item["filename"].replace("\\", "/"))
+                      if "previous_filename" in item:
+                          imported.add(item["previous_filename"].replace("\\", "/"))
+              return frozenset(imported & {path.replace("\\", "/") for path in commit.paths})
+
+
           def _ancestor_application(
               transport,
               repo: str,
@@ -1024,11 +1128,13 @@ jobs:
               rules: dict[str, object],
               base_tip: str | None = None,
               changed_paths: list[str] | None = None,
+              reads: AncestorReads | None = None,
           ) -> dict[str, object]:
+              reads = reads or AncestorReads(transport, repo, base_tip)
               quoted_ancestor = urllib.parse.quote(ancestor, safe="")
               quoted_head = urllib.parse.quote(head, safe="")
               endpoint = f"repos/{repo}/compare/{quoted_ancestor}...{quoted_head}"
-              comparison = _object(transport.get(endpoint), endpoint)
+              comparison = _object(reads.get(endpoint), endpoint)
               merge_base = comparison.get("merge_base_commit")
               merge_base_sha = merge_base.get("sha") if isinstance(merge_base, dict) else None
               commits = _records(comparison.get("commits", []), endpoint)
@@ -1050,6 +1156,8 @@ jobs:
                   }
               intervening: list[str] = []
               intervening_records: list[dict[str, object]] = []
+              carry_reasons: list[str] = []
+              changed = {path.replace("\\", "/") for path in changed_paths or []}
               for commit in commits:
                   revision = commit.get("sha")
                   if not isinstance(revision, str) or FULL_SHA.fullmatch(revision) is None:
@@ -1057,40 +1165,57 @@ jobs:
                           "applicable": False,
                           "reason": f"intervening commit from {ancestor} has no full revision",
                       }
-                  record = _commit_record(transport, repo, revision)
+                  record = reads.commit(revision)
                   paths = record.paths
                   intervening.append(revision)
                   intervening_records.append({"sha": revision, "paths": paths})
-                  refusing = [path for path in paths if use_required([path], rules)]
-                  if refusing and base_tip is not None and FULL_SHA.fullmatch(base_tip) is not None:
-                      overlap = (record.parents is not None and len(record.parents) > 1) or _base_reachable(
-                          transport, repo, revision, base_tip
-                      )
-                      if overlap:
-                          changed = {path.replace("\\", "/") for path in changed_paths or []}
-                          refusing = [path for path in refusing if path.replace("\\", "/") in changed]
-                          version = rules.get("version")
-                          if (
-                              isinstance(version, dict)
-                              and version["path"] in {path.replace("\\", "/") for path in refusing}
-                              and _version_only(transport, repo, revision, record, version)
-                          ):
-                              refusing = [path for path in refusing if path.replace("\\", "/") != version["path"]]
+                  buying = [path for path in paths if use_required([path], rules)]
+                  overlap_paths: frozenset[str] = frozenset()
+                  if buying and record.parents is not None:
+                      if len(record.parents) > 1:
+                          overlap_paths = reads.imported_paths(revision, record)
+                      elif reads.reachable(revision):
+                          overlap_paths = frozenset(path.replace("\\", "/") for path in buying)
+                  nonoverlapping = [path for path in buying
+                      if path.replace("\\", "/") in overlap_paths and path.replace("\\", "/") not in changed]
+                  refusing = [path for path in buying if path not in nonoverlapping]
+                  exempted: list[str] = []
+                  version = rules.get("version")
+                  if (
+                      isinstance(version, dict)
+                      and version["path"] in overlap_paths
+                      and version["path"] in {path.replace("\\", "/") for path in refusing}
+                      and reads.version_only(revision, record, version)
+                  ):
+                      exempted = [path for path in refusing if path.replace("\\", "/") == version["path"]]
+                      refusing = [path for path in refusing if path not in exempted]
                   if refusing:
                       return {
                           "applicable": False,
                           "reason": (
                               f"use evidence at {ancestor} is stale because intervening commit "
-                              f"{revision} changes a use-bought path {_safe_text(refusing[0])}"
+                              f"{revision} changes "
+                              f"{'a use-bought path' if len(refusing) == 1 else 'use-bought paths'} "
+                              + ", ".join(_safe_text(path) for path in refusing)
                           ),
                           "intervening_commits": intervening,
                           "intervening_records": intervening_records,
                       }
+                  reasons = []
+                  if not buying:
+                      reasons.append("changes no use-buying path")
+                  if nonoverlapping:
+                      reasons.append("use-buying paths do not overlap the pull request's changed paths ("
+                          + ", ".join(_safe_text(path) for path in nonoverlapping) + ")")
+                  if exempted:
+                      reasons.append("version-only exemption (" + ", ".join(_safe_text(path) for path in exempted) + ")")
+                  carry_reasons.append(f"intervening commit {revision} carries use: " + "; ".join(reasons))
               return {
                   "applicable": True,
                   "reason": "no intervening commit invalidates the earlier-head use under the trusted policy",
                   "intervening_commits": intervening,
                   "intervening_records": intervening_records,
+                  "carry_reasons": carry_reasons,
               }
 
 
@@ -1102,7 +1227,7 @@ jobs:
               authorized: list[MarkerRecord],
               base_tip: str | None = None,
               changed_paths: list[str] | None = None,
-          ) -> tuple[MarkerRecord | None, list[str], str | None]:
+          ) -> tuple[MarkerRecord | None, list[str], str | None, list[str]]:
               candidates = []
               for marker in authorized:
                   evidence_head = marker.attributes.get("head")
@@ -1120,11 +1245,12 @@ jobs:
                   reverse=True,
               )
               newest_reason: str | None = None
+              reads = AncestorReads(transport, repo, base_tip)
               for marker in candidates:
                   evidence_head = marker.attributes["head"]
                   try:
                       application = _ancestor_application(
-                          transport, repo, evidence_head, head, rules, base_tip, changed_paths
+                          transport, repo, evidence_head, head, rules, base_tip, changed_paths, reads
                       )
                   except (OSError, UnicodeError, ValueError, ProofError) as exc:
                       detail = str(exc) or type(exc).__name__
@@ -1137,10 +1263,10 @@ jobs:
                               isinstance(revision, str) for revision in revisions
                           ):
                               raise ProofError("applicable use history has an invalid internal shape")
-                          return marker, revisions, None
+                          return marker, revisions, None, application["carry_reasons"]
                   if newest_reason is None:
                       newest_reason = reason
-              return None, [], newest_reason
+              return None, [], newest_reason, []
 
 
           def _strip_balanced_markdown_wrapper(value: str) -> str:
@@ -2690,6 +2816,7 @@ jobs:
                                   f"trusted policy requires use and ancestor evidence at {evidence_head} "
                                   "remains applicable"
                               )
+                              verified.extend(application["carry_reasons"])
               else:
                   valid_generated = (
                       use["required"] is False
@@ -2917,8 +3044,9 @@ jobs:
                       ancestor_marker: MarkerRecord | None = None
                       intervening: list[str] = []
                       rejected_reason: str | None = None
+                      carry_reasons: list[str] = []
                       if transport is not None and repo:
-                          ancestor_marker, intervening, rejected_reason = _ancestor_use(
+                          ancestor_marker, intervening, rejected_reason, carry_reasons = _ancestor_use(
                               transport, repo, head, rules, authorized, base_tip, paths
                           )
                       if ancestor_marker is not None:
@@ -2928,6 +3056,7 @@ jobs:
                               "changed paths buy a use and authorized use marker at "
                               f"{evidence_head} remains valid after intervening commits: {revisions}"
                           )
+                          verified.extend(carry_reasons)
                       else:
                           missing = "an authorized, valid use marker for the current head"
                           if rejected_reason is not None:
