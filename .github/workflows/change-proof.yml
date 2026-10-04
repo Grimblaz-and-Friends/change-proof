@@ -74,7 +74,6 @@ jobs:
               r"(?:\A|\r?\n)[ \t]*```(?:json)?[ \t]*\r?\n(.*?)(?:\r?\n)[ \t]*```[ \t]*(?=\r?\n|\Z)",
               re.I | re.S,
           )
-          NO_USE_LINE = re.compile(r"^\s*Use: not required\s+(?:-|—)\s+\S.*$")
           DISPOSITIONS = (
               "fixed",
               "fixed - nothing else found it",
@@ -458,7 +457,7 @@ jobs:
               transport, repo: str, path: str, revision: str
           ) -> tuple[dict[str, object], bytes] | None:
               try:
-                  return _json_file_record(transport, repo, path, revision)
+                  return _json_file_record(transport, repo, path, revision, strict=True)
               except GitHubNotFound:
                   return None
 
@@ -502,7 +501,53 @@ jobs:
                       "major", "minor", "patch"
                   }:
                       raise ProofError("version.increment must be major, minor or patch")
+              load_floor_policy(rules_object)
               return rules_object
+
+
+          def _workflow_path(value: object) -> bool:
+              return (
+                  isinstance(value, str)
+                  and value.startswith(".github/workflows/")
+                  and value.endswith((".yml", ".yaml"))
+                  and not any(character in value for character in "\\:*?[]{}@")
+                  and not any(ord(character) < 32 or 127 <= ord(character) < 160 for character in value)
+                  and not any(part in {"", ".", ".."} for part in value.split("/"))
+              )
+
+
+          def load_floor_policy(policy: dict[str, object]) -> dict[str, object]:
+              """Read only the trusted policy; malformed declarations never become absence."""
+              if "floor" not in policy:
+                  return {"jobs": [], "stall_after_seconds": 3600}
+              floor = policy["floor"]
+              if not isinstance(floor, dict) or not {"jobs"} <= set(floor) <= {
+                  "jobs", "stall_after_seconds"
+              }:
+                  raise ProofError("floor must carry required jobs and optional stall_after_seconds only")
+              jobs = floor["jobs"]
+              if not isinstance(jobs, list):
+                  raise ProofError("floor.jobs must be an array")
+              seen: set[tuple[str, str]] = set()
+              for item in jobs:
+                  if not isinstance(item, dict) or set(item) != {"workflow", "job"}:
+                      raise ProofError("each floor job must carry exactly workflow and job")
+                  if not _workflow_path(item["workflow"]):
+                      raise ProofError("floor workflow must be an exact relative .github/workflows/*.yml or .yaml path")
+                  name = item["job"]
+                  if (
+                      not isinstance(name, str) or not name.strip()
+                      or any(ord(character) < 32 or 127 <= ord(character) < 160 for character in name)
+                  ):
+                      raise ProofError("floor job must be nonblank exact text without control characters")
+                  pair = (item["workflow"], name)
+                  if pair in seen:
+                      raise ProofError("floor.jobs contains a duplicate workflow/job pair")
+                  seen.add(pair)
+              bound = floor.get("stall_after_seconds", 3600)
+              if not _is_integer(bound) or bound <= 0:
+                  raise ProofError("floor.stall_after_seconds must be a positive integer")
+              return {"jobs": jobs, "stall_after_seconds": bound}
 
 
           def load_work_config(value: object) -> WorkConfig:
@@ -533,15 +578,15 @@ jobs:
 
 
           def _schema_object(
-              value: object, path: str, fields: tuple[str, ...]
+              value: object, path: str, fields: tuple[str, ...], optional: tuple[str, ...] = ()
           ) -> dict[str, object]:
               if not isinstance(value, dict):
                   raise ProofError(f"proof document {path} must be an object")
               actual = set(value)
               expected = set(fields)
-              if actual != expected:
+              if not expected <= actual <= expected | set(optional):
                   missing = sorted(expected - actual)
-                  extra = sorted(actual - expected)
+                  extra = sorted(actual - expected - set(optional))
                   details = []
                   if missing:
                       details.append(f"missing {', '.join(missing)}")
@@ -654,9 +699,11 @@ jobs:
                       raise ProofError(f"proof document $.identity.{field} must be a positive integer")
               _schema_head(identity["head"], "$.identity.head")
 
-              policy = _schema_object(document["policy"], "$.policy", ("work_configuration", "use_rules"))
+              policy = _schema_object(document["policy"], "$.policy", ("work_configuration", "use_rules"), ("floor",))
               _validate_policy_source(policy["work_configuration"], "$.policy.work_configuration")
               _validate_policy_source(policy["use_rules"], "$.policy.use_rules")
+              if policy.get("floor") is not None:
+                  _validate_policy_source(policy["floor"], "$.policy.floor")
 
               floor = _schema_object(document["floor"], "$.floor", ("head", "source", "checks"))
               if floor["head"] is not None:
@@ -1219,56 +1266,6 @@ jobs:
               }
 
 
-          def _ancestor_use(
-              transport,
-              repo: str,
-              head: str,
-              rules: dict[str, object],
-              authorized: list[MarkerRecord],
-              base_tip: str | None = None,
-              changed_paths: list[str] | None = None,
-          ) -> tuple[MarkerRecord | None, list[str], str | None, list[str]]:
-              candidates = []
-              for marker in authorized:
-                  evidence_head = marker.attributes.get("head")
-                  if (
-                      marker.name == "use"
-                      and isinstance(evidence_head, str)
-                      and evidence_head != head
-                      and FULL_SHA.fullmatch(evidence_head) is not None
-                      and marker.attributes.get("changed") == "false"
-                      and _valid_use(marker, evidence_head)
-                  ):
-                      candidates.append(marker)
-              candidates.sort(
-                  key=lambda marker: (marker.timestamp, marker.source_id, marker.observed_order),
-                  reverse=True,
-              )
-              newest_reason: str | None = None
-              reads = AncestorReads(transport, repo, base_tip)
-              for marker in candidates:
-                  evidence_head = marker.attributes["head"]
-                  try:
-                      application = _ancestor_application(
-                          transport, repo, evidence_head, head, rules, base_tip, changed_paths, reads
-                      )
-                  except (OSError, UnicodeError, ValueError, ProofError) as exc:
-                      detail = str(exc) or type(exc).__name__
-                      reason = f"history unavailable from {evidence_head}: {detail}"
-                  else:
-                      reason = str(application.get("reason") or "use evidence is not applicable")
-                      if application.get("applicable"):
-                          revisions = application.get("intervening_commits", [])
-                          if not isinstance(revisions, list) or not all(
-                              isinstance(revision, str) for revision in revisions
-                          ):
-                              raise ProofError("applicable use history has an invalid internal shape")
-                          return marker, revisions, None, application["carry_reasons"]
-                  if newest_reason is None:
-                      newest_reason = reason
-              return None, [], newest_reason, []
-
-
           def _strip_balanced_markdown_wrapper(value: str) -> str:
               stripped = value.strip()
               if not stripped or stripped[0] not in "`*_":
@@ -1280,14 +1277,6 @@ jobs:
               if wrapper not in {"`", "*", "**", "_", "__"} or closing != opening:
                   return stripped
               return stripped[opening:-closing].strip()
-
-
-          def _valid_no_use(marker: MarkerRecord, head: str) -> bool:
-              has_line = any(
-                  NO_USE_LINE.fullmatch(_strip_balanced_markdown_wrapper(line))
-                  for line in marker.body.splitlines()
-              )
-              return marker.name == "no-use" and marker.attributes == {"head": head} and has_line
 
 
           def _strip_opening_word_formatting(value: str) -> str:
@@ -2185,6 +2174,361 @@ jobs:
                   return None
 
 
+          @dataclass
+          class DeclaredFloor:
+              checks: list[dict[str, object]]
+              executions: list[dict[str, object]]
+              findings: list[Finding]
+              excluded: list[str]
+              outcome: str
+
+
+          def _positive_id(value: object, label: str) -> int:
+              if not _is_integer(value) or value <= 0:
+                  raise ProofError(f"{label} must be a positive numeric identity")
+              return value
+
+
+          def _run_path(value: object) -> str:
+              if not isinstance(value, str):
+                  raise ProofError("Actions run has no top-level workflow path")
+              path, separator, ref = value.partition("@")
+              # GitHub-managed dynamic workflows cannot match a repository declaration.
+              if not path.startswith(".github/workflows/"):
+                  return path
+              if not _workflow_path(path) or (separator and (not ref or "@" in ref)):
+                  raise ProofError(f"Actions run has an unverifiable top-level workflow path: {value!r}")
+              return path
+
+
+          def _run_identity(run: dict[str, object], repo: str, head: str) -> int:
+              run_id = _positive_id(run.get("id"), "Actions run id")
+              repository = run.get("repository")
+              full_name = repository.get("full_name") if isinstance(repository, dict) else None
+              if not isinstance(full_name, str) or full_name.lower() != repo.lower():
+                  raise ProofError(f"Actions run #{run_id} has missing or contradictory repository identity")
+              if run.get("head_sha") != head:
+                  raise ProofError(f"Actions run #{run_id} has a contradictory head")
+              return run_id
+
+
+          def _run_event(run: dict[str, object]) -> str:
+              event = run.get("event")
+              if not isinstance(event, str) or not event.strip() or any(
+                  ord(character) < 32 or 127 <= ord(character) < 160 for character in event
+              ):
+                  raise ProofError(f"Actions run #{run['id']} has unavailable triggering-event provenance")
+              return event
+
+
+          def _attempt_start(run: dict[str, object], jobs: list[dict[str, object]], attempt: int) -> object:
+              """Do not time a rerun from the original workflow execution's creation."""
+              if attempt == run["run_attempt"] and run.get("run_started_at") is not None:
+                  return run["run_started_at"]
+              starts = [job["started_at"] for job in jobs
+                        if job.get("run_attempt") == attempt and job.get("started_at") is not None]
+              if starts:
+                  instants = [_start_instant(start) for start in starts]
+                  if any(instant is None for instant in instants):
+                      raise ProofError(f"run #{run['id']} attempt #{attempt} has an invalid start timestamp")
+                  return min(starts, key=_start_instant)
+              return run.get("created_at") if attempt == 1 else None
+
+
+          def _execution_state(
+              status: object, conclusion: object, started_at: object, created_at: object,
+              observed_at: datetime, bound: int,
+          ) -> tuple[str, float | None]:
+              if not isinstance(status, str) or (conclusion is not None and not isinstance(conclusion, str)):
+                  raise ProofError("execution has malformed status/conclusion text")
+              if status == "completed":
+                  if conclusion == "success":
+                      return "success", None
+                  if conclusion in {"skipped", "neutral"}:
+                      return "fallback", None
+                  if conclusion in {
+                      "failure", "cancelled", "timed_out", "action_required", "startup_failure", "stale"
+                  }:
+                      return "blocked", None
+                  raise ProofError(f"completed execution has unknown conclusion {conclusion!r}")
+              if status not in {"queued", "in_progress", "waiting", "pending", "requested"}:
+                  raise ProofError(f"execution has unknown status {status!r}")
+              if conclusion is not None:
+                  raise ProofError("unfinished execution has a contradictory conclusion")
+              clock = _start_instant(started_at if started_at is not None else created_at)
+              if clock is None or clock > observed_at:
+                  raise ProofError("unfinished execution has an invalid or unavailable stall timestamp")
+              age = (observed_at - clock).total_seconds()
+              return ("stalled" if age >= bound else "pending"), age
+
+
+          def _declared_floor_checks(
+              transport, repo: str, head: str, declaration: dict[str, object],
+              current_run_id: int | None, current_run_attempt: int | None,
+              observed_at: datetime,
+          ) -> DeclaredFloor:
+              """Select complete public job executions independently of producer claims."""
+              result = DeclaredFloor([], [], [], [], "ci-met")
+              try:
+                  _collect_declared_floor(
+                      transport, repo, head, declaration, current_run_id,
+                      current_run_attempt, observed_at, result,
+                  )
+              except (OSError, UnicodeError, ValueError, ProofError) as exc:
+                  result.outcome = "unverifiable"
+                  result.findings.append(Finding(
+                      f"verifiable declared floor at {head}: {str(exc) or type(exc).__name__}",
+                      "restore the named public execution fact and run proof again",
+                  ))
+              return result
+
+
+          def _collect_declared_floor(
+              transport, repo: str, head: str, declaration: dict[str, object],
+              current_run_id: int | None, current_run_attempt: int | None,
+              observed_at: datetime, result: DeclaredFloor,
+          ) -> None:
+              if not isinstance(observed_at, datetime) or observed_at.tzinfo is None:
+                  raise ProofError("floor observation time must be timezone-aware")
+              pairs = declaration["jobs"]
+              paths = {pair["workflow"] for pair in pairs}
+              bound = declaration["stall_after_seconds"]
+              runs_endpoint = f"repos/{repo}/actions/runs?head_sha={head}&per_page=100"
+              runs = _paginated_objects(
+                  transport.get(runs_endpoint, paginate=True), runs_endpoint, "workflow_runs"
+              )
+              checks_endpoint = f"repos/{repo}/commits/{head}/check-runs?filter=all&per_page=100"
+              checks = _paginated_objects(
+                  transport.get(checks_endpoint, paginate=True), checks_endpoint, "check_runs"
+              )
+              checks_by_id: dict[int, dict[str, object]] = {}
+              for check in checks:
+                  check_id = _positive_id(check.get("id"), "check run id")
+                  if check_id in checks_by_id:
+                      raise ProofError(f"duplicate public check #{check_id} across check pages")
+                  checks_by_id[check_id] = check
+
+              selected: dict[tuple[str, str], dict[str, object]] = {}
+              seen_runs: set[int] = set()
+              run_paths: dict[int, str] = {}
+              for summary in runs:
+                  run_id = _run_identity(summary, repo, head)
+                  if run_id in seen_runs:
+                      raise ProofError(f"duplicate workflow run #{run_id} across run pages")
+                  seen_runs.add(run_id)
+                  # Positive unrelated provenance is enough to exclude it without reading jobs.
+                  if "path" in summary and _run_path(summary["path"]) not in paths:
+                      run_paths[run_id] = _run_path(summary["path"])
+                      continue
+                  endpoint = f"repos/{repo}/actions/runs/{run_id}"
+                  run = _object(transport.get(endpoint), endpoint)
+                  if _run_identity(run, repo, head) != run_id:
+                      raise ProofError(f"Actions run #{run_id} returned a contradictory run id")
+                  path = _run_path(run.get("path"))
+                  if "path" in summary and _run_path(summary["path"]) != path:
+                      raise ProofError(f"Actions run #{run_id} changed its workflow path during collection")
+                  run_paths[run_id] = path
+                  if path not in paths:
+                      continue
+                  event = _run_event(run)
+                  if "event" in summary and _run_event(summary) != event:
+                      raise ProofError(f"Actions run #{run_id} changed its triggering event during collection")
+                  key = (path, event)
+                  if key not in selected or run_id > selected[key]["id"]:
+                      selected[key] = run
+
+              jobs_by_run: dict[int, list[dict[str, object]]] = {}
+              for (path, event), run in selected.items():
+                  run_id = run["id"]
+                  attempt = _positive_id(run.get("run_attempt"), f"run #{run_id} attempt")
+                  _positive_id(run.get("workflow_id"), f"run #{run_id} workflow id")
+                  _positive_id(run.get("check_suite_id"), f"run #{run_id} check suite id")
+                  html_url = run.get("html_url")
+                  if not isinstance(html_url, str) or re.fullmatch(
+                      rf"https://github\.com/{re.escape(repo)}/actions/runs/{run_id}/?", html_url, re.I
+                  ) is None:
+                      raise ProofError(f"run #{run_id} has unavailable or contradictory public URL identity")
+                  jobs = _run_jobs(transport, repo, run_id)
+                  declared_names = {pair["job"] for pair in pairs if pair["workflow"] == path}
+                  seen_jobs: set[int] = set()
+                  check_jobs: dict[int, list[dict[str, object]]] = {}
+                  for job in jobs:
+                      check_url = job.get("check_run_url")
+                      origin = getattr(transport, "api_url", "https://api.github.com").rstrip("/")
+                      match = re.fullmatch(
+                          rf"{re.escape(origin)}/repos/{re.escape(repo)}/check-runs/([1-9][0-9]*)",
+                          check_url if isinstance(check_url, str) else "", re.I,
+                      )
+                      if match is not None:
+                          check_jobs.setdefault(int(match.group(1)), []).append(job)
+                      name = job.get("name")
+                      if isinstance(name, str) and name not in declared_names:
+                          continue
+                      if not isinstance(name, str):
+                          raise ProofError(f"run #{run_id} has a job with unavailable name provenance")
+                      job_id = _positive_id(job.get("id"), f"job in run #{run_id}")
+                      job_attempt = _positive_id(job.get("run_attempt"), f"job #{job_id} attempt")
+                      if job_id in seen_jobs or job_attempt > attempt:
+                          raise ProofError(f"job #{job_id} has duplicate or contradictory attempt identity")
+                      seen_jobs.add(job_id)
+                      if job.get("run_id") != run_id or job.get("head_sha") != head:
+                          raise ProofError(f"job #{job_id} has contradictory run/head identity")
+                      if match is None:
+                          raise ProofError(f"job #{job_id} has an unverifiable check_run_url identity")
+                      run_url = job.get("run_url")
+                      if run_url is not None and (
+                          not isinstance(run_url, str)
+                          or run_url.lower() != f"{origin}/repos/{repo}/actions/runs/{run_id}".lower()
+                      ):
+                          raise ProofError(f"job #{job_id} has contradictory run_url identity")
+                  for check_id, associated in check_jobs.items():
+                      if len(associated) > 1 and any(job.get("name") in declared_names for job in associated):
+                          raise ProofError(f"check #{check_id} is ambiguously associated with jobs")
+                  jobs_by_run[run_id] = jobs
+
+              for pair in pairs:
+                  path, name = pair["workflow"], pair["job"]
+                  pair_runs = [run for (workflow, event), run in selected.items() if workflow == path]
+                  for run in pair_runs or [None]:
+                      execution = {"workflow": path, "job": name, "run_id": None, "event": None,
+                                   "attempt": None, "check_id": None, "state": "fallback",
+                                   "conclusion": None, "age_seconds": None}
+                      if run is None:
+                          result.executions.append(execution)
+                          continue
+                      run_id = run["id"]
+                      run_attempt = run["run_attempt"]
+                      execution.update(run_id=run_id, attempt=run_attempt, event=run["event"])
+                      jobs = jobs_by_run[run_id]
+                      matches = [job for job in jobs if job.get("name") == name]
+                      newest_attempt = max((job["run_attempt"] for job in matches), default=0)
+                      matches = [job for job in matches if job["run_attempt"] == newest_attempt]
+                      current_gate = run_id == current_run_id and (
+                          current_run_attempt is None or current_run_attempt == run_attempt
+                      )
+                      gate_run = run_id == current_run_id or _run_references_gate(run)
+                      proof_attempt = run_attempt if current_gate else newest_attempt
+                      proof_jobs = [job for job in jobs
+                                    if job.get("run_attempt") == proof_attempt and _is_proof_job(job)]
+                      if gate_run and matches and len(proof_jobs) != 1:
+                          raise ProofError(
+                              f"an unambiguous reusable proof job in run #{run_id} attempt #{proof_attempt}; "
+                              f"candidate jobs: {', '.join(_job_label(job) for job in proof_jobs) or 'none'}"
+                          )
+                      # An unfinished rerun does not yet prove that a missing job was retained.
+                      uncertain = run.get("status") != "completed" and newest_attempt < run_attempt
+                      if current_gate and matches and all(job.get("status") == "completed" for job in matches):
+                          # This attempt's gate cannot make retained completed tests wait on itself.
+                          uncertain = False
+                      if uncertain or not matches:
+                          state, age = _execution_state(
+                              run.get("status"), run.get("conclusion"), None,
+                              _attempt_start(run, jobs, run_attempt) if run.get("status") != "completed" else None,
+                              observed_at, bound,
+                          )
+                          # A successful/skipped run does not establish an omitted job's execution.
+                          execution.update(state="fallback" if state == "success" else state,
+                                           age_seconds=age, conclusion=run.get("conclusion"))
+                          result.executions.append(execution)
+                          continue
+                      for job in matches:
+                          check_id = int(job["check_run_url"].rsplit("/", 1)[-1])
+                          if gate_run and _is_proof_job(job):
+                              result.excluded.append(
+                                  f"proof execution run #{run_id} attempt #{newest_attempt} check #{check_id} "
+                                  "cannot establish its own declared floor"
+                              )
+                              result.executions.append(dict(execution))
+                              continue
+                          check = checks_by_id.get(check_id)
+                          if check is None:
+                              raise ProofError(f"job #{job['id']} has no visible check #{check_id}")
+                          app = check.get("app")
+                          suite = check.get("check_suite")
+                          if (
+                              not isinstance(app, dict) or app.get("slug") != "github-actions"
+                              or not _is_integer(app.get("id")) or app["id"] <= 0
+                              or not isinstance(suite, dict) or suite.get("id") != run["check_suite_id"]
+                              or check.get("head_sha") != head or check.get("name") != name
+                              or _actions_run_id(check, repo) != run_id
+                              or check.get("status") != job.get("status")
+                              or check.get("conclusion") != job.get("conclusion")
+                          ):
+                              raise ProofError(f"check #{check_id} and job #{job['id']} have contradictory identities/results")
+                          details_url = check.get("details_url")
+                          if "/job/" in details_url and details_url.rstrip("/").rsplit("/", 1)[-1] != str(job["id"]):
+                              raise ProofError(f"check #{check_id} names a contradictory job identity")
+                          suite_app = suite.get("app")
+                          if suite_app is not None and (
+                              not isinstance(suite_app, dict) or suite_app.get("id") != app["id"]
+                              or suite_app.get("slug") != app["slug"]
+                          ):
+                              raise ProofError(f"check #{check_id} names a contradictory suite application")
+                          suite_repository = suite.get("repository")
+                          if suite_repository is not None and (
+                              not isinstance(suite_repository, dict)
+                              or str(suite_repository.get("full_name", "")).lower() != repo.lower()
+                          ):
+                              raise ProofError(f"check #{check_id} names a contradictory suite repository")
+                          started_at = job.get("started_at") if job.get("started_at") is not None else check.get("started_at")
+                          attempt_start = (
+                              _attempt_start(run, jobs, newest_attempt)
+                              if started_at is None and check.get("status") != "completed" else None
+                          )
+                          state, age = _execution_state(
+                              check.get("status"), check.get("conclusion"), started_at,
+                              attempt_start, observed_at, bound,
+                          )
+                          result.executions.append(dict(
+                              execution, attempt=newest_attempt, check_id=check_id,
+                              state=state, conclusion=check.get("conclusion"), age_seconds=age,
+                          ))
+                          result.checks.append({
+                              "id": check_id, "name": name, "app_id": app["id"], "app_slug": app["slug"],
+                              "workflow_id": run["workflow_id"], "run_id": run_id,
+                              "url": run["html_url"],
+                              "head": head, "status": check.get("status"), "conclusion": check.get("conclusion"),
+                              "started_at": check.get("started_at"), "completed_at": check.get("completed_at"),
+                          })
+
+              relevant_ids = {item["id"] for item in result.checks}
+              for check_id, check in checks_by_id.items():
+                  if check_id in relevant_ids:
+                      continue
+                  app = check.get("app")
+                  run_id = _actions_run_id(check, repo)
+                  if (
+                      not isinstance(app, dict) or not isinstance(app.get("slug"), str)
+                      or not app["slug"] or not _is_integer(app.get("id")) or app["id"] <= 0
+                  ):
+                      raise ProofError(f"check #{check_id} has unavailable application provenance")
+                  if app.get("slug") == "github-actions" and run_id not in run_paths:
+                      declared_names = {pair["job"] for pair in pairs}
+                      name = check.get("name")
+                      if run_id is not None or not isinstance(name, str) or name in declared_names:
+                          raise ProofError(f"Actions check #{check_id} has unavailable workflow-run provenance")
+                  result.excluded.append(f"check #{check_id} is outside the selected declared executions")
+              result.checks.sort(key=lambda check: check["id"])
+              states = {execution["state"] for execution in result.executions}
+              result.outcome = next(
+                  (state for state in ("blocked", "stalled", "pending", "fallback") if state in states),
+                  "ci-met",
+              )
+              for execution in result.executions:
+                  label = (
+                      f"{execution['workflow']} job {execution['job']!r} at {head} "
+                      f"event {execution['event']!r} run #{execution['run_id']} "
+                      f"attempt #{execution['attempt']} check #{execution['check_id']}"
+                  )
+                  state = execution["state"]
+                  if state in {"blocked", "pending", "stalled"}:
+                      result.findings.append(Finding(
+                          f"declared floor {state}: {label}; conclusion={execution['conclusion']!r} "
+                          f"age_seconds={execution['age_seconds']}",
+                          "resolve the named declared execution; a builder marker cannot override it; run proof again",
+                      ))
+
+
           def _public_floor_checks(
               transport,
               repo: str,
@@ -2433,9 +2777,14 @@ jobs:
               known_paths = {
                   "work_configuration": ".tradecraft/work.json",
                   "use_rules": ".github/change-proof.json",
+                  "floor": ".github/change-proof.json",
               }
               for name, expected_path in known_paths.items():
-                  source = policy[name]
+                  source = policy.get(name)
+                  if source is None:
+                      if name == "floor" and name in policy:
+                          declared.append("policy floor: producer reports no base-policy blob")
+                      continue
                   assert isinstance(source, dict)
                   prefix = (
                       f"policy {name} repository={_safe_text(source['repository'])} "
@@ -2497,6 +2846,7 @@ jobs:
               current_run_id: int | None,
               current_run_attempt: int | None,
               base_tip: str | None = None,
+              observed_at: datetime | None = None,
           ) -> tuple[list[Finding], list[str], list[str], list[str], list[str], list[str], list[str]]:
               failures: list[Finding] = []
               verified: list[str] = [f"selected proof-v1 comment #{comment_id}"]
@@ -2532,6 +2882,41 @@ jobs:
 
               floor = document["floor"]
               assert isinstance(floor, dict)
+              declaration = load_floor_policy(rules)
+              has_declaration = bool(declaration["jobs"])
+              base_blob = policy_bytes.get((".github/change-proof.json", base_tip or ""))
+              verified.append(
+                  f"floor authority: {repo} .github/change-proof.json at base tip {base_tip}; "
+                  f"sha256={hashlib.sha256(base_blob).hexdigest() if base_blob is not None else 'unavailable'}; "
+                  f"declared jobs={len(declaration['jobs'])}"
+              )
+              ci_floor: DeclaredFloor | None = None
+              if has_declaration:
+                  ci_floor = _declared_floor_checks(
+                      transport, repo, head, declaration, current_run_id, current_run_attempt,
+                      observed_at if observed_at is not None else datetime.now(timezone.utc),
+                  )
+                  actual_checks, check_findings, excluded, superseded = (
+                      ci_floor.checks, ci_floor.findings, ci_floor.excluded, []
+                  )
+                  for execution in ci_floor.executions:
+                      statement = (
+                          f"declared job {_safe_text(execution['workflow'])} job={_safe_text(execution['job'])} "
+                          f"event={_safe_text(execution['event'])} "
+                          f"run=#{execution['run_id']} attempt=#{execution['attempt']} "
+                          f"check=#{execution['check_id']} conclusion={_safe_text(execution['conclusion'])} "
+                          f"state={execution['state']}"
+                      )
+                      if execution["state"] == "success":
+                          verified.append(statement)
+                      elif execution["state"] == "fallback":
+                          diagnostics.append(statement + "; authorized builder fallback is owed")
+              else:
+                  actual_checks, check_findings, excluded, superseded = _public_floor_checks(
+                      transport, repo, head, current_run_id, current_run_attempt
+                  )
+              failures.extend(check_findings)
+              source_owed = ci_floor is None or ci_floor.outcome == "fallback"
               if floor["head"] != head:
                   failures.append(Finding(
                       "a current-head floor record in the selected proof document",
@@ -2539,7 +2924,16 @@ jobs:
                   ))
               source = floor["source"]
               floor_source_verified = False
-              if not isinstance(source, dict):
+              if ci_floor is not None and ci_floor.outcome == "ci-met":
+                  if source is not None:
+                      failures.append(Finding(
+                          "a source-free declared CI floor",
+                          "run proof with floor.source null for the successful declared CI executions",
+                      ))
+                  verified.append("floor satisfied by declared CI; no builder floor was needed")
+              elif not source_owed and source is None:
+                  pass
+              elif not isinstance(source, dict):
                   failures.append(Finding(
                       "an authorized public floor source",
                       "post the successful current-head floor marker and recompose proof",
@@ -2598,17 +2992,18 @@ jobs:
                   else:
                       floor_source_verified = True
                       verified.append(f"floor source {_safe_text(source['kind'])} #{_safe_text(source['id'])} is authorized and current-head")
-
-              actual_checks, check_findings, excluded, superseded = _public_floor_checks(
-                  transport, repo, head, current_run_id, current_run_attempt
-              )
-              failures.extend(check_findings)
+                      verified.append("builder floor supplied by an authorized public attestation")
               supplied_checks = floor["checks"]
               assert isinstance(supplied_checks, list)
               actual_by_id = {check["id"]: check for check in actual_checks}
               supplied_ids: list[object] = []
               for supplied in supplied_checks:
                   assert isinstance(supplied, dict)
+                  if supplied["id"] in supplied_ids:
+                      failures.append(Finding(
+                          f"a unique floor check entry; duplicate check #{supplied['id']}",
+                          "run proof with each selected public check exactly once",
+                      ))
                   supplied_ids.append(supplied["id"])
                   actual = actual_by_id.get(supplied["id"])
                   if actual is None:
@@ -2629,7 +3024,7 @@ jobs:
                       f"the complete public floor set; omitted check id(s): {', '.join(map(str, omitted))}",
                       "recompose proof after collecting every current-head floor check",
                   ))
-              for check in actual_checks:
+              for check in actual_checks if not has_declaration else []:
                   conclusion = check["conclusion"]
                   if (
                       check["status"] != "completed"
@@ -3014,173 +3409,6 @@ jobs:
               return failures, verified, declared, diagnostics, producer_diagnostics, excluded, superseded
 
 
-          def evaluate(
-              head: str,
-              paths: list[str],
-              rules: dict[str, object],
-              config: WorkConfig,
-              comments: list[dict[str, object]],
-              reviews: list[dict[str, object]],
-              review_comments: list[dict[str, object]],
-              transport=None,
-              repo: str = "",
-              number: int | None = None,
-              base_tip: str | None = None,
-          ) -> tuple[list[Finding], list[str]]:
-              failures: list[Finding] = []
-              verified: list[str] = []
-              evidence = comments + reviews + review_comments
-              authorized = [item for item in markers(evidence) if item.author in config.marker_producers]
-              bought = use_required(paths, rules)
-              current_use = [
-                  marker
-                  for marker in authorized
-                  if marker.name == "use" and marker.attributes.get("head") == head
-              ]
-              if bought:
-                  if any(_valid_use(marker, head) for marker in current_use):
-                      verified.append("changed paths buy a use and an authorized current-head use marker is valid")
-                  else:
-                      ancestor_marker: MarkerRecord | None = None
-                      intervening: list[str] = []
-                      rejected_reason: str | None = None
-                      carry_reasons: list[str] = []
-                      if transport is not None and repo:
-                          ancestor_marker, intervening, rejected_reason, carry_reasons = _ancestor_use(
-                              transport, repo, head, rules, authorized, base_tip, paths
-                          )
-                      if ancestor_marker is not None:
-                          evidence_head = ancestor_marker.attributes["head"]
-                          revisions = ", ".join(intervening) if intervening else "none"
-                          verified.append(
-                              "changed paths buy a use and authorized use marker at "
-                              f"{evidence_head} remains valid after intervening commits: {revisions}"
-                          )
-                          verified.extend(carry_reasons)
-                      else:
-                          missing = "an authorized, valid use marker for the current head"
-                          if rejected_reason is not None:
-                              missing = f"{missing}; latest earlier-head candidate failed: {rejected_reason}"
-                          failures.append(Finding(
-                              missing,
-                              "post the completed use note with the exact tradecraft:use:v1 form at this head",
-                          ))
-              else:
-                  if current_use:
-                      failures.append(Finding(
-                          "a truthful path classification because the current-head use marker is a false claim",
-                          "remove the false used claim and post an authorized tradecraft:no-use:v1 note",
-                      ))
-                  current_no_use = [
-                      marker
-                      for marker in authorized
-                      if marker.name == "no-use" and marker.attributes.get("head") == head
-                  ]
-                  if any(_valid_no_use(marker, head) for marker in current_no_use):
-                      verified.append(
-                          "changed paths do not buy a use and an authorized current-head no-use note has its line"
-                      )
-                  else:
-                      failures.append(Finding(
-                          "an authorized no-use marker and its 'Use: not required' line for the current head",
-                          "post the exact tradecraft:no-use:v1 marker followed by that line and the reason",
-                      ))
-
-              missing_reviewers: list[str] = []
-              receipt_cache: dict[tuple[str, int], tuple[str | None, str | None, str | None]] = {}
-              for reviewer in sorted(config.connected_reviewers):
-                  credit: str | None = None
-                  notices: list[str] = []
-                  rejections: list[str] = []
-                  for kind, records in (("review", reviews), ("inline review comment", review_comments)):
-                      for item in records:
-                          if _author(item) != reviewer:
-                              continue
-                          credit, error = _review_receipt(item, kind, transport, repo, receipt_cache)
-                          if credit is not None:
-                              break
-                          rejections.append(f"{_record_label(kind, item)}: {error}")
-                      if credit is not None:
-                          break
-                  if credit is None:
-                      for item in comments:
-                          if _author(item) != reviewer:
-                              continue
-                          credit, error = _review_receipt(
-                              item, "pull-request comment", transport, repo, receipt_cache
-                          )
-                          if credit is not None:
-                              break
-                          notice = _review_notice(str(item.get("body") or ""))
-                          if notice is not None:
-                              notices.append(notice)
-                          else:
-                              rejections.append(f"{_record_label('pull-request comment', item)}: {error}")
-                  if credit is not None:
-                      verified.append(f"connected reviewer {reviewer} credited by {_safe_text(credit)}")
-                  elif reviewer == LAB_REVIEWER:
-                      detail = "; ".join(dict.fromkeys(rejections)) or "no submitted review names its workflow run"
-                      if notices:
-                          named = ", ".join(f"{notice!r}" for notice in dict.fromkeys(notices))
-                          detail += f"; public notice(s) {named} do not count, so a review is still owed"
-                      failures.append(Finding(
-                          f"connected reviewer run for {reviewer}; {detail}",
-                          _lab_review_remedy("then re-run change-proof"),
-                      ))
-                  elif notices:
-                      named = ", ".join(f"{notice!r}" for notice in dict.fromkeys(notices))
-                      failures.append(Finding(
-                          f"connected reviewer run for {reviewer}; public notice(s) "
-                          f"{named} do not count, so a review is still owed",
-                          f"have {reviewer} post a completed review, inline review comment, or "
-                          "pull-request comment that is not a notice of not reviewing",
-                      ))
-                  else:
-                      missing_reviewers.append(reviewer)
-              if missing_reviewers:
-                  failures.append(Finding(
-                      f"connected reviewer run(s): {', '.join(missing_reviewers)}",
-                      "have each listed reviewer post a review, inline review comment, or pull-request comment",
-                  ))
-              if not config.connected_reviewers:
-                  verified.append("the caller configures no connected reviewers")
-
-              replies: dict[int, list[dict[str, object]]] = {}
-              for item in review_comments:
-                  parent = item.get("in_reply_to_id")
-                  if isinstance(parent, int):
-                      replies.setdefault(parent, []).append(item)
-              undisposed: list[int] = []
-              for item in review_comments:
-                  identity = item.get("id")
-                  if (
-                      not isinstance(identity, int)
-                      or item.get("in_reply_to_id") is not None
-                      or _author(item) not in config.connected_reviewers
-                  ):
-                      continue
-                  if not any(
-                      _author(reply) in config.marker_producers
-                      and _disposition(str(reply.get("body") or ""))
-                      for reply in replies.get(identity, [])
-                  ):
-                      undisposed.append(identity)
-              if undisposed:
-                  failures.append(Finding(
-                      f"marker-producer disposition replies on top-level inline comment(s): "
-                      f"{', '.join(str(identity) for identity in undisposed)}",
-                      "reply in each thread with a closed disposition word at the start of the first non-blank line",
-                  ))
-              else:
-                  verified.append("every top-level inline reviewer comment has a marker-producer disposition")
-              body_failures, body_verified = _check_body_findings(
-                  repo, number, config, comments, reviews, review_comments
-              )
-              failures.extend(body_failures)
-              verified.extend(body_verified)
-              return failures, verified
-
-
           def _environment(
               environ: Mapping[str, str],
           ) -> tuple[str, str, int, str | None, str, int | None, int | None]:
@@ -3218,6 +3446,7 @@ jobs:
               *,
               transport=None,
               output: TextIO | None = None,
+              observed_at: datetime | None = None,
           ) -> int:
               destination = output or sys.stdout
               try:
@@ -3274,7 +3503,7 @@ jobs:
                       base_reference.get("object"), f"{base_ref_endpoint} object"
                   )
                   base_tip = base_tip_object.get("sha")
-                  if not isinstance(base_tip, str) or not base_tip:
+                  if not isinstance(base_tip, str) or FULL_SHA.fullmatch(base_tip) is None:
                       raise ProofError(
                           "the base branch reference object SHA is missing from the GET response"
                       )
@@ -3326,7 +3555,12 @@ jobs:
                   superseded: list[str] = []
                   evidence_path: str | None = None
                   if selected_policy is not None:
-                      rules = load_use_rules(selected_policy[".github/change-proof.json"])
+                      rules_value = dict(selected_policy[".github/change-proof.json"])
+                      rules_value.pop("floor", None)
+                      trusted_floor_policy = base_policy[".github/change-proof.json"]
+                      if trusted_floor_policy is not None and "floor" in trusted_floor_policy:
+                          rules_value["floor"] = trusted_floor_policy["floor"]
+                      rules = load_use_rules(rules_value)
                       config = load_work_config(selected_policy[".tradecraft/work.json"])
                       files_endpoint = f"{pull_endpoint}/files?per_page=100"
                       files = _records(github.get(files_endpoint, paginate=True), files_endpoint)
@@ -3385,11 +3619,11 @@ jobs:
                                   )
                           if unscoped or current:
                               evidence_path = "proof-v1"
-                              if len(current) == 1:
-                                  diagnostics.append(
-                                      "legacy markers were not evaluated because a current-head proof "
-                                      "document was selected"
-                                  )
+                              if not current:
+                                  failures.append(Finding(
+                                      "an authorized current-head proof document",
+                                      "run proof after removing or correcting the unsafe envelope",
+                                  ))
                               if unscoped:
                                   for candidate in unscoped:
                                       failures.append(Finding(
@@ -3410,7 +3644,7 @@ jobs:
                                           f"a valid selected proof-v1 document in comment #{candidate.comment_id}: "
                                           f"{candidate.error or 'document is missing'}",
                                           f"correct or replace comment #{candidate.comment_id} so exactly one "
-                                          "authorized current-head proof document remains",
+                                          "authorized current-head proof document remains; run proof",
                                       ))
                                   elif not unscoped:
                                       identity = candidate.document["identity"]
@@ -3465,6 +3699,7 @@ jobs:
                                           current_run_id,
                                           current_run_attempt,
                                           base_tip if not absent_on_base else None,
+                                          observed_at,
                                       )
                                       if work_comments_error is not None:
                                           document_failures.insert(0, Finding(
@@ -3481,22 +3716,11 @@ jobs:
                                       excluded.extend(document_excluded)
                                       superseded.extend(document_superseded)
                           else:
-                              evidence_path = "legacy-markers"
-                              evidence_failures, evidence_verified = evaluate(
-                                  head,
-                                  paths,
-                                  rules,
-                                  config,
-                                  comments,
-                                  reviews,
-                                  review_comments,
-                                  github,
-                                  repo,
-                                  number,
-                                  base_tip if not absent_on_base else None,
-                              )
-                              failures.extend(evidence_failures)
-                              verified.extend(evidence_verified)
+                              evidence_path = "proof-v1"
+                              failures.append(Finding(
+                                  "an authorized current-head proof document",
+                                  "run proof to publish one authorized proof-v1 document at the live head",
+                              ))
 
                   if not failures:
                       refreshed_pull = _object(github.get(pull_endpoint), pull_endpoint)
@@ -3506,6 +3730,17 @@ jobs:
                           failures.append(Finding(
                               f"the pull-request head to remain {head} through evaluation; now {refreshed_sha}",
                               "run change-proof again on the new head",
+                          ))
+                  if not failures:
+                      refreshed_reference = _object(github.get(base_ref_endpoint), base_ref_endpoint)
+                      refreshed_object = refreshed_reference.get("object")
+                      refreshed_tip = refreshed_object.get("sha") if isinstance(refreshed_object, dict) else None
+                      refreshed_base = refreshed_pull.get("base")
+                      refreshed_ref = refreshed_base.get("ref") if isinstance(refreshed_base, dict) else None
+                      if refreshed_tip != base_tip or refreshed_ref != base_ref:
+                          failures.append(Finding(
+                              f"the base branch tip to remain {base_tip} through evaluation; now {refreshed_tip}",
+                              "recollect the moved base declaration and run proof again",
                           ))
                   if failures:
                       print("change-proof: FAIL", file=destination)

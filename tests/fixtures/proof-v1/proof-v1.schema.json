@@ -36,7 +36,8 @@
       "required": ["work_configuration", "use_rules"],
       "properties": {
         "work_configuration": {"$ref": "#/$defs/policy_source"},
-        "use_rules": {"$ref": "#/$defs/policy_source"}
+        "use_rules": {"$ref": "#/$defs/policy_source"},
+        "floor": {"oneOf": [{"$ref": "#/$defs/policy_source"}, {"type": "null"}]}
       }
     },
     "floor": {
