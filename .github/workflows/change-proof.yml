@@ -1326,6 +1326,13 @@ jobs:
               return f"{kind} #{identity}" if isinstance(identity, int) else kind
 
 
+          def _review_job_name(name: object) -> bool:
+              if not isinstance(name, str):
+                  return False
+              parts = name.split(" / ")
+              return parts[-1] == "review" and all(part.strip() for part in parts)
+
+
           def _lab_review_run(
               transport,
               repo: str,
@@ -1357,7 +1364,7 @@ jobs:
                       raise ProofError(f"run #{run_id} has no full head_sha")
                   jobs = _run_jobs(transport, repo, run_id)
                   successful = next((job for job in jobs if (
-                      job.get("name") == "review"
+                      _review_job_name(job.get("name"))
                       and _is_integer(job.get("id")) and job["id"] > 0
                       and _is_integer(job.get("run_id")) and job["run_id"] == run_id
                       and isinstance(job.get("head_sha"), str) and job["head_sha"].lower() == head.lower()

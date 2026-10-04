@@ -103,6 +103,57 @@ def test_lab_receipt_accepts_submitted_review_on_its_own_commit(evidence_path, s
     assert (JOBS_ENDPOINT, True) in transport.calls
 
 
+@pytest.mark.parametrize("name", (
+    "review",
+    "connected-review / review",
+    "outer / connected-review / review",
+    "caller (linux) / review",
+))
+def test_lab_receipt_accepts_direct_and_called_review_job_names(name):
+    transport, _ = receipt_scenario("proof-v1")
+    review_job(transport)["name"] = name
+
+    result, output = execute(transport)
+
+    assert result == 0, output
+    assert f"credited by review #{REVIEW_ID}; run #{RUN_ID}" in output
+
+
+@pytest.mark.parametrize("name", (
+    "preview",
+    "review-extra",
+    "caller / preview",
+    "caller / review-extra",
+    "review (matrix)",
+    "caller / review (matrix)",
+    "Review",
+    "caller / Review",
+    " / review",
+    "caller /  / review",
+    "caller / / review",
+    "caller / review / ",
+    "review / report",
+    "caller / prepare",
+    "caller/review",
+    "caller /review",
+    "caller/ review",
+    "",
+    "review ",
+    " review",
+    "caller / review\n",
+    None,
+    [],
+    {},
+    1,
+    True,
+))
+def test_lab_receipt_rejects_near_match_and_malformed_review_job_names(name):
+    transport, _ = receipt_scenario("proof-v1")
+    review_job(transport)["name"] = name
+
+    assert_receipt_rejected(transport, "no completed successful review job")
+
+
 @pytest.mark.parametrize("evidence_path", EVIDENCE_PATHS)
 def test_lab_receipt_rejects_pull_request_even_with_matching_provenance(evidence_path):
     transport, _ = receipt_scenario(evidence_path)
@@ -175,20 +226,23 @@ INVALID_FIELDS = (
 
 
 @pytest.mark.parametrize("evidence_path", EVIDENCE_PATHS)
+@pytest.mark.parametrize("job_name", ("review", "connected-review / review"))
 @pytest.mark.parametrize("target,field,value,reason", INVALID_FIELDS)
-def test_lab_receipt_rejects_unproved_fields(evidence_path, target, field, value, reason):
+def test_lab_receipt_rejects_unproved_fields(evidence_path, job_name, target, field, value, reason):
     transport, _ = receipt_scenario(evidence_path)
+    job = review_job(transport)
+    job["name"] = job_name
     item = {
         "run": transport.responses[RUN_ENDPOINT],
         "review": transport.responses[REVIEW_ENDPOINT][0],
-        "job": review_job(transport),
+        "job": job,
     }[target]
     if value is MISSING:
         item.pop(field)
     else:
         item[field] = value
     if target == "run" and field == "head_sha" and isinstance(value, str):
-        review_job(transport)["head_sha"] = value
+        job["head_sha"] = value
 
     assert_receipt_rejected(transport, reason)
 
@@ -356,14 +410,17 @@ def test_lab_receipt_cannot_be_supplied_by_another_surface(evidence_path, surfac
 
 
 @pytest.mark.parametrize("evidence_path", EVIDENCE_PATHS)
+@pytest.mark.parametrize("job_name", ("review", "connected-review / review"))
 @pytest.mark.parametrize("later_status", ("failure", "in_progress"))
-def test_lab_receipt_survives_overall_failure_and_a_failed_or_pending_rerun(evidence_path, later_status):
+def test_lab_receipt_survives_overall_failure_and_a_failed_or_pending_rerun(evidence_path, job_name, later_status):
     transport, _ = receipt_scenario(evidence_path)
+    original_job = review_job(transport)
+    original_job["name"] = job_name
     transport.responses[RUN_ENDPOINT].update(
         status="in_progress" if later_status == "in_progress" else "completed",
         conclusion=None if later_status == "in_progress" else "failure", run_attempt=2,
     )
-    job = copy.deepcopy(review_job(transport))
+    job = copy.deepcopy(original_job)
     job.update(id=JOB_ID + 1, run_attempt=2, conclusion=later_status,
                status="in_progress" if later_status == "in_progress" else "completed")
     page = transport.responses[JOBS_ENDPOINT][0]
@@ -377,10 +434,12 @@ def test_lab_receipt_survives_overall_failure_and_a_failed_or_pending_rerun(evid
 
 
 @pytest.mark.parametrize("evidence_path", EVIDENCE_PATHS)
-def test_lab_receipt_finds_success_only_on_a_later_jobs_page(evidence_path):
+@pytest.mark.parametrize("job_name", ("review", "connected-review / review"))
+def test_lab_receipt_finds_success_only_on_a_later_jobs_page(evidence_path, job_name):
     transport, _ = receipt_scenario(evidence_path)
     page = transport.responses[JOBS_ENDPOINT][0]
     job = review_job(transport)
+    job["name"] = job_name
     page["jobs"].remove(job)
     transport.responses[JOBS_ENDPOINT].append({"total_count": 3, "jobs": [job]})
 
@@ -390,8 +449,10 @@ def test_lab_receipt_finds_success_only_on_a_later_jobs_page(evidence_path):
 
 
 @pytest.mark.parametrize("evidence_path", EVIDENCE_PATHS)
-def test_lab_receipt_rejects_incomplete_jobs_even_with_a_successful_review(evidence_path):
+@pytest.mark.parametrize("job_name", ("review", "connected-review / review"))
+def test_lab_receipt_rejects_incomplete_jobs_even_with_a_successful_review(evidence_path, job_name):
     transport, _ = receipt_scenario(evidence_path)
+    review_job(transport)["name"] = job_name
     transport.responses[JOBS_ENDPOINT][0]["total_count"] = 4
 
     assert_receipt_rejected(transport, "incomplete")
