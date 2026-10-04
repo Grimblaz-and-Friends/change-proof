@@ -40,7 +40,7 @@ def answer(identity=IDENTITY, review_id=41, *, disposition="fixed", author=OWNER
 def body_scenario(evidence_path, reviewer=CR):
     if reviewer == LAB:
         transport, document = receipt_scenario(evidence_path)
-    elif evidence_path == "proof-v1":
+    else:
         transport, document = proof_scenario()
         document["reviewers"][0]["login"] = reviewer
         document["reviewers"][0]["source"]["author"] = reviewer
@@ -51,10 +51,6 @@ def body_scenario(evidence_path, reviewer=CR):
             config["connected_reviewers"] = [reviewer]
             transport.responses[endpoint] = contents(config)
         replace_proof_document(transport, document)
-    else:
-        document = None
-        transport = scenario(paths=("docs/readme.md",), comments=[no_use_note()],
-                             reviewers=(reviewer,), reviews=[record(reviewer, id=41)])
     return transport, document
 
 
@@ -83,7 +79,7 @@ def add_inline(transport, document, *, reviewer=CR, identity=IDENTITY,
         replace_proof_document(transport, document)
 
 
-@pytest.fixture(params=("legacy-markers", "proof-v1"))
+@pytest.fixture(params=("proof-v1",))
 def evidence_path(request):
     return request.param
 
@@ -934,7 +930,7 @@ def test_only_closed_zero_statements_account_for_empty_sections(content, zero, s
 ))
 @pytest.mark.parametrize("same_pr", (False, True))
 def test_inline_exemption_requires_reply_urls_on_this_pr(url_field, current_url, other_url, same_pr):
-    transport, document = body_scenario("legacy-markers")
+    transport, document = body_scenario("proof-v1")
     reviews = transport.responses[REVIEW_ENDPOINT]
     reviews[0]["body"] = MARKER
     add_inline(transport, document)

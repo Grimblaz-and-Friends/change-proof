@@ -22,7 +22,7 @@ JOB_ID = 109749373184
 REVIEW_ENDPOINT = f"repos/{REPO}/pulls/17/reviews?per_page=100"
 RUN_ENDPOINT = f"repos/{REPO}/actions/runs/{RUN_ID}"
 JOBS_ENDPOINT = f"{RUN_ENDPOINT}/jobs?filter=all&per_page=100"
-EVIDENCE_PATHS = ("legacy-markers", "proof-v1")
+EVIDENCE_PATHS = ("proof-v1",)
 MISSING = object()
 
 
@@ -34,28 +34,22 @@ def recorded_receipt():
 def receipt_scenario(evidence_path):
     fixture = recorded_receipt()
     review = fixture["review"]
-    if evidence_path == "proof-v1":
-        transport, document = proof_scenario()
-        entry = document["reviewers"][0]
-        entry["login"] = LAB
-        entry["source"].update({
-            "id": REVIEW_ID, "author": LAB, "revision": review["commit_id"],
-            "timestamp": review["submitted_at"],
-        })
-        for revision in (HEAD, BASE_TIP):
-            endpoint = f"repos/{REPO}/contents/.tradecraft/work.json?ref={revision}"
-            config = json.loads(base64.b64decode(transport.responses[endpoint]["content"]))
-            config["connected_reviewers"] = [LAB]
-            transport.responses[endpoint] = contents(config)
-        document["policy"]["work_configuration"]["sha256"] = hashlib.sha256(
-            serialized_policy(config)
-        ).hexdigest()
-        replace_proof_document(transport, document)
-    else:
-        document = None
-        transport = scenario(
-            paths=("docs/readme.md",), comments=[no_use_note()], reviewers=(LAB,),
-        )
+    transport, document = proof_scenario()
+    entry = document["reviewers"][0]
+    entry["login"] = LAB
+    entry["source"].update({
+        "id": REVIEW_ID, "author": LAB, "revision": review["commit_id"],
+        "timestamp": review["submitted_at"],
+    })
+    for revision in (HEAD, BASE_TIP):
+        endpoint = f"repos/{REPO}/contents/.tradecraft/work.json?ref={revision}"
+        config = json.loads(base64.b64decode(transport.responses[endpoint]["content"]))
+        config["connected_reviewers"] = [LAB]
+        transport.responses[endpoint] = contents(config)
+    document["policy"]["work_configuration"]["sha256"] = hashlib.sha256(
+        serialized_policy(config)
+    ).hexdigest()
+    replace_proof_document(transport, document)
     transport.responses[REVIEW_ENDPOINT] = [review]
     fixture["run"]["repository"]["full_name"] = REPO
     transport.responses[RUN_ENDPOINT] = fixture["run"]
@@ -298,7 +292,6 @@ def test_lab_receipt_requires_trailing_marker_even_with_an_earlier_valid_one(evi
 
 
 @pytest.mark.parametrize("evidence_path,follow_up,other_path_follow_up", (
-    ("legacy-markers", "then re-run change-proof", "then recompose proof"),
     ("proof-v1", "then recompose proof", "then re-run change-proof"),
 ))
 def test_lab_receipt_remedy_matches_selected_evidence_path(evidence_path, follow_up, other_path_follow_up):
@@ -434,43 +427,6 @@ def test_lab_receipt_does_not_credit_unreadable_or_incomplete_records(evidence_p
     assert "retry unreadable Actions records" in output
 
 
-@pytest.mark.parametrize("position", (0, 1))
-@pytest.mark.parametrize("bad_read", (False, True))
-def test_legacy_bad_lab_candidate_does_not_hide_a_proved_receipt(position, bad_read):
-    transport, _ = receipt_scenario("legacy-markers")
-    bad = copy.deepcopy(transport.responses[REVIEW_ENDPOINT][0])
-    bad["id"] += 1
-    bad["body"] = f"<!-- connected-review-attempt:{RUN_ID + 1} -->"
-    transport.responses[REVIEW_ENDPOINT].insert(position, bad)
-    endpoint = f"repos/{REPO}/actions/runs/{RUN_ID + 1}"
-    transport.responses[endpoint] = (
-        check.ProofError("unreadable candidate") if bad_read
-        else dict(transport.responses[RUN_ENDPOINT], id=RUN_ID + 1, path="other.yml")
-    )
-
-    result, output = execute(transport)
-
-    assert result == 0, output
-    assert f"credited by review #{REVIEW_ID}; run #{RUN_ID}" in output
-
-
-@pytest.mark.parametrize("bad_read", (False, True))
-def test_legacy_lab_run_reads_and_rejections_are_cached(bad_read):
-    transport, _ = receipt_scenario("legacy-markers")
-    reviews = transport.responses[REVIEW_ENDPOINT]
-    reviews.append(copy.deepcopy(reviews[0]))
-    if bad_read:
-        transport.responses[JOBS_ENDPOINT] = check.ProofError("jobs unreadable")
-    else:
-        reviews[0]["commit_id"] = "f" * 40
-
-    result, output = execute(transport)
-
-    assert result == (1 if bad_read else 0), output
-    assert transport.calls.count((RUN_ENDPOINT, False)) == 1
-    assert transport.calls.count((JOBS_ENDPOINT, True)) == 1
-
-
 @pytest.mark.parametrize("missing", (False, True))
 @pytest.mark.parametrize("alternate_kind", ("unmarked", "wrong-workflow", "unreadable", "valid"))
 def test_document_lab_pointer_remedy_only_names_a_qualifying_review(missing, alternate_kind):
@@ -582,7 +538,7 @@ def test_lab_receipt_diagnostics_cannot_manufacture_output_lines(evidence_path):
 
 
 def test_lab_receipt_does_not_swallow_programming_errors():
-    transport, _ = receipt_scenario("legacy-markers")
+    transport, _ = receipt_scenario("proof-v1")
     transport.responses[RUN_ENDPOINT] = TypeError("programming defect")
 
     with pytest.raises(TypeError, match="programming defect"):

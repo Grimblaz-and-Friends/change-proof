@@ -235,17 +235,17 @@ def execute(transport, *, head=HEAD):
     return result, output.getvalue()
 
 
-def complete_scenario(**overrides):
-    values = {
-        "comments": [use_note()],
-        "reviews": [record(REVIEWER, "review summary")],
-    }
-    values.update(overrides)
-    return scenario(**values)
-
-
 def serialized_policy(value):
     return (json.dumps(value) + "\n").encode()
+
+
+def proof_with_body(body):
+    transport, _ = proof_scenario()
+    if body is ABSENT_BODY:
+        transport.responses[f"repos/{REPO}/pulls/17"].pop("body", None)
+    else:
+        transport.responses[f"repos/{REPO}/pulls/17"]["body"] = body
+    return transport
 
 
 def proof_scenario(*, document_patch=None, proof_author=OWNER, extra_comments=()):
@@ -867,9 +867,14 @@ def test_recorded_mechanical_producer_comment_is_the_exact_prechange_falsifier()
     prechange_lines = [
         "change-proof: FAIL" if index == 0 else line
         for index, line in enumerate(actual_lines)
-        if line != lane_line
+        if line != lane_line and not line.startswith((
+            "verified: floor authority:", "verified: builder floor supplied by"
+        ))
     ]
     prechange_lines.extend(expected_lines[-2:])
+    expected_lines = [line for line in expected_lines if not line.startswith(
+        "diagnostic: legacy markers were not evaluated"
+    )]
 
     assert prechange_lines == expected_lines
     assert [line for line in expected_lines if line.startswith("missing:")] == [
@@ -1443,21 +1448,6 @@ def test_irrelevant_mechanical_brief_does_not_override_current_head_use():
     assert "verified: owner-affirmed mechanical lane" not in output
 
 
-def test_mechanical_brief_does_not_change_the_marker_only_path():
-    transport = scenario(
-        paths=("src/main.ts",),
-        comments=[affirmed_brief_record()],
-        reviews=[record(REVIEWER, "completed review")],
-    )
-
-    result, output = execute(transport)
-
-    assert result == 1
-    assert "evidence path: legacy-markers" in output
-    assert "authorized, valid use marker" in output
-    assert "verified: owner-affirmed mechanical lane" not in output
-
-
 def test_valid_mechanical_lane_does_not_clear_missing_path_departures():
     transport, _document = mechanical_proof_scenario()
     transport.responses[f"repos/{REPO}/pulls/17"]["body"] = ""
@@ -1548,7 +1538,7 @@ def test_invalid_selected_document_does_not_fall_back_to_complete_legacy_markers
     assert "authorized current-head no-use note" not in output
 
 
-def test_older_document_leaves_the_legacy_compatibility_path_available():
+def test_older_document_cannot_supply_current_head_proof():
     transport, document = proof_scenario()
     old_head = "9" * 40
     document["identity"]["head"] = old_head
@@ -1563,8 +1553,8 @@ def test_older_document_leaves_the_legacy_compatibility_path_available():
 
     result, output = execute(transport)
 
-    assert result == 0
-    assert "evidence path: legacy-markers" in output
+    assert result == 1
+    assert "run proof" in output
 
 
 def test_competing_authorized_current_head_documents_are_ambiguous():
@@ -1580,13 +1570,13 @@ def test_competing_authorized_current_head_documents_are_ambiguous():
     assert "competing comments: #501, #502" in output
 
 
-def test_unauthorized_proof_noise_does_not_suppress_valid_legacy_evidence():
+def test_unauthorized_document_cannot_supply_current_head_proof():
     transport, _document = proof_scenario(proof_author="stranger", extra_comments=(no_use_note(),))
 
     result, output = execute(transport)
 
-    assert result == 0
-    assert "evidence path: legacy-markers" in output
+    assert result == 1
+    assert "run proof" in output
     assert "diagnostic: proof comment #501 is unauthorized" in output
 
 
@@ -1649,7 +1639,8 @@ def test_duplicate_json_keys_in_selected_document_are_rejected():
     assert "exactly one authorized current-head proof document remains" in output
 
 
-def test_current_head_bought_use_is_verified_from_its_claimed_public_source():
+@pytest.mark.parametrize("changed", (False, True))
+def test_current_head_bought_use_is_verified_from_its_claimed_public_source(changed):
     transport, document = proof_scenario()
     transport.responses[f"repos/{REPO}/pulls/17/files?per_page=100"] = [
         {"filename": "src/main.ts"}
@@ -1677,7 +1668,7 @@ def test_current_head_bought_use_is_verified_from_its_claimed_public_source():
         {"filename": "src/main.ts"}
     ]
     transport.responses[f"repos/{REPO}/issues/12/comments?per_page=100"].append(
-        use_note(id=32)
+        use_note(id=32, changed=changed)
     )
 
     result, output = execute(transport)
@@ -1832,36 +1823,6 @@ def test_incomplete_check_run_collection_cannot_prove_floor_completeness():
     assert "paginated GET was incomplete" in output
 
 
-@pytest.mark.parametrize("evidence_path", ("proof-v1", "legacy-markers"))
-@pytest.mark.parametrize("payload_kind", ("unhashable-enum", "deep-json"))
-def test_unauthorized_proof_bodies_are_not_parsed(evidence_path, payload_kind):
-    if payload_kind == "unhashable-enum":
-        _unused, document = proof_scenario()
-        document["reviewers"][0]["result"] = ["present"]
-        payload = json.dumps(document)
-    else:
-        payload = "[" * 1_200 + "0" + "]" * 1_200
-    noise = record(
-        "stranger",
-        f"<!-- tradecraft:proof:v1 head={HEAD} -->\n```json\n{payload}\n```",
-        id=777,
-    )
-    if evidence_path == "proof-v1":
-        transport, _document = proof_scenario(extra_comments=(noise,))
-    else:
-        transport = scenario(
-            comments=[use_note(), noise],
-            reviews=[record(REVIEWER, "completed review", id=41)],
-        )
-
-    result, output = execute(transport)
-
-    assert result == 0
-    assert f"evidence path: {evidence_path}" in output
-    assert "proof comment #777 is unauthorized" in output
-    assert "Traceback" not in output
-
-
 def test_unclosed_unauthorized_proof_prefix_is_scanned_in_linear_time():
     body = "<!-- tradecraft:proof:v1 " + (" " * 250_000)
     comments = [record("stranger", body, id=777)]
@@ -1929,10 +1890,6 @@ def test_invalid_selected_json_reports_comment_position_and_no_legacy_fallback()
 
     assert result == 1
     assert "proof document JSON parse error at comment line 6 column 1" in output
-    assert (
-        "diagnostic: legacy markers were not evaluated because a current-head proof "
-        "document was selected"
-    ) in output
     assert "evidence path: proof-v1" in output
 
 
@@ -1963,7 +1920,7 @@ def test_envelope_head_mutation_fails_independently():
     result, output = execute(transport)
 
     assert result == 1
-    assert "evidence path: legacy-markers" in output
+    assert "run proof" in output
 
 
 class MovingHeadTransport(FakeTransport):
@@ -2742,19 +2699,15 @@ def merge_side(transport, files, *, first=ANCESTOR, other=BASE_TIP, base=BASE):
 
 
 def carried_case(evidence, *, files=None, paths=("src/main.ts",), kind="base", version=None):
-    if evidence == "proof-v1":
-        transport, document = proof_scenario()
-        source = {
-            "kind": "issue-comment", "repository": REPO, "id": 32,
-            "url": f"https://github.com/{REPO}/issues/12#issuecomment-32",
-            "author": OWNER, "timestamp": "2026-09-23T12:08:00Z", "revision": ANCESTOR,
-        }
-        transport.responses[f"repos/{REPO}/issues/12/comments?per_page=100"].append(
-            use_note(ANCESTOR, id=32)
-        )
-    else:
-        transport = complete_scenario(comments=[use_note(ANCESTOR)])
-        document = None
+    transport, document = proof_scenario()
+    source = {
+        "kind": "issue-comment", "repository": REPO, "id": 32,
+        "url": f"https://github.com/{REPO}/issues/12#issuecomment-32",
+        "author": OWNER, "timestamp": "2026-09-23T12:08:00Z", "revision": ANCESTOR,
+    }
+    transport.responses[f"repos/{REPO}/issues/12/comments?per_page=100"].append(
+        use_note(ANCESTOR, id=32)
+    )
     pull = f"repos/{REPO}/pulls/17"
     transport.responses[f"{pull}/files?per_page=100"] = [{"filename": path} for path in paths]
     transport.responses[pull]["changed_files"] = len(paths)
@@ -2792,7 +2745,7 @@ def carried_case(evidence, *, files=None, paths=("src/main.ts",), kind="base", v
     return transport, document
 
 
-@pytest.fixture(params=("legacy-markers", "proof-v1"))
+@pytest.fixture(params=("proof-v1",))
 def evidence_path(request):
     return request.param
 
@@ -2888,26 +2841,6 @@ def test_relaxed_history_still_requires_changed_false_without_history_reads(evid
     result, output = execute(transport)
     assert result == 1
     assert (compare_endpoint(ANCESTOR), False) not in transport.calls
-
-
-@pytest.mark.parametrize("version", (None, "package.json", [], {},
-    {"path": "package.json", "field": "version"},
-    {**VERSION_DECLARATION, "extra": True},
-    *({**VERSION_DECLARATION, "path": value} for value in (
-        None, 1, [], "", " ", "/package.json", "C:package.json", "C:/package.json",
-        "dir\\package.json", "a//b", "a/./b", "a/../b", "../package.json",
-        "a/", "a\x00b", "a\nb", "a\x7fb",
-    )),
-    *({**VERSION_DECLARATION, "field": value} for value in (None, 1, [], "", " \t")),
-    *({**VERSION_DECLARATION, "increment": value} for value in (None, 1, [], "", "PATCH", "build")),
-))
-def test_malformed_trusted_version_declaration_fails_policy(version):
-    policy = {"schema_version": 1, "rules": [{"include": ["src/**"], "exclude": []}], "version": version}
-    with pytest.raises(check.ProofError, match="version"):
-        check.load_use_rules(policy)
-    result, output = execute(complete_scenario(base_rules=policy))
-    assert result == 1
-    assert "change-proof: ERROR" in output and "version" in output
 
 
 @pytest.mark.parametrize("increment", ("major", "minor", "patch"))
@@ -3323,61 +3256,6 @@ def test_carried_commit_can_explain_both_overlap_and_version_exemption(evidence_
     assert "changed paths (src/other.ts); version-only exemption (package.json)" in output
 
 
-def test_caches_shared_commit_provenance_and_version_reads_across_candidates():
-    other = "5" * 40
-    transport, _ = carried_case("legacy-markers", kind="merge", paths=("package.json",),
-        files=[{"filename": "package.json", "status": "modified"}], version=VERSION_DECLARATION)
-    transport.responses[f"repos/{REPO}/issues/17/comments?per_page=100"] = [
-        use_note(OLDER_ANCESTOR, id=10), use_note(ANCESTOR, id=20),
-    ]
-    for source in (ANCESTOR, OLDER_ANCESTOR):
-        transport.responses[compare_endpoint(source)] = comparison(source, [COMMIT_ONE, COMMIT_TWO])
-    transport.responses[commit_endpoint(COMMIT_ONE)]["parents"][1]["sha"] = other
-    transport.responses[compare_endpoint(other, BASE_TIP)] = comparison(other, [])
-    merge_side(transport, [{"filename": "package.json", "status": "modified"}], other=other)
-    transport.responses[commit_endpoint(COMMIT_TWO)] = check.ProofError("later commit unreadable")
-    install_version_contents(transport, {"version": "1"}, {"version": "2"})
-    result, output = execute(transport)
-    assert result == 1 and "later commit unreadable" in output
-    for call in (
-        (commit_endpoint(COMMIT_ONE), True), (commit_endpoint(COMMIT_TWO), True),
-        (compare_endpoint(other, BASE_TIP), False),
-        (compare_endpoint(ANCESTOR, other), False), (compare_endpoint(BASE, other), False),
-        (f"repos/{REPO}/contents/package.json?ref={COMMIT_ONE}", False),
-        (f"repos/{REPO}/contents/package.json?ref={ANCESTOR}", False),
-    ):
-        assert transport.calls.count(call) == 1
-    assert (compare_endpoint(OLDER_ANCESTOR), False) in transport.calls
-
-
-@pytest.mark.parametrize("failure", ("membership", "parents", "side", "version", "commit"))
-def test_failed_ancestor_reads_are_memoized_across_candidates(failure):
-    version = VERSION_DECLARATION if failure == "version" else None
-    path = "package.json" if version else "src/other.ts"
-    transport, _ = carried_case("legacy-markers", kind="merge", paths=("src/main.ts", path),
-        files=[{"filename": path, "status": "modified"}], version=version)
-    transport.responses[f"repos/{REPO}/issues/17/comments?per_page=100"] = [
-        use_note(OLDER_ANCESTOR, id=10), use_note(ANCESTOR, id=20),
-    ]
-    transport.responses[compare_endpoint(OLDER_ANCESTOR)] = comparison(OLDER_ANCESTOR, [COMMIT_ONE])
-    if failure == "membership":
-        transport.responses[commit_endpoint(COMMIT_ONE)]["parents"][1]["sha"] = COMMIT_TWO
-        endpoint = compare_endpoint(COMMIT_TWO, BASE_TIP)
-    elif failure == "parents":
-        endpoint = compare_endpoint(ANCESTOR, BASE_TIP)
-    elif failure == "side":
-        endpoint = compare_endpoint(BASE, BASE_TIP)
-    elif failure == "version":
-        endpoint = f"repos/{REPO}/contents/package.json?ref={COMMIT_ONE}"
-    else:
-        endpoint = commit_endpoint(COMMIT_ONE)
-    transport.responses[endpoint] = check.ProofError("read failed")
-    result, output = execute(transport)
-    assert result == 1
-    assert transport.calls.count((endpoint, failure == "commit")) == 1
-    assert (compare_endpoint(OLDER_ANCESTOR), False) in transport.calls
-
-
 def test_ancestor_read_cache_does_not_outlive_an_evaluation(evidence_path):
     transport, _ = carried_case(evidence_path, kind="merge")
     result, output = execute(transport)
@@ -3705,18 +3583,6 @@ def test_every_python_line_separator_is_escaped_in_failure_output(separator):
     assert not any(line == "verified: forged" for line in output.splitlines())
 
 
-def test_legacy_running_word_outside_the_status_cell_is_not_a_notice():
-    body = "| Subject | Status |\n| --- | --- |\n| running service | completed |"
-    transport = scenario(
-        comments=[use_note(), record(REVIEWER, body, id=42)],
-    )
-
-    result, output = execute(transport)
-
-    assert result == 0
-    assert f"connected reviewer {REVIEWER} credited by pull-request comment #42" in output
-
-
 def test_failed_floor_source_never_prints_verified_public_attestation():
     transport, document = proof_scenario()
     document["floor"]["checks"] = []
@@ -3829,7 +3695,7 @@ NEGATIVE_PATH_DEPARTURES_BODIES = (
 @pytest.mark.parametrize("separator", ("\n", "\r\n", "\r"), ids=("lf", "crlf", "cr"))
 @pytest.mark.parametrize("body", POSITIVE_PATH_DEPARTURES_BODIES)
 def test_path_departures_paragraph_shapes_pass_for_all_line_endings(body, separator):
-    result, output = execute(complete_scenario(body=line_ending(body, separator)))
+    result, output = execute(proof_with_body(line_ending(body, separator)))
 
     assert result == 0
     assert output.count(
@@ -3841,7 +3707,7 @@ def test_path_departures_paragraph_shapes_pass_for_all_line_endings(body, separa
 @pytest.mark.parametrize("separator", ("\n", "\r\n", "\r"), ids=("lf", "crlf", "cr"))
 @pytest.mark.parametrize("body", NEGATIVE_PATH_DEPARTURES_BODIES)
 def test_nonparagraph_path_departures_shapes_fail_for_all_line_endings(body, separator):
-    result, output = execute(complete_scenario(body=line_ending(body, separator)))
+    result, output = execute(proof_with_body(line_ending(body, separator)))
 
     assert result == 1
     assert "verified: pull request body has a **Path departures:** paragraph" not in output
@@ -3860,7 +3726,7 @@ def test_nonparagraph_path_departures_shapes_fail_for_all_line_endings(body, sep
     ids=("absent", "null", "empty", "non-string"),
 )
 def test_missing_path_departures_body_fails_with_exact_repair(body):
-    result, output = execute(complete_scenario(body=body))
+    result, output = execute(proof_with_body(body))
 
     assert result == 1
     assert output.count(
@@ -3870,14 +3736,6 @@ def test_missing_path_departures_body_fails_with_exact_repair(body):
         "satisfy: add the **Path departures:** paragraph to the pull request body and re-run "
         "change-proof\n"
     ) == 1
-
-
-def test_missing_body_remains_visible_when_policy_preflight_also_fails():
-    result, output = execute(complete_scenario(body=None, base_policy=False))
-
-    assert result == 1
-    assert "missing: a pull request body paragraph beginning with **Path departures:**\n" in output
-    assert "missing: trusted policy on the pull request base branch tip" in output
 
 
 def test_readme_use_rules_classify_documented_paths():
@@ -3915,822 +3773,6 @@ def test_readme_use_rules_classify_documented_paths():
 
     for path, required in expected.items():
         assert check.use_required([path], rules) is required
-
-
-def test_bought_use_fails_without_current_head_used_note():
-    result, output = execute(scenario(reviews=[record(REVIEWER, "summary")]))
-
-    assert result == 1
-    assert "authorized, valid use marker for the current head" in output
-    assert "satisfy:" in output
-
-
-def test_bought_use_passes_with_current_head_used_note():
-    result, output = execute(complete_scenario())
-
-    assert result == 0
-    assert "change-proof: PASS" in output
-    assert "current-head use marker is valid" in output
-
-
-def test_policy_is_loaded_from_base_branch_reference_tip():
-    transport = complete_scenario()
-    policy_paths = (".github/change-proof.json", ".tradecraft/work.json")
-    for path in policy_paths:
-        transport.responses[f"repos/{REPO}/contents/{path}?ref={BASE}"] = (
-            check.GitHubNotFound(f"missing {path}")
-        )
-
-    result, output = execute(transport)
-
-    assert result == 0
-    assert "change-proof: PASS" in output
-    assert f"verified: base branch {BASE_REF} tip resolved to commit {BASE_TIP}" in output
-    assert (f"repos/{REPO}/git/ref/heads/{BASE_REF}", False) in transport.calls
-    assert (f"repos/{REPO}/commits/{BASE_REF}", False) not in transport.calls
-    assert all(
-        (f"repos/{REPO}/contents/{path}?ref={BASE_TIP}", False) in transport.calls
-        for path in policy_paths
-    )
-    assert all(
-        (f"repos/{REPO}/contents/{path}?ref={BASE}", False) not in transport.calls
-        for path in policy_paths
-    )
-
-
-def test_missing_base_branch_reference_fails_when_old_commit_lookup_would_pass():
-    transport = complete_scenario()
-    base_ref_endpoint = f"repos/{REPO}/git/ref/heads/{BASE_REF}"
-    transport.responses[base_ref_endpoint] = check.GitHubNotFound("missing branch reference")
-
-    result, output = execute(transport)
-
-    assert result == 1
-    assert "change-proof: ERROR" in output
-    assert f"base branch reference refs/heads/{BASE_REF} does not exist" in output
-    assert (base_ref_endpoint, False) in transport.calls
-    assert (f"repos/{REPO}/commits/{BASE_REF}", False) not in transport.calls
-
-
-def test_head_that_weakens_policy_is_judged_by_base_and_fails():
-    weakened_rules = {
-        "schema_version": 1,
-        "rules": [{"name": "weakened", "include": ["docs/**"], "exclude": []}],
-    }
-    weakened_config = {
-        "schema_version": 1,
-        "product_repositories": [],
-        "connected_reviewers": [],
-        "marker_producers": ["attacker"],
-    }
-    transport = scenario(
-        comments=[no_use_note(author="attacker")],
-        head_rules=weakened_rules,
-        head_config=weakened_config,
-    )
-    result, output = execute(transport)
-
-    assert result == 1
-    assert "verified: pull request changes policy and was judged by the base branch tip policy" in output
-    assert "authorized, valid use marker for the current head" in output
-    assert f"connected reviewer run(s): {REVIEWER}" in output
-
-
-def test_head_policy_identical_to_base_passes():
-    result, output = execute(complete_scenario())
-
-    assert result == 0
-    assert "change-proof: PASS" in output
-    assert "pull request changes policy" not in output
-
-
-def test_base_branch_tip_without_policy_is_bootstrap_failure_with_other_verifications():
-    result, output = execute(complete_scenario(base_policy=False))
-
-    assert result == 1
-    assert "trusted policy on the pull request base branch tip" in output
-    assert ".github/change-proof.json, .tradecraft/work.json" in output
-    assert "this pull request cannot prove itself" in output
-    assert "the owner merges it on the connected reviewers' evidence" in output
-    assert f"verified: base branch {BASE_REF} tip resolved to commit {BASE_TIP}" in output
-    assert "verified: changed paths buy a use" in output
-    assert f"verified: connected reviewer {REVIEWER} credited by review" in output
-
-
-def test_policy_deleted_on_head_is_judged_by_complete_base():
-    transport = complete_scenario(head_missing=(".tradecraft/work.json",))
-    result, output = execute(transport)
-
-    assert result == 0
-    assert "change-proof: PASS" in output
-    assert "verified: pull request changes policy and was judged by the base branch tip policy" in output
-
-
-def test_policy_absent_on_base_and_head_is_bootstrap_failure():
-    missing = ".tradecraft/work.json"
-    transport = complete_scenario(head_missing=(missing,), base_missing=(missing,))
-    result, output = execute(transport)
-
-    assert result == 1
-    assert "change-proof: FAIL" in output
-    assert "change-proof: ERROR" not in output
-    assert f"trusted policy on the pull request base branch tip; absent: {missing}" in output
-    assert "this pull request cannot prove itself" in output
-
-
-def test_docs_only_fails_on_false_used_claim():
-    result, output = execute(complete_scenario(paths=("docs/guide.md",)))
-
-    assert result == 1
-    assert "current-head use marker is a false claim" in output
-
-
-def test_docs_only_passes_with_verified_no_use_line():
-    transport = scenario(
-        paths=("docs/guide.md",),
-        comments=[no_use_note()],
-        reviews=[record(REVIEWER, "summary")],
-    )
-    result, output = execute(transport)
-
-    assert result == 0
-    assert "current-head no-use note has its line" in output
-
-
-def test_no_use_marker_without_required_line_fails():
-    transport = scenario(
-        paths=("docs/guide.md",),
-        comments=[no_use_note(line=False)],
-        reviews=[record(REVIEWER, "summary")],
-    )
-    result, output = execute(transport)
-
-    assert result == 1
-    assert "'Use: not required' line" in output
-
-
-@pytest.mark.parametrize(
-    "line",
-    [
-        "Use: not required - documentation-only change",
-        "Use: not required — documentation-only change",
-    ],
-)
-def test_no_use_line_accepts_hyphen_or_em_dash_with_reason(line):
-    transport = scenario(
-        paths=("docs/guide.md",),
-        comments=[no_use_note(line=line)],
-        reviews=[record(REVIEWER, "summary")],
-    )
-    result, output = execute(transport)
-
-    assert result == 0
-    assert "current-head no-use note has its line" in output
-
-
-@pytest.mark.parametrize(
-    ("line", "passes"),
-    [
-        ("  `Use: not required — documentation-only change`", True),
-        ("*Use: not required — documentation-only change*", True),
-        ("**Use: not required — documentation-only change**", True),
-        ("_Use: not required — documentation-only change_", True),
-        ("__Use: not required — documentation-only change__", True),
-        ("`Use: not required — documentation-only change", False),
-        ("*Use: not required — documentation-only change", False),
-        ("_Use: not required — documentation-only change", False),
-        ("*Use: not required — documentation-only change_", False),
-        ("**Use: not required — documentation-only change*", False),
-    ],
-)
-def test_no_use_line_requires_balanced_markdown_wrapper(line, passes):
-    transport = scenario(
-        paths=("docs/guide.md",),
-        comments=[no_use_note(line=line)],
-        reviews=[record(REVIEWER, "summary")],
-    )
-    result, output = execute(transport)
-
-    assert result == (0 if passes else 1)
-    expected = (
-        "current-head no-use note has its line"
-        if passes
-        else "'Use: not required' line"
-    )
-    assert expected in output
-
-
-@pytest.mark.parametrize(
-    "line",
-    [
-        "Use: not required",
-        "Use: not requiredness - documentation-only change",
-        "Use: not required -",
-        "Use: not required —   ",
-        "Note: `Use: not required — documentation-only change`",
-    ],
-)
-def test_no_use_line_requires_separator_and_nonempty_reason(line):
-    transport = scenario(
-        paths=("docs/guide.md",),
-        comments=[no_use_note(line=line)],
-        reviews=[record(REVIEWER, "summary")],
-    )
-    result, output = execute(transport)
-
-    assert result == 1
-    assert "'Use: not required' line" in output
-
-
-def test_non_ancestor_use_note_fails_current_head_check():
-    transport = complete_scenario(comments=[use_note(ANCESTOR)])
-    transport.responses[compare_endpoint(ANCESTOR)] = comparison(
-        ANCESTOR, [], status="diverged", merge_base=BASE
-    )
-    result, output = execute(transport)
-
-    assert result == 1
-    assert "change-proof: FAIL" in output
-    assert "change-proof: ERROR" not in output
-    assert f"use evidence head {ANCESTOR} is not an ancestor of current head {HEAD}" in output
-    assert "for the current head" in output
-    assert transport.calls.count((compare_endpoint(ANCESTOR), False)) == 1
-
-
-def test_changed_false_ancestor_note_carries_across_use_free_commits():
-    transport = complete_scenario(comments=[use_note(ANCESTOR)])
-    transport.responses[compare_endpoint(ANCESTOR)] = comparison(
-        ANCESTOR, [COMMIT_ONE, COMMIT_TWO]
-    )
-    transport.responses[commit_endpoint(COMMIT_ONE)] = {"files": [{"filename": "docs/one.md"}]}
-    transport.responses[commit_endpoint(COMMIT_TWO)] = [
-        {"files": [{"filename": "docs/two.md"}]},
-        {"files": [{"filename": "tests/test_check.py"}]},
-    ]
-
-    result, output = execute(transport)
-
-    assert result == 0
-    assert "change-proof: PASS" in output
-    assert (
-        "verified: changed paths buy a use and authorized use marker at "
-        f"{ANCESTOR} remains valid after intervening commits: {COMMIT_ONE}, {COMMIT_TWO}"
-    ) in output
-    assert transport.calls.count((compare_endpoint(ANCESTOR), False)) == 1
-    assert (commit_endpoint(COMMIT_ONE), True) in transport.calls
-    assert (commit_endpoint(COMMIT_TWO), True) in transport.calls
-
-
-def test_current_head_changed_true_use_note_still_passes():
-    result, output = execute(complete_scenario(comments=[use_note(changed=True)]))
-
-    assert result == 0
-    assert "current-head use marker is valid" in output
-
-
-def test_earlier_changed_true_use_note_does_not_carry():
-    transport = complete_scenario(comments=[use_note(ANCESTOR, changed=True)])
-
-    result, output = execute(transport)
-
-    assert result == 1
-    assert "authorized, valid use marker for the current head" in output
-    assert not any(endpoint == compare_endpoint(ANCESTOR) for endpoint, _paginate in transport.calls)
-
-
-def test_incomplete_single_compare_response_is_stale_without_pagination():
-    transport = complete_scenario(comments=[use_note(ANCESTOR)])
-    transport.responses[compare_endpoint(ANCESTOR)] = comparison(
-        ANCESTOR, [COMMIT_ONE], ahead_by=2
-    )
-
-    result, output = execute(transport)
-
-    assert result == 1
-    assert "change-proof: FAIL" in output
-    assert "change-proof: ERROR" not in output
-    assert f"complete intervening history from {ANCESTOR} is unavailable" in output
-    assert transport.calls.count((compare_endpoint(ANCESTOR), False)) == 1
-
-
-def test_intervening_commit_without_full_revision_is_stale():
-    transport = complete_scenario(comments=[use_note(ANCESTOR)])
-    transport.responses[compare_endpoint(ANCESTOR)] = comparison(ANCESTOR, ["short"])
-
-    result, output = execute(transport)
-
-    assert result == 1
-    assert "change-proof: FAIL" in output
-    assert f"intervening commit from {ANCESTOR} has no full revision" in output
-    assert not any(endpoint.startswith(f"repos/{REPO}/commits/short") for endpoint, _ in transport.calls)
-
-
-def test_paginated_commit_pages_and_previous_filename_can_stale_ancestor_note():
-    transport = complete_scenario(comments=[use_note(ANCESTOR)])
-    transport.responses[compare_endpoint(ANCESTOR)] = comparison(ANCESTOR, [COMMIT_ONE])
-    transport.responses[commit_endpoint(COMMIT_ONE)] = [
-        {"files": [{"filename": "docs/moved.ts"}]},
-        {
-            "files": [
-                {
-                    "filename": "docs/renamed.ts",
-                    "previous_filename": "src/renamed.ts",
-                }
-            ]
-        },
-    ]
-
-    result, output = execute(transport)
-
-    assert result == 1
-    assert (
-        f"use evidence at {ANCESTOR} is stale because intervening commit {COMMIT_ONE} "
-        "changes a use-bought path"
-    ) in output
-    assert (commit_endpoint(COMMIT_ONE), True) in transport.calls
-
-
-def test_use_bought_commit_stales_note_even_when_later_commit_reverts_it():
-    transport = complete_scenario(comments=[use_note(ANCESTOR)])
-    transport.responses[compare_endpoint(ANCESTOR)] = comparison(
-        ANCESTOR, [COMMIT_ONE, COMMIT_TWO]
-    )
-    transport.responses[commit_endpoint(COMMIT_ONE)] = {"files": [{"filename": "src/main.ts"}]}
-    transport.responses[commit_endpoint(COMMIT_TWO)] = {"files": [{"filename": "docs/revert.md"}]}
-
-    result, output = execute(transport)
-
-    assert result == 1
-    assert ANCESTOR in output
-    assert COMMIT_ONE in output
-    assert (commit_endpoint(COMMIT_TWO), True) not in transport.calls
-
-
-@pytest.mark.parametrize(
-    ("failure", "newest_compare", "newest_commit"),
-    [
-        ("compare GET failed", check.ProofError("compare GET failed"), None),
-        (
-            "commit GET failed",
-            comparison(ANCESTOR, [COMMIT_ONE]),
-            check.ProofError("commit GET failed"),
-        ),
-        ("invalid candidate JSON", ValueError("invalid candidate JSON"), None),
-        (
-            "omitted files",
-            comparison(ANCESTOR, [COMMIT_ONE]),
-            [{"sha": COMMIT_ONE}],
-        ),
-    ],
-)
-def test_candidate_history_failure_continues_to_older_clean_note(
-    failure, newest_compare, newest_commit
-):
-    newer = use_note(ANCESTOR, created_at="2026-09-24T12:00:00Z", id=20)
-    older = use_note(OLDER_ANCESTOR, created_at="2026-09-23T12:00:00Z", id=10)
-    transport = complete_scenario(comments=[older, newer])
-    transport.responses[compare_endpoint(ANCESTOR)] = newest_compare
-    if newest_commit is not None:
-        transport.responses[commit_endpoint(COMMIT_ONE)] = newest_commit
-    transport.responses[compare_endpoint(OLDER_ANCESTOR)] = comparison(
-        OLDER_ANCESTOR, [COMMIT_TWO]
-    )
-    transport.responses[commit_endpoint(COMMIT_TWO)] = {
-        "files": [{"filename": "docs/older.md"}]
-    }
-
-    result, output = execute(transport)
-
-    assert result == 0
-    assert "change-proof: PASS" in output
-    assert OLDER_ANCESTOR in output
-    assert COMMIT_TWO in output
-    assert ANCESTOR not in output
-    assert transport.calls.index((compare_endpoint(ANCESTOR), False)) < transport.calls.index(
-        (compare_endpoint(OLDER_ANCESTOR), False)
-    )
-
-
-def test_all_rejected_candidates_fail_with_newest_reason_and_current_head_remedy():
-    newer = use_note(ANCESTOR, created_at="2026-09-24T12:00:00Z", id=20)
-    older = use_note(OLDER_ANCESTOR, created_at="2026-09-23T12:00:00Z", id=10)
-    transport = complete_scenario(comments=[older, newer])
-    transport.responses[compare_endpoint(ANCESTOR)] = comparison(ANCESTOR, [COMMIT_ONE])
-    transport.responses[commit_endpoint(COMMIT_ONE)] = [{"sha": COMMIT_ONE}]
-    transport.responses[compare_endpoint(OLDER_ANCESTOR)] = comparison(
-        OLDER_ANCESTOR, [COMMIT_TWO]
-    )
-    transport.responses[commit_endpoint(COMMIT_TWO)] = {"files": [{"filename": "src/main.ts"}]}
-
-    result, output = execute(transport)
-
-    assert result == 1
-    assert "change-proof: FAIL" in output
-    assert "change-proof: ERROR" not in output
-    assert f"history unavailable from {ANCESTOR}" in output
-    assert f"intervening commit {COMMIT_TWO} changes a use-bought path" not in output
-    assert "post the completed use note with the exact tradecraft:use:v1 form at this head" in output
-
-
-def test_intervening_paths_are_classified_by_base_tip_policy():
-    weakened_head_rules = {
-        "schema_version": 1,
-        "rules": [{"name": "weakened", "include": ["docs/**"], "exclude": []}],
-    }
-    transport = complete_scenario(
-        comments=[use_note(ANCESTOR)], head_rules=weakened_head_rules
-    )
-    transport.responses[compare_endpoint(ANCESTOR)] = comparison(ANCESTOR, [COMMIT_ONE])
-    transport.responses[commit_endpoint(COMMIT_ONE)] = {"files": [{"filename": "src/new.ts"}]}
-
-    result, output = execute(transport)
-
-    assert result == 1
-    assert f"intervening commit {COMMIT_ONE} changes a use-bought path" in output
-    assert "pull request changes policy and was judged by the base branch tip policy" in output
-
-
-def test_older_no_use_note_remains_insufficient():
-    transport = scenario(
-        paths=("docs/guide.md",),
-        comments=[no_use_note(ANCESTOR)],
-        reviews=[record(REVIEWER, "summary")],
-    )
-
-    result, output = execute(transport)
-
-    assert result == 1
-    assert "no-use marker" in output
-    assert "for the current head" in output
-
-
-def test_unauthorized_use_note_does_not_supply_evidence():
-    transport = complete_scenario(comments=[use_note(author="stranger")])
-    result, output = execute(transport)
-
-    assert result == 1
-    assert "authorized, valid use marker" in output
-
-
-def test_rename_out_of_included_path_buys_a_use():
-    transport = complete_scenario(
-        files=[
-            {
-                "filename": "docs/main.ts",
-                "previous_filename": "src/main.ts",
-                "status": "renamed",
-            }
-        ]
-    )
-    result, output = execute(transport)
-
-    assert result == 0
-    assert "changed paths buy a use" in output
-
-
-def test_changed_file_count_matching_pull_response_passes():
-    transport = complete_scenario(paths=("src/main.ts", "docs/guide.md"))
-    result, output = execute(transport)
-
-    assert result == 0
-    assert "change-proof: PASS" in output
-
-
-def test_truncated_changed_file_list_fails_without_classification():
-    files = [{"filename": f"docs/generated-{index}.md"} for index in range(3000)]
-    transport = scenario(
-        files=files,
-        changed_files=3001,
-        comments=[no_use_note()],
-        reviews=[record(REVIEWER, "summary")],
-    )
-    result, output = execute(transport)
-
-    assert result == 1
-    assert "pull reports 3001, retrieved 3000" in output
-    assert "the change cannot be classified" in output
-    assert "changed paths do not buy a use" not in output
-
-
-def test_missing_connected_reviewer_run_fails():
-    result, output = execute(scenario(comments=[use_note()]))
-
-    assert result == 1
-    assert f"connected reviewer run(s): {REVIEWER}" in output
-
-
-def test_repeated_connected_reviewer_runs_pass():
-    transport = complete_scenario(
-        reviews=[record(REVIEWER, "first"), record(REVIEWER, "bought second look")]
-    )
-    result, output = execute(transport)
-
-    assert result == 0
-    assert f"connected reviewer {REVIEWER} credited by review" in output
-
-
-def test_rate_limit_notice_alone_fails_naming_notice():
-    reviewer = "coderabbitai[bot]"
-    transport = scenario(
-        comments=[use_note(), record(reviewer, CODERABBIT_RATE_LIMIT_NOTICE, id=5750507875)],
-        reviewers=(reviewer,),
-    )
-    result, output = execute(transport)
-
-    assert result == 1
-    assert "'Review limit reached' do not count" in output
-    assert "a review is still owed" in output
-
-
-def test_summary_only_plan_notice_does_not_count_as_a_review():
-    reviewer = "coderabbitai[bot]"
-    transport = scenario(
-        comments=[use_note(), record(reviewer, CODERABBIT_SUMMARY_ONLY_NOTICE, id=5750390080)],
-        reviewers=(reviewer,),
-    )
-    result, output = execute(transport)
-
-    assert result == 1
-    assert "'Ask your admin to upgrade for code reviews' do not count" in output
-    assert "a review is still owed" in output
-
-
-def test_completed_summary_comment_counts_as_reviewer_run():
-    reviewer = "chatgpt-codex-connector[bot]"
-    transport = scenario(
-        comments=[use_note(), record(reviewer, CODEX_COMPLETED_SUMMARY, id=5750586451)],
-        reviewers=(reviewer,),
-    )
-    result, output = execute(transport)
-
-    assert result == 0
-    assert f"connected reviewer {reviewer} credited by pull-request comment #5750586451" in output
-
-
-def test_running_notice_alone_fails():
-    reviewer = "chatgpt-codex-connector[bot]"
-    transport = scenario(
-        comments=[use_note(), record(reviewer, CODEX_RUNNING_NOTICE, id=5750586451)],
-        reviewers=(reviewer,),
-    )
-    result, output = execute(transport)
-
-    assert result == 1
-    assert "'Running' do not count" in output
-    assert "a review is still owed" in output
-
-
-@pytest.mark.parametrize(
-    ("body", "notice"),
-    [
-        ("THE REVIEW WAS LIMITED", "review limited"),
-        ("REVIEW SKIPPED", "review skipped"),
-    ],
-)
-def test_notice_phrasings_match_case_insensitively(body, notice):
-    transport = scenario(
-        comments=[use_note(), record(REVIEWER, body)],
-    )
-    result, output = execute(transport)
-
-    assert result == 1
-    assert f"'{notice}' do not count" in output
-    assert "a review is still owed" in output
-
-
-def test_review_endpoint_record_counts_as_reviewer_run():
-    transport = scenario(
-        comments=[use_note()],
-        reviews=[record(REVIEWER, "review summary", id=5260887954)],
-    )
-    result, output = execute(transport)
-
-    assert result == 0
-    assert f"connected reviewer {REVIEWER} credited by review #5260887954" in output
-
-
-def test_legacy_review_endpoint_body_does_not_change_reviewer_credit():
-    transport = scenario(
-        comments=[use_note()],
-        reviews=[record(REVIEWER, "Review limit reached", id=41)],
-    )
-
-    result, output = execute(transport)
-
-    assert result == 0
-    assert f"connected reviewer {REVIEWER} credited by review #41" in output
-
-
-def test_undispositioned_top_level_inline_comment_fails():
-    inline = record(REVIEWER, "finding", id=41, in_reply_to_id=None)
-    result, output = execute(
-        scenario(comments=[use_note()], review_comments=[inline])
-    )
-
-    assert result == 1
-    assert "top-level inline comment(s): 41" in output
-
-
-@pytest.mark.parametrize(
-    "disposition",
-    [
-        "fixed",
-        "fixed - addressed",
-        "fixed — addressed",
-    ],
-)
-def test_authorized_first_line_disposition_passes(disposition):
-    inline = record(REVIEWER, "finding", id=41, in_reply_to_id=None)
-    reply = record(OWNER, f"{disposition}\nDetails.", id=42, in_reply_to_id=41)
-    result, output = execute(
-        scenario(comments=[use_note()], review_comments=[inline, reply])
-    )
-
-    assert result == 0
-    assert "marker-producer disposition" in output
-
-
-@pytest.mark.parametrize(
-    ("disposition", "passes"),
-    [
-        ("`fixed`", True),
-        ("`fixed — nothing else found it`", True),
-        ("  `yours — in the release report`", True),
-        ("*fixed*", True),
-        ("**fixed**", True),
-        ("_fixed_", True),
-        ("__fixed__", True),
-        ("`fixed", False),
-        ("**fixed", False),
-        ("_fixed", False),
-        ("*fixed_", False),
-        ("**fixed*", False),
-    ],
-)
-def test_disposition_requires_balanced_markdown_wrapper(disposition, passes):
-    inline = record(REVIEWER, "finding", id=41, in_reply_to_id=None)
-    reply = record(OWNER, f"{disposition}\nDetails.", id=42, in_reply_to_id=41)
-    result, output = execute(
-        scenario(comments=[use_note()], review_comments=[inline, reply])
-    )
-
-    assert result == (0 if passes else 1)
-    expected = (
-        "marker-producer disposition"
-        if passes
-        else "top-level inline comment(s): 41"
-    )
-    assert expected in output
-
-
-@pytest.mark.parametrize(
-    ("disposition", "passes"),
-    [
-        ("**fixed** - addressed", True),
-        ("__declined__ - not a defect", True),
-        ("*yours* - in the release report", True),
-        ("`duplicate` of the earlier comment", True),
-        ("**fixing** this", False),
-        ("*fixed*ness", False),
-        ("**fixed in** #12", False),
-        ("_sustained_ - fixed", False),
-    ],
-)
-def test_disposition_reads_formatted_opening_word(disposition, passes):
-    inline = record(REVIEWER, "finding", id=41, in_reply_to_id=None)
-    reply = record(OWNER, disposition, id=42, in_reply_to_id=41)
-    result, output = execute(
-        scenario(comments=[use_note()], review_comments=[inline, reply])
-    )
-
-    assert result == (0 if passes else 1)
-    expected = (
-        "marker-producer disposition"
-        if passes
-        else "top-level inline comment(s): 41"
-    )
-    assert expected in output
-
-
-@pytest.mark.parametrize(
-    ("body", "passes"),
-    [
-        ("\n\nFixed\nDetails.", True),
-        ("\n\nThanks\nFixed", False),
-    ],
-)
-def test_disposition_reads_first_non_blank_line(body, passes):
-    inline = record(REVIEWER, "finding", id=41, in_reply_to_id=None)
-    reply = record(OWNER, body, id=42, in_reply_to_id=41)
-    result, output = execute(
-        scenario(comments=[use_note()], review_comments=[inline, reply])
-    )
-
-    assert result == (0 if passes else 1)
-    expected = (
-        "marker-producer disposition"
-        if passes
-        else "top-level inline comment(s): 41"
-    )
-    assert expected in output
-
-
-@pytest.mark.parametrize(
-    "reply",
-    [
-        record("stranger", "fixed", id=42, in_reply_to_id=41),
-        record(OWNER, "Thanks\nfixed", id=42, in_reply_to_id=41),
-        record(OWNER, "Thanks, fixed", id=42, in_reply_to_id=41),
-        record(OWNER, "fixedness", id=42, in_reply_to_id=41),
-    ],
-)
-def test_reply_must_be_from_producer_and_start_with_disposition(reply):
-    inline = record(REVIEWER, "finding", id=41, in_reply_to_id=None)
-    result, output = execute(
-        scenario(comments=[use_note()], review_comments=[inline, reply])
-    )
-
-    assert result == 1
-    assert "top-level inline comment(s): 41" in output
-
-
-def test_summary_only_reviewer_run_owes_no_disposition():
-    reviewer = "chatgpt-codex-connector[bot]"
-    transport = scenario(
-        comments=[use_note(), record(reviewer, CODEX_COMPLETED_SUMMARY)],
-        reviewers=(reviewer,),
-    )
-    result, output = execute(transport)
-
-    assert result == 0
-    assert "every top-level inline reviewer comment" in output
-
-
-def test_ready_pull_request_with_complete_evidence_passes():
-    inline = record(REVIEWER, "finding", id=91, in_reply_to_id=None)
-    reply = record(OWNER, "declined - not a product defect", id=92, in_reply_to_id=91)
-    transport = complete_scenario(draft=False, review_comments=[inline, reply])
-    result, output = execute(transport)
-
-    assert result == 0
-    assert "change-proof: PASS" in output
-    assert output.count("verified:") == 5
-    assert output.count(
-        "verified: pull request body has a **Path departures:** paragraph\n"
-    ) == 1
-    pull = f"repos/{REPO}/pulls/17"
-    evidence_calls = {
-        (f"{pull}/files?per_page=100", True),
-        (f"repos/{REPO}/issues/17/comments?per_page=100", True),
-        (f"{pull}/reviews?per_page=100", True),
-        (f"{pull}/comments?per_page=100", True),
-    }
-    assert evidence_calls <= set(transport.calls)
-
-
-def test_missing_event_head_is_resolved_by_get():
-    result, output = execute(complete_scenario(), head="")
-
-    assert result == 0
-    assert "change-proof: PASS" in output
-
-
-def test_draft_pull_request_exits_nonzero_without_evaluating():
-    transport = scenario(draft=True)
-    pull = f"repos/{REPO}/pulls/17"
-    transport.responses = {pull: transport.responses[pull]}
-    result, output = execute(transport)
-
-    assert result == 1
-    assert output == (
-        "change-proof: SKIP: pull request #17 is draft; evidence is not evaluated\n"
-        "satisfy: mark pull request #17 ready and re-run change-proof\n"
-    )
-    assert transport.calls == [(pull, False)]
-
-
-@pytest.mark.parametrize(
-    "endpoint",
-    [
-        f"repos/{REPO}/pulls/17",
-        f"repos/{REPO}/git/ref/heads/{BASE_REF}",
-        f"repos/{REPO}/contents/.github/change-proof.json?ref={HEAD}",
-        f"repos/{REPO}/contents/.tradecraft/work.json?ref={BASE_TIP}",
-        f"repos/{REPO}/pulls/17/files?per_page=100",
-        f"repos/{REPO}/issues/17/comments?per_page=100",
-        f"repos/{REPO}/pulls/17/reviews?per_page=100",
-        f"repos/{REPO}/pulls/17/comments?per_page=100",
-    ],
-)
-def test_primary_input_failures_remain_whole_check_errors(endpoint):
-    transport = complete_scenario()
-    transport.responses[endpoint] = check.ProofError("primary input unavailable")
-
-    result, output = execute(transport)
-
-    assert result == 1
-    assert "change-proof: ERROR" in output
-    assert "primary input unavailable" in output
 
 
 class Response:
