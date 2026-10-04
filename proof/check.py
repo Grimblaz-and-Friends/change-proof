@@ -2162,6 +2162,9 @@ def _run_path(value: object) -> str:
     if not isinstance(value, str):
         raise ProofError("Actions run has no top-level workflow path")
     path, separator, ref = value.partition("@")
+    # GitHub-managed dynamic workflows cannot match a repository declaration.
+    if not path.startswith(".github/workflows/"):
+        return path
     if not _workflow_path(path) or (separator and (not ref or "@" in ref)):
         raise ProofError(f"Actions run has an unverifiable top-level workflow path: {value!r}")
     return path
@@ -2176,6 +2179,29 @@ def _run_identity(run: dict[str, object], repo: str, head: str) -> int:
     if run.get("head_sha") != head:
         raise ProofError(f"Actions run #{run_id} has a contradictory head")
     return run_id
+
+
+def _run_event(run: dict[str, object]) -> str:
+    event = run.get("event")
+    if not isinstance(event, str) or not event.strip() or any(
+        ord(character) < 32 or 127 <= ord(character) < 160 for character in event
+    ):
+        raise ProofError(f"Actions run #{run['id']} has unavailable triggering-event provenance")
+    return event
+
+
+def _attempt_start(run: dict[str, object], jobs: list[dict[str, object]], attempt: int) -> object:
+    """Do not time a rerun from the original workflow execution's creation."""
+    if attempt == run["run_attempt"] and run.get("run_started_at") is not None:
+        return run["run_started_at"]
+    starts = [job["started_at"] for job in jobs
+              if job.get("run_attempt") == attempt and job.get("started_at") is not None]
+    if starts:
+        instants = [_start_instant(start) for start in starts]
+        if any(instant is None for instant in instants):
+            raise ProofError(f"run #{run['id']} attempt #{attempt} has an invalid start timestamp")
+        return min(starts, key=_start_instant)
+    return run.get("created_at") if attempt == 1 else None
 
 
 def _execution_state(
@@ -2251,7 +2277,7 @@ def _collect_declared_floor(
             raise ProofError(f"duplicate public check #{check_id} across check pages")
         checks_by_id[check_id] = check
 
-    selected: dict[str, dict[str, object]] = {}
+    selected: dict[tuple[str, str], dict[str, object]] = {}
     seen_runs: set[int] = set()
     run_paths: dict[int, str] = {}
     for summary in runs:
@@ -2273,11 +2299,15 @@ def _collect_declared_floor(
         run_paths[run_id] = path
         if path not in paths:
             continue
-        if path not in selected or run_id > selected[path]["id"]:
-            selected[path] = run
+        event = _run_event(run)
+        if "event" in summary and _run_event(summary) != event:
+            raise ProofError(f"Actions run #{run_id} changed its triggering event during collection")
+        key = (path, event)
+        if key not in selected or run_id > selected[key]["id"]:
+            selected[key] = run
 
-    jobs_by_path: dict[str, list[dict[str, object]]] = {}
-    for path, run in selected.items():
+    jobs_by_run: dict[int, list[dict[str, object]]] = {}
+    for (path, event), run in selected.items():
         run_id = run["id"]
         attempt = _positive_id(run.get("run_attempt"), f"run #{run_id} attempt")
         _positive_id(run.get("workflow_id"), f"run #{run_id} workflow id")
@@ -2323,100 +2353,112 @@ def _collect_declared_floor(
         for check_id, associated in check_jobs.items():
             if len(associated) > 1 and any(job.get("name") in declared_names for job in associated):
                 raise ProofError(f"check #{check_id} is ambiguously associated with jobs")
-        jobs_by_path[path] = jobs
+        jobs_by_run[run_id] = jobs
 
     for pair in pairs:
         path, name = pair["workflow"], pair["job"]
-        run = selected.get(path)
-        execution = {"workflow": path, "job": name, "run_id": None,
-                     "attempt": None, "check_id": None, "state": "fallback",
-                     "conclusion": None, "age_seconds": None}
-        if run is None:
-            result.executions.append(execution)
-            continue
-        run_id = run["id"]
-        run_attempt = run["run_attempt"]
-        execution.update(run_id=run_id, attempt=run_attempt)
-        jobs = jobs_by_path[path]
-        matches = [job for job in jobs if job.get("name") == name]
-        newest_attempt = max((job["run_attempt"] for job in matches), default=0)
-        matches = [job for job in matches if job["run_attempt"] == newest_attempt]
-        # An unfinished rerun does not yet prove that a missing job was retained.
-        uncertain = run.get("status") != "completed" and newest_attempt < run_attempt
-        if uncertain or not matches:
-            if run.get("status") != "completed":
+        pair_runs = [run for (workflow, event), run in selected.items() if workflow == path]
+        for run in pair_runs or [None]:
+            execution = {"workflow": path, "job": name, "run_id": None, "event": None,
+                         "attempt": None, "check_id": None, "state": "fallback",
+                         "conclusion": None, "age_seconds": None}
+            if run is None:
+                result.executions.append(execution)
+                continue
+            run_id = run["id"]
+            run_attempt = run["run_attempt"]
+            execution.update(run_id=run_id, attempt=run_attempt, event=run["event"])
+            jobs = jobs_by_run[run_id]
+            matches = [job for job in jobs if job.get("name") == name]
+            newest_attempt = max((job["run_attempt"] for job in matches), default=0)
+            matches = [job for job in matches if job["run_attempt"] == newest_attempt]
+            current_gate = run_id == current_run_id and (
+                current_run_attempt is None or current_run_attempt == run_attempt
+            )
+            gate_run = run_id == current_run_id or _run_references_gate(run)
+            proof_attempt = run_attempt if current_gate else newest_attempt
+            proof_jobs = [job for job in jobs
+                          if job.get("run_attempt") == proof_attempt and _is_proof_job(job)]
+            if gate_run and matches and len(proof_jobs) != 1:
+                raise ProofError(
+                    f"an unambiguous reusable proof job in run #{run_id} attempt #{proof_attempt}; "
+                    f"candidate jobs: {', '.join(_job_label(job) for job in proof_jobs) or 'none'}"
+                )
+            # An unfinished rerun does not yet prove that a missing job was retained.
+            uncertain = run.get("status") != "completed" and newest_attempt < run_attempt
+            if current_gate and matches and all(job.get("status") == "completed" for job in matches):
+                # This attempt's gate cannot make retained completed tests wait on itself.
+                uncertain = False
+            if uncertain or not matches:
                 state, age = _execution_state(
                     run.get("status"), run.get("conclusion"), None,
-                    run.get("created_at"), observed_at, bound,
+                    _attempt_start(run, jobs, run_attempt) if run.get("status") != "completed" else None,
+                    observed_at, bound,
                 )
-                execution.update(state=state, age_seconds=age)
-            result.executions.append(execution)
-            if uncertain:
-                # No earlier successful check is selected while inventory is unknown.
+                # A successful/skipped run does not establish an omitted job's execution.
+                execution.update(state="fallback" if state == "success" else state,
+                                 age_seconds=age, conclusion=run.get("conclusion"))
+                result.executions.append(execution)
                 continue
-            continue
-        gate_run = run_id == current_run_id or _run_references_gate(run)
-        proof_jobs = [job for job in jobs if job.get("run_attempt") == newest_attempt and _is_proof_job(job)]
-        if gate_run and len(proof_jobs) != 1:
-            raise ProofError(
-                f"an unambiguous reusable proof job in run #{run_id} attempt #{newest_attempt}; "
-                f"candidate jobs: {', '.join(_job_label(job) for job in proof_jobs) or 'none'}"
-            )
-        for job in matches:
-            check_id = int(job["check_run_url"].rsplit("/", 1)[-1])
-            if gate_run and job == proof_jobs[0]:
-                result.excluded.append(
-                    f"proof execution run #{run_id} attempt #{newest_attempt} check #{check_id} "
-                    "cannot establish its own declared floor"
+            for job in matches:
+                check_id = int(job["check_run_url"].rsplit("/", 1)[-1])
+                if gate_run and _is_proof_job(job):
+                    result.excluded.append(
+                        f"proof execution run #{run_id} attempt #{newest_attempt} check #{check_id} "
+                        "cannot establish its own declared floor"
+                    )
+                    result.executions.append(dict(execution))
+                    continue
+                check = checks_by_id.get(check_id)
+                if check is None:
+                    raise ProofError(f"job #{job['id']} has no visible check #{check_id}")
+                app = check.get("app")
+                suite = check.get("check_suite")
+                if (
+                    not isinstance(app, dict) or app.get("slug") != "github-actions"
+                    or not _is_integer(app.get("id")) or app["id"] <= 0
+                    or not isinstance(suite, dict) or suite.get("id") != run["check_suite_id"]
+                    or check.get("head_sha") != head or check.get("name") != name
+                    or _actions_run_id(check, repo) != run_id
+                    or check.get("status") != job.get("status")
+                    or check.get("conclusion") != job.get("conclusion")
+                ):
+                    raise ProofError(f"check #{check_id} and job #{job['id']} have contradictory identities/results")
+                details_url = check.get("details_url")
+                if "/job/" in details_url and details_url.rstrip("/").rsplit("/", 1)[-1] != str(job["id"]):
+                    raise ProofError(f"check #{check_id} names a contradictory job identity")
+                suite_app = suite.get("app")
+                if suite_app is not None and (
+                    not isinstance(suite_app, dict) or suite_app.get("id") != app["id"]
+                    or suite_app.get("slug") != app["slug"]
+                ):
+                    raise ProofError(f"check #{check_id} names a contradictory suite application")
+                suite_repository = suite.get("repository")
+                if suite_repository is not None and (
+                    not isinstance(suite_repository, dict)
+                    or str(suite_repository.get("full_name", "")).lower() != repo.lower()
+                ):
+                    raise ProofError(f"check #{check_id} names a contradictory suite repository")
+                started_at = job.get("started_at") if job.get("started_at") is not None else check.get("started_at")
+                attempt_start = (
+                    _attempt_start(run, jobs, newest_attempt)
+                    if started_at is None and check.get("status") != "completed" else None
                 )
-                result.executions.append(dict(execution))
-                continue
-            check = checks_by_id.get(check_id)
-            if check is None:
-                raise ProofError(f"job #{job['id']} has no visible check #{check_id}")
-            app = check.get("app")
-            suite = check.get("check_suite")
-            if (
-                not isinstance(app, dict) or app.get("slug") != "github-actions"
-                or not _is_integer(app.get("id")) or app["id"] <= 0
-                or not isinstance(suite, dict) or suite.get("id") != run["check_suite_id"]
-                or check.get("head_sha") != head or check.get("name") != name
-                or _actions_run_id(check, repo) != run_id
-                or check.get("status") != job.get("status")
-                or check.get("conclusion") != job.get("conclusion")
-            ):
-                raise ProofError(f"check #{check_id} and job #{job['id']} have contradictory identities/results")
-            details_url = check.get("details_url")
-            if "/job/" in details_url and details_url.rstrip("/").rsplit("/", 1)[-1] != str(job["id"]):
-                raise ProofError(f"check #{check_id} names a contradictory job identity")
-            suite_app = suite.get("app")
-            if suite_app is not None and (
-                not isinstance(suite_app, dict) or suite_app.get("id") != app["id"]
-                or suite_app.get("slug") != app["slug"]
-            ):
-                raise ProofError(f"check #{check_id} names a contradictory suite application")
-            suite_repository = suite.get("repository")
-            if suite_repository is not None and (
-                not isinstance(suite_repository, dict)
-                or str(suite_repository.get("full_name", "")).lower() != repo.lower()
-            ):
-                raise ProofError(f"check #{check_id} names a contradictory suite repository")
-            state, age = _execution_state(
-                check.get("status"), check.get("conclusion"),
-                job.get("started_at") if job.get("started_at") is not None else check.get("started_at"),
-                run.get("created_at"), observed_at, bound,
-            )
-            result.executions.append(dict(
-                execution, attempt=newest_attempt, check_id=check_id,
-                state=state, conclusion=check.get("conclusion"), age_seconds=age,
-            ))
-            result.checks.append({
-                "id": check_id, "name": name, "app_id": app["id"], "app_slug": app["slug"],
-                "workflow_id": run["workflow_id"], "run_id": run_id,
-                "url": run["html_url"],
-                "head": head, "status": check.get("status"), "conclusion": check.get("conclusion"),
-                "started_at": check.get("started_at"), "completed_at": check.get("completed_at"),
-            })
+                state, age = _execution_state(
+                    check.get("status"), check.get("conclusion"), started_at,
+                    attempt_start, observed_at, bound,
+                )
+                result.executions.append(dict(
+                    execution, attempt=newest_attempt, check_id=check_id,
+                    state=state, conclusion=check.get("conclusion"), age_seconds=age,
+                ))
+                result.checks.append({
+                    "id": check_id, "name": name, "app_id": app["id"], "app_slug": app["slug"],
+                    "workflow_id": run["workflow_id"], "run_id": run_id,
+                    "url": run["html_url"],
+                    "head": head, "status": check.get("status"), "conclusion": check.get("conclusion"),
+                    "started_at": check.get("started_at"), "completed_at": check.get("completed_at"),
+                })
 
     relevant_ids = {item["id"] for item in result.checks}
     for check_id, check in checks_by_id.items():
@@ -2429,8 +2471,11 @@ def _collect_declared_floor(
             or not app["slug"] or not _is_integer(app.get("id")) or app["id"] <= 0
         ):
             raise ProofError(f"check #{check_id} has unavailable application provenance")
-        if isinstance(app, dict) and app.get("slug") == "github-actions" and run_id not in run_paths:
-            raise ProofError(f"Actions check #{check_id} has unavailable workflow-run provenance")
+        if app.get("slug") == "github-actions" and run_id not in run_paths:
+            declared_names = {pair["job"] for pair in pairs}
+            name = check.get("name")
+            if run_id is not None or not isinstance(name, str) or name in declared_names:
+                raise ProofError(f"Actions check #{check_id} has unavailable workflow-run provenance")
         result.excluded.append(f"check #{check_id} is outside the selected declared executions")
     result.checks.sort(key=lambda check: check["id"])
     states = {execution["state"] for execution in result.executions}
@@ -2441,7 +2486,8 @@ def _collect_declared_floor(
     for execution in result.executions:
         label = (
             f"{execution['workflow']} job {execution['job']!r} at {head} "
-            f"run #{execution['run_id']} attempt #{execution['attempt']} check #{execution['check_id']}"
+            f"event {execution['event']!r} run #{execution['run_id']} "
+            f"attempt #{execution['attempt']} check #{execution['check_id']}"
         )
         state = execution["state"]
         if state in {"blocked", "pending", "stalled"}:
@@ -2825,6 +2871,7 @@ def evaluate_document(
         for execution in ci_floor.executions:
             statement = (
                 f"declared job {_safe_text(execution['workflow'])} job={_safe_text(execution['job'])} "
+                f"event={_safe_text(execution['event'])} "
                 f"run=#{execution['run_id']} attempt=#{execution['attempt']} "
                 f"check=#{execution['check_id']} conclusion={_safe_text(execution['conclusion'])} "
                 f"state={execution['state']}"

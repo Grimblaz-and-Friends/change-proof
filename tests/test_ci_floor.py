@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import copy
-from datetime import datetime
+from datetime import datetime, timedelta
 import hashlib
 import io
 import json
@@ -108,23 +108,31 @@ def test_shared_ci_floor_normalized_obligation(case):
         assert case["expected"]["outcome"] == "builder"
         return
     result = check._declared_floor_checks(
-        transport, REPO, case["head"], declaration, None, None,
+        transport, REPO, case["head"], declaration,
+        case.get("current_run_id"), case.get("current_run_attempt"),
         datetime.fromisoformat(case["observed_at"]),
     )
     assert result.outcome == case["expected"]["outcome"], result.findings
     assert [item["id"] for item in result.checks] == case["expected"]["check_ids"]
     expected = case["expected"]["executions"]
     if expected is not None:
-        assert [{field: execution[field] for field in ("check_id", "run_id", "attempt")}
-                for execution in result.executions] == expected
+        assert len(result.executions) == len(expected)
+        assert [{field: execution.get(field) for field in expectation}
+                for execution, expectation in zip(result.executions, expected)] == expected
+    for check_id in case["expected"].get("excluded_check_ids", []):
+        assert any(f"check #{check_id} " in exclusion for exclusion in result.excluded)
 
 
 @pytest.mark.parametrize("case", CASES, ids=lambda case: case["name"])
 def test_shared_ci_floor_complete_document_gate(case):
     transport, _ = fixture_transport(case)
     output = io.StringIO()
+    environ = {"GITHUB_TOKEN": "test", "GITHUB_REPOSITORY": REPO, "PULL_REQUEST_NUMBER": "19"}
+    if "current_run_id" in case:
+        environ["GITHUB_RUN_ID"] = str(case["current_run_id"])
+        environ["GITHUB_RUN_ATTEMPT"] = str(case["current_run_attempt"])
     result = check.run(
-        {"GITHUB_TOKEN": "test", "GITHUB_REPOSITORY": REPO, "PULL_REQUEST_NUMBER": "19"},
+        environ,
         transport=transport, output=output, observed_at=datetime.fromisoformat(case["observed_at"]),
     )
     assert result == (0 if case["expected"]["gate_pass"] else 1), output.getvalue()
@@ -132,6 +140,8 @@ def test_shared_ci_floor_complete_document_gate(case):
         assert f"floor authority: {REPO} .github/change-proof.json at base tip {case['base_tip']}" in output.getvalue()
         if case["expected"]["outcome"] == "ci-met":
             assert "floor satisfied by declared CI; no builder floor was needed" in output.getvalue()
+            for execution in case["expected"]["executions"] or []:
+                assert f"event={execution['event']} run=#{execution['run_id']}" in output.getvalue()
         else:
             assert "builder floor supplied by an authorized public attestation" in output.getvalue()
     if case["expected"]["outcome"] in {"blocked", "pending", "stalled"}:
@@ -282,3 +292,86 @@ def test_same_named_unexpanded_matrix_key_does_not_declare_expanded_jobs():
         datetime.fromisoformat(case["observed_at"]))
     assert result.outcome == "fallback"
     assert result.checks == []
+
+
+@pytest.mark.parametrize("conclusion", (
+    "failure", "cancelled", "timed_out", "action_required", "startup_failure", "stale"
+))
+def test_repair_empty_terminal_red_run_blocks_builder_attestation(conclusion):
+    case = copy.deepcopy(next(case for case in CASES
+        if case["name"] == "repair-terminal-red-run-without-declared-jobs"))
+    case["workflow_runs"][0]["workflow_runs"][0]["conclusion"] = conclusion
+    case["runs"][0]["record"]["conclusion"] = conclusion
+    for execution in case["expected"]["executions"]:
+        execution["conclusion"] = conclusion
+    test_shared_ci_floor_normalized_obligation(case)
+    test_shared_ci_floor_complete_document_gate(case)
+
+
+@pytest.mark.parametrize("conclusion", ("success", "skipped", "neutral"))
+def test_repair_empty_nonexecuted_run_keeps_builder_fallback(conclusion):
+    case = copy.deepcopy(next(case for case in CASES
+        if case["name"] == "repair-successful-run-with-omitted-jobs-keeps-fallback"))
+    case["workflow_runs"][0]["workflow_runs"][0]["conclusion"] = conclusion
+    case["runs"][0]["record"]["conclusion"] = conclusion
+    for execution in case["expected"]["executions"]:
+        execution["conclusion"] = conclusion
+    test_shared_ci_floor_normalized_obligation(case)
+    test_shared_ci_floor_complete_document_gate(case)
+
+
+@pytest.mark.parametrize("url", (None, "https://reports.example/test", "https://github.com/owner/repo/runs/83"))
+@pytest.mark.parametrize("same_name", (False, True))
+def test_repair_api_created_actions_check_requires_declared_name_for_uncertainty(url, same_name):
+    name = "repair-same-name-api-actions-check-is-unverifiable" if same_name else "repair-unrelated-api-actions-check-is-excluded"
+    case = copy.deepcopy(next(case for case in CASES if case["name"] == name))
+    case["check_runs"][0]["check_runs"][-1]["details_url"] = url
+    test_shared_ci_floor_normalized_obligation(case)
+    test_shared_ci_floor_complete_document_gate(case)
+
+
+@pytest.mark.parametrize("age", (3599, 3600, 3601))
+def test_repair_current_gate_pending_job_uses_attempt_clock_at_boundary(age):
+    case = copy.deepcopy(next(case for case in CASES
+        if case["name"] == "repair-current-gate-keeps-rerun-test-pending"))
+    case["observed_at"] = (datetime.fromisoformat("2026-10-03T12:04:00+00:00")
+        + timedelta(seconds=age)).isoformat()
+    state = "pending" if age < 3600 else "stalled"
+    case["expected"]["outcome"] = state
+    case["expected"]["executions"][0].update(state=state, age_seconds=age)
+    test_shared_ci_floor_normalized_obligation(case)
+    test_shared_ci_floor_complete_document_gate(case)
+
+
+def test_repair_rerun_without_attempt_clock_is_unverifiable():
+    case = copy.deepcopy(next(case for case in CASES
+        if case["name"] == "repair-unfinished-rerun-uses-attempt-start"))
+    run = case["runs"][0]["record"]
+    run.pop("run_started_at")
+    for job in case["jobs"][0]["pages"][0]["jobs"]:
+        if job["run_attempt"] == 2:
+            job["started_at"] = None
+    case["expected"].update(outcome="unverifiable", executions=None)
+    test_shared_ci_floor_normalized_obligation(case)
+    test_shared_ci_floor_complete_document_gate(case)
+
+
+@pytest.mark.parametrize("proof_jobs", (0, 2))
+def test_repair_current_gate_retention_requires_unambiguous_gate_identity(proof_jobs):
+    case = copy.deepcopy(next(case for case in CASES
+        if case["name"] == "repair-current-gate-retains-earlier-tests"))
+    jobs = case["jobs"][0]["pages"][0]["jobs"]
+    proof = jobs.pop()
+    jobs.extend(copy.deepcopy(proof) for _ in range(proof_jobs))
+    case["expected"].update(outcome="unverifiable", check_ids=[], executions=None, gate_pass=False)
+    test_shared_ci_floor_normalized_obligation(case)
+    test_shared_ci_floor_complete_document_gate(case)
+
+
+@pytest.mark.parametrize("event", (None, "", "push", "pull_request\n"))
+def test_repair_selected_run_requires_consistent_event_identity(event):
+    case = copy.deepcopy(CASES[0])
+    case["runs"][0]["record"]["event"] = event
+    case["expected"].update(outcome="unverifiable", check_ids=[], executions=None, gate_pass=False)
+    test_shared_ci_floor_normalized_obligation(case)
+    test_shared_ci_floor_complete_document_gate(case)

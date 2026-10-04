@@ -16,6 +16,10 @@ records; observation time; a document patch; and expected obligation, selected
 check identities and gate verdict. `proof_mode` cases exercise document selection
 with standalone historical markers present. Expectations are assertions, never
 runtime authority. The corpus includes the exact stall boundary without sleeping.
+Repair cases cover dynamic workflows and API-created checks, red runs without jobs,
+the current gate's partial rerun and attempt clock, and selection per triggering
+event. Run records carry their event; expected executions assert it. Optional
+`current_run_id` and `current_run_attempt` model the running gate's identity.
 Tradecraft copies this file and schema after the gate half lands.
 
 The gate implements the schema independently. Fixtures are interoperability inputs,

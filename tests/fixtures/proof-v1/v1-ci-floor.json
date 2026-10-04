@@ -124,7 +124,8 @@
               "conclusion": "success",
               "created_at": "2026-10-03T12:00:00Z",
               "html_url": "https://github.com/example/product/actions/runs/91",
-              "referenced_workflows": []
+              "referenced_workflows": [],
+              "event": "pull_request"
             }
           ]
         }
@@ -146,7 +147,8 @@
             "conclusion": "success",
             "created_at": "2026-10-03T12:00:00Z",
             "html_url": "https://github.com/example/product/actions/runs/91",
-            "referenced_workflows": []
+            "referenced_workflows": [],
+            "event": "pull_request"
           }
         }
       ],
@@ -277,12 +279,14 @@
           {
             "check_id": 81,
             "run_id": 91,
-            "attempt": 1
+            "attempt": 1,
+            "event": "pull_request"
           },
           {
             "check_id": 82,
             "run_id": 91,
-            "attempt": 1
+            "attempt": 1,
+            "event": "pull_request"
           }
         ]
       }
@@ -357,7 +361,8 @@
               "conclusion": "success",
               "created_at": "2026-10-03T12:00:00Z",
               "html_url": "https://github.com/example/product/actions/runs/91",
-              "referenced_workflows": []
+              "referenced_workflows": [],
+              "event": "pull_request"
             }
           ]
         }
@@ -379,7 +384,8 @@
             "conclusion": "success",
             "created_at": "2026-10-03T12:00:00Z",
             "html_url": "https://github.com/example/product/actions/runs/91",
-            "referenced_workflows": []
+            "referenced_workflows": [],
+            "event": "pull_request"
           }
         }
       ],
@@ -607,7 +613,8 @@
               "conclusion": "success",
               "created_at": "2026-10-03T12:00:00Z",
               "html_url": "https://github.com/example/product/actions/runs/91",
-              "referenced_workflows": []
+              "referenced_workflows": [],
+              "event": "pull_request"
             }
           ]
         }
@@ -629,7 +636,8 @@
             "conclusion": "success",
             "created_at": "2026-10-03T12:00:00Z",
             "html_url": "https://github.com/example/product/actions/runs/91",
-            "referenced_workflows": []
+            "referenced_workflows": [],
+            "event": "pull_request"
           }
         }
       ],
@@ -884,7 +892,8 @@
               "conclusion": "success",
               "created_at": "2026-10-03T12:00:00Z",
               "html_url": "https://github.com/example/product/actions/runs/91",
-              "referenced_workflows": []
+              "referenced_workflows": [],
+              "event": "pull_request"
             }
           ]
         }
@@ -906,7 +915,8 @@
             "conclusion": "success",
             "created_at": "2026-10-03T12:00:00Z",
             "html_url": "https://github.com/example/product/actions/runs/91",
-            "referenced_workflows": []
+            "referenced_workflows": [],
+            "event": "pull_request"
           }
         }
       ],
@@ -1135,7 +1145,8 @@
               "conclusion": "success",
               "created_at": "2026-10-03T12:00:00Z",
               "html_url": "https://github.com/example/product/actions/runs/91",
-              "referenced_workflows": []
+              "referenced_workflows": [],
+              "event": "pull_request"
             }
           ]
         }
@@ -1157,7 +1168,8 @@
             "conclusion": "success",
             "created_at": "2026-10-03T12:00:00Z",
             "html_url": "https://github.com/example/product/actions/runs/91",
-            "referenced_workflows": []
+            "referenced_workflows": [],
+            "event": "pull_request"
           }
         }
       ],
@@ -1394,7 +1406,8 @@
               "conclusion": "success",
               "created_at": "2026-10-03T12:00:00Z",
               "html_url": "https://github.com/example/product/actions/runs/91",
-              "referenced_workflows": []
+              "referenced_workflows": [],
+              "event": "pull_request"
             }
           ]
         }
@@ -1416,7 +1429,8 @@
             "conclusion": "success",
             "created_at": "2026-10-03T12:00:00Z",
             "html_url": "https://github.com/example/product/actions/runs/91",
-            "referenced_workflows": []
+            "referenced_workflows": [],
+            "event": "pull_request"
           }
         }
       ],
@@ -1629,7 +1643,8 @@
               "conclusion": "success",
               "created_at": "2026-10-03T12:00:00Z",
               "html_url": "https://github.com/example/product/actions/runs/91",
-              "referenced_workflows": []
+              "referenced_workflows": [],
+              "event": "pull_request"
             }
           ]
         }
@@ -1651,7 +1666,8 @@
             "conclusion": "success",
             "created_at": "2026-10-03T12:00:00Z",
             "html_url": "https://github.com/example/product/actions/runs/91",
-            "referenced_workflows": []
+            "referenced_workflows": [],
+            "event": "pull_request"
           }
         }
       ],
@@ -1879,7 +1895,8 @@
               "conclusion": "success",
               "created_at": "2026-10-03T12:00:00Z",
               "html_url": "https://github.com/example/product/actions/runs/91",
-              "referenced_workflows": []
+              "referenced_workflows": [],
+              "event": "pull_request"
             }
           ]
         }
@@ -1901,7 +1918,8 @@
             "conclusion": "success",
             "created_at": "2026-10-03T12:00:00Z",
             "html_url": "https://github.com/example/product/actions/runs/91",
-            "referenced_workflows": []
+            "referenced_workflows": [],
+            "event": "pull_request"
           }
         }
       ],
@@ -2130,7 +2148,8 @@
               "conclusion": "success",
               "created_at": "2026-10-03T12:00:00Z",
               "html_url": "https://github.com/example/product/actions/runs/91",
-              "referenced_workflows": []
+              "referenced_workflows": [],
+              "event": "pull_request"
             }
           ]
         }
@@ -2152,7 +2171,8 @@
             "conclusion": "success",
             "created_at": "2026-10-03T12:00:00Z",
             "html_url": "https://github.com/example/product/actions/runs/91",
-            "referenced_workflows": []
+            "referenced_workflows": [],
+            "event": "pull_request"
           }
         }
       ],
@@ -2381,7 +2401,8 @@
               "conclusion": "success",
               "created_at": "2026-10-03T12:00:00Z",
               "html_url": "https://github.com/example/product/actions/runs/91",
-              "referenced_workflows": []
+              "referenced_workflows": [],
+              "event": "pull_request"
             }
           ]
         }
@@ -2403,7 +2424,8 @@
             "conclusion": "success",
             "created_at": "2026-10-03T12:00:00Z",
             "html_url": "https://github.com/example/product/actions/runs/91",
-            "referenced_workflows": []
+            "referenced_workflows": [],
+            "event": "pull_request"
           }
         }
       ],
@@ -2671,7 +2693,8 @@
               "conclusion": "success",
               "created_at": "2026-10-03T12:00:00Z",
               "html_url": "https://github.com/example/product/actions/runs/91",
-              "referenced_workflows": []
+              "referenced_workflows": [],
+              "event": "pull_request"
             }
           ]
         }
@@ -2693,7 +2716,8 @@
             "conclusion": "success",
             "created_at": "2026-10-03T12:00:00Z",
             "html_url": "https://github.com/example/product/actions/runs/91",
-            "referenced_workflows": []
+            "referenced_workflows": [],
+            "event": "pull_request"
           }
         }
       ],
@@ -2946,7 +2970,8 @@
               "created_at": "2026-10-03T12:00:00Z",
               "html_url": "https://github.com/example/product/actions/runs/91",
               "referenced_workflows": [],
-              "name": "CI"
+              "name": "CI",
+              "event": "pull_request"
             }
           ]
         }
@@ -2969,7 +2994,8 @@
             "created_at": "2026-10-03T12:00:00Z",
             "html_url": "https://github.com/example/product/actions/runs/91",
             "referenced_workflows": [],
-            "name": "CI"
+            "name": "CI",
+            "event": "pull_request"
           }
         }
       ],
@@ -3343,7 +3369,8 @@
                 {
                   "path": "example/product/.github/workflows/ci.yml@main"
                 }
-              ]
+              ],
+              "event": "pull_request"
             }
           ]
         }
@@ -3369,7 +3396,8 @@
               {
                 "path": "example/product/.github/workflows/ci.yml@main"
               }
-            ]
+            ],
+            "event": "pull_request"
           }
         }
       ],
@@ -3589,7 +3617,8 @@
               "conclusion": "success",
               "created_at": "2026-10-03T12:00:00Z",
               "html_url": "https://github.com/example/product/actions/runs/91",
-              "referenced_workflows": []
+              "referenced_workflows": [],
+              "event": "pull_request"
             }
           ]
         }
@@ -3611,7 +3640,8 @@
             "conclusion": "success",
             "created_at": "2026-10-03T12:00:00Z",
             "html_url": "https://github.com/example/product/actions/runs/91",
-            "referenced_workflows": []
+            "referenced_workflows": [],
+            "event": "pull_request"
           }
         }
       ],
@@ -3879,7 +3909,8 @@
               "conclusion": "success",
               "created_at": "2026-10-03T12:00:00Z",
               "html_url": "https://github.com/example/product/actions/runs/91",
-              "referenced_workflows": []
+              "referenced_workflows": [],
+              "event": "pull_request"
             },
             {
               "id": 92,
@@ -3895,7 +3926,8 @@
               "conclusion": "success",
               "created_at": "2026-10-03T12:00:00Z",
               "html_url": "https://github.com/example/product/actions/runs/92",
-              "referenced_workflows": []
+              "referenced_workflows": [],
+              "event": "pull_request"
             }
           ]
         }
@@ -3917,7 +3949,8 @@
             "conclusion": "success",
             "created_at": "2026-10-03T12:00:00Z",
             "html_url": "https://github.com/example/product/actions/runs/91",
-            "referenced_workflows": []
+            "referenced_workflows": [],
+            "event": "pull_request"
           }
         },
         {
@@ -3936,7 +3969,8 @@
             "conclusion": "success",
             "created_at": "2026-10-03T12:00:00Z",
             "html_url": "https://github.com/example/product/actions/runs/92",
-            "referenced_workflows": []
+            "referenced_workflows": [],
+            "event": "pull_request"
           }
         }
       ],
@@ -4272,7 +4306,8 @@
               "conclusion": "success",
               "created_at": "2026-10-03T12:00:00Z",
               "html_url": "https://github.com/example/product/actions/runs/91",
-              "referenced_workflows": []
+              "referenced_workflows": [],
+              "event": "pull_request"
             },
             {
               "id": 92,
@@ -4288,7 +4323,8 @@
               "conclusion": "success",
               "created_at": "2026-10-03T12:00:00Z",
               "html_url": "https://github.com/example/product/actions/runs/92",
-              "referenced_workflows": []
+              "referenced_workflows": [],
+              "event": "pull_request"
             }
           ]
         }
@@ -4310,7 +4346,8 @@
             "conclusion": "success",
             "created_at": "2026-10-03T12:00:00Z",
             "html_url": "https://github.com/example/product/actions/runs/91",
-            "referenced_workflows": []
+            "referenced_workflows": [],
+            "event": "pull_request"
           }
         },
         {
@@ -4329,7 +4366,8 @@
             "conclusion": "success",
             "created_at": "2026-10-03T12:00:00Z",
             "html_url": "https://github.com/example/product/actions/runs/92",
-            "referenced_workflows": []
+            "referenced_workflows": [],
+            "event": "pull_request"
           }
         }
       ],
@@ -4605,7 +4643,8 @@
               "conclusion": "success",
               "created_at": "2026-10-03T12:00:00Z",
               "html_url": "https://github.com/example/product/actions/runs/91",
-              "referenced_workflows": []
+              "referenced_workflows": [],
+              "event": "pull_request"
             },
             {
               "id": 92,
@@ -4621,7 +4660,8 @@
               "conclusion": "success",
               "created_at": "2026-10-03T12:00:00Z",
               "html_url": "https://github.com/example/product/actions/runs/92",
-              "referenced_workflows": []
+              "referenced_workflows": [],
+              "event": "pull_request"
             }
           ]
         }
@@ -4643,7 +4683,8 @@
             "conclusion": "success",
             "created_at": "2026-10-03T12:00:00Z",
             "html_url": "https://github.com/example/product/actions/runs/91",
-            "referenced_workflows": []
+            "referenced_workflows": [],
+            "event": "pull_request"
           }
         },
         {
@@ -4662,7 +4703,8 @@
             "conclusion": "success",
             "created_at": "2026-10-03T12:00:00Z",
             "html_url": "https://github.com/example/product/actions/runs/92",
-            "referenced_workflows": []
+            "referenced_workflows": [],
+            "event": "pull_request"
           }
         }
       ],
@@ -4954,7 +4996,8 @@
               "conclusion": "success",
               "created_at": "2026-10-03T12:00:00Z",
               "html_url": "https://github.com/example/product/actions/runs/91",
-              "referenced_workflows": []
+              "referenced_workflows": [],
+              "event": "pull_request"
             },
             {
               "id": 92,
@@ -4970,7 +5013,8 @@
               "conclusion": null,
               "created_at": "2026-10-03T12:00:00Z",
               "html_url": "https://github.com/example/product/actions/runs/92",
-              "referenced_workflows": []
+              "referenced_workflows": [],
+              "event": "pull_request"
             }
           ]
         }
@@ -4992,7 +5036,8 @@
             "conclusion": "success",
             "created_at": "2026-10-03T12:00:00Z",
             "html_url": "https://github.com/example/product/actions/runs/91",
-            "referenced_workflows": []
+            "referenced_workflows": [],
+            "event": "pull_request"
           }
         },
         {
@@ -5011,7 +5056,8 @@
             "conclusion": null,
             "created_at": "2026-10-03T12:00:00Z",
             "html_url": "https://github.com/example/product/actions/runs/92",
-            "referenced_workflows": []
+            "referenced_workflows": [],
+            "event": "pull_request"
           }
         }
       ],
@@ -5256,7 +5302,8 @@
               "conclusion": "success",
               "created_at": "2026-10-03T12:00:00Z",
               "html_url": "https://github.com/example/product/actions/runs/91",
-              "referenced_workflows": []
+              "referenced_workflows": [],
+              "event": "pull_request"
             },
             {
               "id": 92,
@@ -5272,7 +5319,8 @@
               "conclusion": null,
               "created_at": "2026-10-03T12:00:00Z",
               "html_url": "https://github.com/example/product/actions/runs/92",
-              "referenced_workflows": []
+              "referenced_workflows": [],
+              "event": "pull_request"
             }
           ]
         }
@@ -5294,7 +5342,8 @@
             "conclusion": "success",
             "created_at": "2026-10-03T12:00:00Z",
             "html_url": "https://github.com/example/product/actions/runs/91",
-            "referenced_workflows": []
+            "referenced_workflows": [],
+            "event": "pull_request"
           }
         },
         {
@@ -5313,7 +5362,8 @@
             "conclusion": null,
             "created_at": "2026-10-03T12:00:00Z",
             "html_url": "https://github.com/example/product/actions/runs/92",
-            "referenced_workflows": []
+            "referenced_workflows": [],
+            "event": "pull_request"
           }
         }
       ],
@@ -5558,7 +5608,8 @@
               "conclusion": "success",
               "created_at": "2026-10-03T12:00:00Z",
               "html_url": "https://github.com/example/product/actions/runs/91",
-              "referenced_workflows": []
+              "referenced_workflows": [],
+              "event": "pull_request"
             },
             {
               "id": 92,
@@ -5574,7 +5625,8 @@
               "conclusion": null,
               "created_at": "2026-10-03T12:00:00Z",
               "html_url": "https://github.com/example/product/actions/runs/92",
-              "referenced_workflows": []
+              "referenced_workflows": [],
+              "event": "pull_request"
             }
           ]
         }
@@ -5596,7 +5648,8 @@
             "conclusion": "success",
             "created_at": "2026-10-03T12:00:00Z",
             "html_url": "https://github.com/example/product/actions/runs/91",
-            "referenced_workflows": []
+            "referenced_workflows": [],
+            "event": "pull_request"
           }
         },
         {
@@ -5615,7 +5668,8 @@
             "conclusion": null,
             "created_at": "2026-10-03T12:00:00Z",
             "html_url": "https://github.com/example/product/actions/runs/92",
-            "referenced_workflows": []
+            "referenced_workflows": [],
+            "event": "pull_request"
           }
         }
       ],
@@ -5860,7 +5914,8 @@
               "conclusion": "success",
               "created_at": "2026-10-03T12:00:00Z",
               "html_url": "https://github.com/example/product/actions/runs/91",
-              "referenced_workflows": []
+              "referenced_workflows": [],
+              "event": "pull_request"
             }
           ]
         }
@@ -5882,7 +5937,9 @@
             "conclusion": "success",
             "created_at": "2026-10-03T12:00:00Z",
             "html_url": "https://github.com/example/product/actions/runs/91",
-            "referenced_workflows": []
+            "referenced_workflows": [],
+            "event": "pull_request",
+            "run_started_at": "2026-10-03T12:00:00Z"
           }
         }
       ],
@@ -6042,12 +6099,14 @@
           {
             "check_id": 81,
             "run_id": 91,
-            "attempt": 1
+            "attempt": 1,
+            "event": "pull_request"
           },
           {
             "check_id": 83,
             "run_id": 91,
-            "attempt": 2
+            "attempt": 2,
+            "event": "pull_request"
           }
         ]
       }
@@ -6174,7 +6233,8 @@
               "conclusion": null,
               "created_at": "2026-10-03T12:00:00Z",
               "html_url": "https://github.com/example/product/actions/runs/91",
-              "referenced_workflows": []
+              "referenced_workflows": [],
+              "event": "pull_request"
             }
           ]
         }
@@ -6196,7 +6256,9 @@
             "conclusion": null,
             "created_at": "2026-10-03T12:00:00Z",
             "html_url": "https://github.com/example/product/actions/runs/91",
-            "referenced_workflows": []
+            "referenced_workflows": [],
+            "event": "pull_request",
+            "run_started_at": "2026-10-03T12:00:00Z"
           }
         }
       ],
@@ -6432,7 +6494,8 @@
               "conclusion": "success",
               "created_at": "2026-10-03T12:00:00Z",
               "html_url": "https://github.com/example/product/actions/runs/91",
-              "referenced_workflows": []
+              "referenced_workflows": [],
+              "event": "pull_request"
             }
           ]
         }
@@ -6454,7 +6517,8 @@
             "conclusion": "success",
             "created_at": "2026-10-03T12:00:00Z",
             "html_url": "https://github.com/example/product/actions/runs/91",
-            "referenced_workflows": []
+            "referenced_workflows": [],
+            "event": "pull_request"
           }
         }
       ],
@@ -6766,7 +6830,8 @@
               "conclusion": "success",
               "created_at": "2026-10-03T12:00:00Z",
               "html_url": "https://github.com/example/product/actions/runs/91",
-              "referenced_workflows": []
+              "referenced_workflows": [],
+              "event": "pull_request"
             }
           ]
         }
@@ -6788,7 +6853,8 @@
             "conclusion": "success",
             "created_at": "2026-10-03T12:00:00Z",
             "html_url": "https://github.com/example/product/actions/runs/91",
-            "referenced_workflows": []
+            "referenced_workflows": [],
+            "event": "pull_request"
           }
         }
       ],
@@ -7040,7 +7106,8 @@
               "conclusion": "success",
               "created_at": "2026-10-03T12:00:00Z",
               "html_url": "https://github.com/example/product/actions/runs/91",
-              "referenced_workflows": []
+              "referenced_workflows": [],
+              "event": "pull_request"
             }
           ]
         }
@@ -7062,7 +7129,8 @@
             "conclusion": "success",
             "created_at": "2026-10-03T12:00:00Z",
             "html_url": "https://github.com/example/product/actions/runs/91",
-            "referenced_workflows": []
+            "referenced_workflows": [],
+            "event": "pull_request"
           }
         }
       ],
@@ -7330,7 +7398,8 @@
               "conclusion": "success",
               "created_at": "2026-10-03T12:00:00Z",
               "html_url": "https://github.com/example/product/actions/runs/91",
-              "referenced_workflows": []
+              "referenced_workflows": [],
+              "event": "pull_request"
             }
           ]
         }
@@ -7352,7 +7421,8 @@
             "conclusion": "success",
             "created_at": "2026-10-03T12:00:00Z",
             "html_url": "https://github.com/example/product/actions/runs/91",
-            "referenced_workflows": []
+            "referenced_workflows": [],
+            "event": "pull_request"
           }
         }
       ],
@@ -7604,7 +7674,8 @@
               "conclusion": "success",
               "created_at": "2026-10-03T12:00:00Z",
               "html_url": "https://github.com/example/product/actions/runs/91",
-              "referenced_workflows": []
+              "referenced_workflows": [],
+              "event": "pull_request"
             }
           ]
         }
@@ -7626,7 +7697,8 @@
             "conclusion": "success",
             "created_at": "2026-10-03T12:00:00Z",
             "html_url": "https://github.com/example/product/actions/runs/91",
-            "referenced_workflows": []
+            "referenced_workflows": [],
+            "event": "pull_request"
           }
         }
       ],
@@ -8180,7 +8252,8 @@
               "conclusion": null,
               "created_at": "2026-10-03T12:00:00Z",
               "html_url": "https://github.com/example/product/actions/runs/91",
-              "referenced_workflows": []
+              "referenced_workflows": [],
+              "event": "pull_request"
             }
           ]
         }
@@ -8202,7 +8275,8 @@
             "conclusion": null,
             "created_at": "2026-10-03T12:00:00Z",
             "html_url": "https://github.com/example/product/actions/runs/91",
-            "referenced_workflows": []
+            "referenced_workflows": [],
+            "event": "pull_request"
           }
         }
       ],
@@ -8470,7 +8544,8 @@
               "conclusion": null,
               "created_at": "2026-10-03T10:00:00Z",
               "html_url": "https://github.com/example/product/actions/runs/91",
-              "referenced_workflows": []
+              "referenced_workflows": [],
+              "event": "pull_request"
             }
           ]
         }
@@ -8492,7 +8567,8 @@
             "conclusion": null,
             "created_at": "2026-10-03T10:00:00Z",
             "html_url": "https://github.com/example/product/actions/runs/91",
-            "referenced_workflows": []
+            "referenced_workflows": [],
+            "event": "pull_request"
           }
         }
       ],
@@ -8744,7 +8820,8 @@
               "conclusion": null,
               "created_at": "2026-10-03T12:00:00Z",
               "html_url": "https://github.com/example/product/actions/runs/91",
-              "referenced_workflows": []
+              "referenced_workflows": [],
+              "event": "pull_request"
             }
           ]
         }
@@ -8766,7 +8843,8 @@
             "conclusion": null,
             "created_at": "2026-10-03T12:00:00Z",
             "html_url": "https://github.com/example/product/actions/runs/91",
-            "referenced_workflows": []
+            "referenced_workflows": [],
+            "event": "pull_request"
           }
         }
       ],
@@ -8986,7 +9064,8 @@
               "conclusion": "success",
               "created_at": "2026-10-03T12:00:00Z",
               "html_url": "https://github.com/example/product/actions/runs/91",
-              "referenced_workflows": []
+              "referenced_workflows": [],
+              "event": "pull_request"
             },
             {
               "id": 92,
@@ -9002,7 +9081,8 @@
               "conclusion": "success",
               "created_at": "2026-10-03T12:00:00Z",
               "html_url": "https://github.com/example/product/actions/runs/92",
-              "referenced_workflows": []
+              "referenced_workflows": [],
+              "event": "pull_request"
             }
           ]
         }
@@ -9024,7 +9104,8 @@
             "conclusion": "success",
             "created_at": "2026-10-03T12:00:00Z",
             "html_url": "https://github.com/example/product/actions/runs/91",
-            "referenced_workflows": []
+            "referenced_workflows": [],
+            "event": "pull_request"
           }
         },
         {
@@ -9043,7 +9124,8 @@
             "conclusion": "success",
             "created_at": "2026-10-03T12:00:00Z",
             "html_url": "https://github.com/example/product/actions/runs/92",
-            "referenced_workflows": []
+            "referenced_workflows": [],
+            "event": "pull_request"
           }
         }
       ],
@@ -9334,7 +9416,8 @@
               "conclusion": "success",
               "created_at": "2026-10-03T12:00:00Z",
               "html_url": "https://github.com/example/product/actions/runs/91",
-              "referenced_workflows": []
+              "referenced_workflows": [],
+              "event": "pull_request"
             }
           ]
         }
@@ -9356,7 +9439,8 @@
             "conclusion": "success",
             "created_at": "2026-10-03T12:00:00Z",
             "html_url": "https://github.com/example/product/actions/runs/91",
-            "referenced_workflows": []
+            "referenced_workflows": [],
+            "event": "pull_request"
           }
         }
       ],
@@ -9622,7 +9706,8 @@
               "conclusion": "success",
               "created_at": "2026-10-03T12:00:00Z",
               "html_url": "https://github.com/example/product/actions/runs/91",
-              "referenced_workflows": []
+              "referenced_workflows": [],
+              "event": "pull_request"
             },
             {
               "id": 92,
@@ -9638,7 +9723,8 @@
               "conclusion": null,
               "created_at": "2026-10-03T12:00:00Z",
               "html_url": "https://github.com/example/product/actions/runs/92",
-              "referenced_workflows": []
+              "referenced_workflows": [],
+              "event": "pull_request"
             }
           ]
         }
@@ -9660,7 +9746,8 @@
             "conclusion": "success",
             "created_at": "2026-10-03T12:00:00Z",
             "html_url": "https://github.com/example/product/actions/runs/91",
-            "referenced_workflows": []
+            "referenced_workflows": [],
+            "event": "pull_request"
           }
         },
         {
@@ -9679,7 +9766,8 @@
             "conclusion": null,
             "created_at": "2026-10-03T12:00:00Z",
             "html_url": "https://github.com/example/product/actions/runs/92",
-            "referenced_workflows": []
+            "referenced_workflows": [],
+            "event": "pull_request"
           }
         }
       ],
@@ -9970,7 +10058,8 @@
               "conclusion": "success",
               "created_at": "2026-10-03T12:00:00Z",
               "html_url": "https://github.com/example/product/actions/runs/91",
-              "referenced_workflows": []
+              "referenced_workflows": [],
+              "event": "pull_request"
             }
           ]
         }
@@ -9992,7 +10081,8 @@
             "conclusion": "success",
             "created_at": "2026-10-03T12:00:00Z",
             "html_url": "https://github.com/example/product/actions/runs/91",
-            "referenced_workflows": []
+            "referenced_workflows": [],
+            "event": "pull_request"
           }
         }
       ],
@@ -10258,7 +10348,8 @@
               "conclusion": "success",
               "created_at": "2026-10-03T12:00:00Z",
               "html_url": "https://github.com/example/product/actions/runs/91",
-              "referenced_workflows": []
+              "referenced_workflows": [],
+              "event": "pull_request"
             },
             {
               "id": 92,
@@ -10274,7 +10365,8 @@
               "conclusion": "success",
               "created_at": "2026-10-03T12:00:00Z",
               "html_url": "https://github.com/example/product/actions/runs/92",
-              "referenced_workflows": []
+              "referenced_workflows": [],
+              "event": "pull_request"
             }
           ]
         }
@@ -10296,7 +10388,8 @@
             "conclusion": "success",
             "created_at": "2026-10-03T12:00:00Z",
             "html_url": "https://github.com/example/product/actions/runs/91",
-            "referenced_workflows": []
+            "referenced_workflows": [],
+            "event": "pull_request"
           }
         },
         {
@@ -10315,7 +10408,8 @@
             "conclusion": "success",
             "created_at": "2026-10-03T12:00:00Z",
             "html_url": "https://github.com/example/product/actions/runs/92",
-            "referenced_workflows": []
+            "referenced_workflows": [],
+            "event": "pull_request"
           }
         }
       ],
@@ -10570,7 +10664,8 @@
               "conclusion": "success",
               "created_at": "2026-10-03T12:00:00Z",
               "html_url": "https://github.com/example/product/actions/runs/91",
-              "referenced_workflows": []
+              "referenced_workflows": [],
+              "event": "pull_request"
             }
           ]
         }
@@ -10592,7 +10687,8 @@
             "conclusion": "success",
             "created_at": "2026-10-03T12:00:00Z",
             "html_url": "https://github.com/example/product/actions/runs/91",
-            "referenced_workflows": []
+            "referenced_workflows": [],
+            "event": "pull_request"
           }
         }
       ],
@@ -10808,7 +10904,8 @@
               "conclusion": "success",
               "created_at": "2026-10-03T12:00:00Z",
               "html_url": "https://github.com/example/product/actions/runs/91",
-              "referenced_workflows": []
+              "referenced_workflows": [],
+              "event": "pull_request"
             }
           ]
         }
@@ -10830,7 +10927,8 @@
             "conclusion": "success",
             "created_at": "2026-10-03T12:00:00Z",
             "html_url": "https://github.com/example/product/actions/runs/91",
-            "referenced_workflows": []
+            "referenced_workflows": [],
+            "event": "pull_request"
           }
         }
       ],
@@ -11098,7 +11196,8 @@
               "conclusion": "success",
               "created_at": "2026-10-03T12:00:00Z",
               "html_url": "https://github.com/example/product/actions/runs/91",
-              "referenced_workflows": []
+              "referenced_workflows": [],
+              "event": "pull_request"
             }
           ]
         }
@@ -11120,7 +11219,8 @@
             "conclusion": "success",
             "created_at": "2026-10-03T12:00:00Z",
             "html_url": "https://github.com/example/product/actions/runs/91",
-            "referenced_workflows": []
+            "referenced_workflows": [],
+            "event": "pull_request"
           }
         }
       ],
@@ -11340,7 +11440,8 @@
               "conclusion": "success",
               "created_at": "2026-10-03T12:00:00Z",
               "html_url": "https://github.com/example/product/actions/runs/91",
-              "referenced_workflows": []
+              "referenced_workflows": [],
+              "event": "pull_request"
             }
           ]
         }
@@ -11362,7 +11463,8 @@
             "conclusion": "success",
             "created_at": "2026-10-03T12:00:00Z",
             "html_url": "https://github.com/example/product/actions/runs/91",
-            "referenced_workflows": []
+            "referenced_workflows": [],
+            "event": "pull_request"
           }
         }
       ],
@@ -11582,7 +11684,8 @@
               "conclusion": "success",
               "created_at": "2026-10-03T12:00:00Z",
               "html_url": "https://github.com/example/product/actions/runs/91",
-              "referenced_workflows": []
+              "referenced_workflows": [],
+              "event": "pull_request"
             }
           ]
         }
@@ -11604,7 +11707,8 @@
             "conclusion": "success",
             "created_at": "2026-10-03T12:00:00Z",
             "html_url": "https://github.com/example/product/actions/runs/91",
-            "referenced_workflows": []
+            "referenced_workflows": [],
+            "event": "pull_request"
           }
         }
       ],
@@ -11824,7 +11928,8 @@
               "conclusion": "success",
               "created_at": "2026-10-03T12:00:00Z",
               "html_url": "https://github.com/example/product/actions/runs/91",
-              "referenced_workflows": []
+              "referenced_workflows": [],
+              "event": "pull_request"
             }
           ]
         }
@@ -11846,7 +11951,8 @@
             "conclusion": "success",
             "created_at": "2026-10-03T12:00:00Z",
             "html_url": "https://github.com/example/product/actions/runs/91",
-            "referenced_workflows": []
+            "referenced_workflows": [],
+            "event": "pull_request"
           }
         }
       ],
@@ -12066,7 +12172,8 @@
               "conclusion": "success",
               "created_at": "2026-10-03T12:00:00Z",
               "html_url": "https://github.com/example/product/actions/runs/91",
-              "referenced_workflows": []
+              "referenced_workflows": [],
+              "event": "pull_request"
             }
           ]
         }
@@ -12088,7 +12195,8 @@
             "conclusion": "success",
             "created_at": "2026-10-03T12:00:00Z",
             "html_url": "https://github.com/example/product/actions/runs/91",
-            "referenced_workflows": []
+            "referenced_workflows": [],
+            "event": "pull_request"
           }
         }
       ],
@@ -12308,7 +12416,8 @@
               "conclusion": "success",
               "created_at": "2026-10-03T12:00:00Z",
               "html_url": "https://github.com/example/product/actions/runs/91",
-              "referenced_workflows": []
+              "referenced_workflows": [],
+              "event": "pull_request"
             }
           ]
         }
@@ -12330,7 +12439,8 @@
             "conclusion": "success",
             "created_at": "2026-10-03T12:00:00Z",
             "html_url": "https://github.com/example/product/actions/runs/91",
-            "referenced_workflows": []
+            "referenced_workflows": [],
+            "event": "pull_request"
           }
         }
       ],
@@ -12550,7 +12660,8 @@
               "conclusion": "success",
               "created_at": "2026-10-03T12:00:00Z",
               "html_url": "https://github.com/example/product/actions/runs/91",
-              "referenced_workflows": []
+              "referenced_workflows": [],
+              "event": "pull_request"
             }
           ]
         }
@@ -12572,7 +12683,8 @@
             "conclusion": "success",
             "created_at": "2026-10-03T12:00:00Z",
             "html_url": "https://github.com/example/product/actions/runs/91",
-            "referenced_workflows": []
+            "referenced_workflows": [],
+            "event": "pull_request"
           }
         }
       ],
@@ -12792,7 +12904,8 @@
               "conclusion": "success",
               "created_at": "2026-10-03T12:00:00Z",
               "html_url": "https://github.com/example/product/actions/runs/91",
-              "referenced_workflows": []
+              "referenced_workflows": [],
+              "event": "pull_request"
             }
           ]
         }
@@ -12814,7 +12927,8 @@
             "conclusion": "success",
             "created_at": "2026-10-03T12:00:00Z",
             "html_url": "https://github.com/example/product/actions/runs/91",
-            "referenced_workflows": []
+            "referenced_workflows": [],
+            "event": "pull_request"
           }
         }
       ],
@@ -13034,7 +13148,8 @@
               "conclusion": "success",
               "created_at": "2026-10-03T12:00:00Z",
               "html_url": "https://github.com/example/product/actions/runs/91",
-              "referenced_workflows": []
+              "referenced_workflows": [],
+              "event": "pull_request"
             }
           ]
         }
@@ -13056,7 +13171,8 @@
             "conclusion": "success",
             "created_at": "2026-10-03T12:00:00Z",
             "html_url": "https://github.com/example/product/actions/runs/91",
-            "referenced_workflows": []
+            "referenced_workflows": [],
+            "event": "pull_request"
           }
         }
       ],
@@ -13288,7 +13404,8 @@
               "conclusion": "success",
               "created_at": "2026-10-03T12:00:00Z",
               "html_url": "https://github.com/example/product/actions/runs/91",
-              "referenced_workflows": []
+              "referenced_workflows": [],
+              "event": "pull_request"
             }
           ]
         }
@@ -13515,7 +13632,8 @@
               "conclusion": "success",
               "created_at": "2026-10-03T12:00:00Z",
               "html_url": "https://github.com/example/product/actions/runs/91",
-              "referenced_workflows": []
+              "referenced_workflows": [],
+              "event": "pull_request"
             }
           ]
         }
@@ -13537,7 +13655,8 @@
             "conclusion": "success",
             "created_at": "2026-10-03T12:00:00Z",
             "html_url": "https://github.com/example/product/actions/runs/91",
-            "referenced_workflows": []
+            "referenced_workflows": [],
+            "event": "pull_request"
           }
         }
       ],
@@ -13757,7 +13876,8 @@
               "conclusion": "success",
               "created_at": "2026-10-03T12:00:00Z",
               "html_url": "https://github.com/example/product/actions/runs/91",
-              "referenced_workflows": []
+              "referenced_workflows": [],
+              "event": "pull_request"
             }
           ]
         }
@@ -13779,7 +13899,8 @@
             "conclusion": "success",
             "created_at": "2026-10-03T12:00:00Z",
             "html_url": "https://github.com/example/product/actions/runs/91",
-            "referenced_workflows": []
+            "referenced_workflows": [],
+            "event": "pull_request"
           }
         }
       ],
@@ -14036,7 +14157,8 @@
               "conclusion": "success",
               "created_at": "2026-10-03T12:00:00Z",
               "html_url": "https://github.com/example/product/actions/runs/91",
-              "referenced_workflows": []
+              "referenced_workflows": [],
+              "event": "pull_request"
             }
           ]
         }
@@ -14058,7 +14180,8 @@
             "conclusion": "success",
             "created_at": "2026-10-03T12:00:00Z",
             "html_url": "https://github.com/example/product/actions/runs/91",
-            "referenced_workflows": []
+            "referenced_workflows": [],
+            "event": "pull_request"
           }
         }
       ],
@@ -14296,7 +14419,8 @@
               "conclusion": "success",
               "created_at": "2026-10-03T12:00:00Z",
               "html_url": "https://github.com/example/product/actions/runs/91",
-              "referenced_workflows": []
+              "referenced_workflows": [],
+              "event": "pull_request"
             }
           ]
         }
@@ -14318,7 +14442,8 @@
             "conclusion": "success",
             "created_at": "2026-10-03T12:00:00Z",
             "html_url": "https://github.com/example/product/actions/runs/91",
-            "referenced_workflows": []
+            "referenced_workflows": [],
+            "event": "pull_request"
           }
         }
       ],
@@ -14584,7 +14709,8 @@
               "conclusion": "success",
               "created_at": "2026-10-03T12:00:00Z",
               "html_url": "https://github.com/example/product/actions/runs/91",
-              "referenced_workflows": []
+              "referenced_workflows": [],
+              "event": "pull_request"
             }
           ]
         }
@@ -14606,7 +14732,8 @@
             "conclusion": "success",
             "created_at": "2026-10-03T12:00:00Z",
             "html_url": "https://github.com/example/product/actions/runs/91",
-            "referenced_workflows": []
+            "referenced_workflows": [],
+            "event": "pull_request"
           }
         }
       ],
@@ -14858,7 +14985,8 @@
               "conclusion": "success",
               "created_at": "2026-10-03T12:00:00Z",
               "html_url": "https://github.com/example/product/actions/runs/91",
-              "referenced_workflows": []
+              "referenced_workflows": [],
+              "event": "pull_request"
             }
           ]
         }
@@ -14880,7 +15008,8 @@
             "conclusion": "success",
             "created_at": "2026-10-03T12:00:00Z",
             "html_url": "https://github.com/example/product/actions/runs/91",
-            "referenced_workflows": []
+            "referenced_workflows": [],
+            "event": "pull_request"
           }
         }
       ],
@@ -15132,7 +15261,8 @@
               "conclusion": "success",
               "created_at": "2026-10-03T12:00:00Z",
               "html_url": "https://github.com/example/product/actions/runs/91",
-              "referenced_workflows": []
+              "referenced_workflows": [],
+              "event": "pull_request"
             }
           ]
         }
@@ -15154,7 +15284,8 @@
             "conclusion": "success",
             "created_at": "2026-10-03T12:00:00Z",
             "html_url": "https://github.com/example/product/actions/runs/91",
-            "referenced_workflows": []
+            "referenced_workflows": [],
+            "event": "pull_request"
           }
         }
       ],
@@ -15404,7 +15535,8 @@
                 {
                   "path": "Grimblaz-and-Friends/change-proof/.github/workflows/change-proof.yml@main"
                 }
-              ]
+              ],
+              "event": "pull_request"
             }
           ]
         }
@@ -15430,7 +15562,8 @@
               {
                 "path": "Grimblaz-and-Friends/change-proof/.github/workflows/change-proof.yml@main"
               }
-            ]
+            ],
+            "event": "pull_request"
           }
         }
       ],
@@ -15621,7 +15754,8 @@
               "conclusion": "success",
               "created_at": "2026-10-03T12:00:00Z",
               "html_url": "https://github.com/example/product/actions/runs/91",
-              "referenced_workflows": []
+              "referenced_workflows": [],
+              "event": "pull_request"
             }
           ]
         }
@@ -15643,7 +15777,8 @@
             "conclusion": "success",
             "created_at": "2026-10-03T12:00:00Z",
             "html_url": "https://github.com/example/product/actions/runs/91",
-            "referenced_workflows": []
+            "referenced_workflows": [],
+            "event": "pull_request"
           }
         }
       ],
@@ -15896,7 +16031,8 @@
               "conclusion": "success",
               "created_at": "2026-10-03T12:00:00Z",
               "html_url": "https://github.com/example/product/actions/runs/91",
-              "referenced_workflows": []
+              "referenced_workflows": [],
+              "event": "pull_request"
             }
           ]
         }
@@ -15918,7 +16054,8 @@
             "conclusion": "success",
             "created_at": "2026-10-03T12:00:00Z",
             "html_url": "https://github.com/example/product/actions/runs/91",
-            "referenced_workflows": []
+            "referenced_workflows": [],
+            "event": "pull_request"
           }
         }
       ],
@@ -16176,7 +16313,8 @@
               "conclusion": "success",
               "created_at": "2026-10-03T12:00:00Z",
               "html_url": "https://github.com/example/product/actions/runs/91",
-              "referenced_workflows": []
+              "referenced_workflows": [],
+              "event": "pull_request"
             }
           ]
         }
@@ -16198,7 +16336,8 @@
             "conclusion": "success",
             "created_at": "2026-10-03T12:00:00Z",
             "html_url": "https://github.com/example/product/actions/runs/91",
-            "referenced_workflows": []
+            "referenced_workflows": [],
+            "event": "pull_request"
           }
         }
       ],
@@ -16329,12 +16468,14 @@
           {
             "check_id": 81,
             "run_id": 91,
-            "attempt": 1
+            "attempt": 1,
+            "event": "pull_request"
           },
           {
             "check_id": 82,
             "run_id": 91,
-            "attempt": 1
+            "attempt": 1,
+            "event": "pull_request"
           }
         ]
       },
@@ -16462,7 +16603,8 @@
               "conclusion": "success",
               "created_at": "2026-10-03T12:00:00Z",
               "html_url": "https://github.com/example/product/actions/runs/91",
-              "referenced_workflows": []
+              "referenced_workflows": [],
+              "event": "pull_request"
             }
           ]
         }
@@ -16484,7 +16626,8 @@
             "conclusion": "success",
             "created_at": "2026-10-03T12:00:00Z",
             "html_url": "https://github.com/example/product/actions/runs/91",
-            "referenced_workflows": []
+            "referenced_workflows": [],
+            "event": "pull_request"
           }
         }
       ],
@@ -16615,12 +16758,14 @@
           {
             "check_id": 81,
             "run_id": 91,
-            "attempt": 1
+            "attempt": 1,
+            "event": "pull_request"
           },
           {
             "check_id": 82,
             "run_id": 91,
-            "attempt": 1
+            "attempt": 1,
+            "event": "pull_request"
           }
         ]
       },
@@ -16748,7 +16893,8 @@
               "conclusion": "success",
               "created_at": "2026-10-03T12:00:00Z",
               "html_url": "https://github.com/example/product/actions/runs/91",
-              "referenced_workflows": []
+              "referenced_workflows": [],
+              "event": "pull_request"
             }
           ]
         }
@@ -16770,7 +16916,8 @@
             "conclusion": "success",
             "created_at": "2026-10-03T12:00:00Z",
             "html_url": "https://github.com/example/product/actions/runs/91",
-            "referenced_workflows": []
+            "referenced_workflows": [],
+            "event": "pull_request"
           }
         }
       ],
@@ -16901,12 +17048,14 @@
           {
             "check_id": 81,
             "run_id": 91,
-            "attempt": 1
+            "attempt": 1,
+            "event": "pull_request"
           },
           {
             "check_id": 82,
             "run_id": 91,
-            "attempt": 1
+            "attempt": 1,
+            "event": "pull_request"
           }
         ]
       },
@@ -17034,7 +17183,8 @@
               "conclusion": "success",
               "created_at": "2026-10-03T12:00:00Z",
               "html_url": "https://github.com/example/product/actions/runs/91",
-              "referenced_workflows": []
+              "referenced_workflows": [],
+              "event": "pull_request"
             }
           ]
         }
@@ -17056,7 +17206,8 @@
             "conclusion": "success",
             "created_at": "2026-10-03T12:00:00Z",
             "html_url": "https://github.com/example/product/actions/runs/91",
-            "referenced_workflows": []
+            "referenced_workflows": [],
+            "event": "pull_request"
           }
         }
       ],
@@ -17187,12 +17338,14 @@
           {
             "check_id": 81,
             "run_id": 91,
-            "attempt": 1
+            "attempt": 1,
+            "event": "pull_request"
           },
           {
             "check_id": 82,
             "run_id": 91,
-            "attempt": 1
+            "attempt": 1,
+            "event": "pull_request"
           }
         ]
       },
@@ -17320,7 +17473,8 @@
               "conclusion": "success",
               "created_at": "2026-10-03T12:00:00Z",
               "html_url": "https://github.com/example/product/actions/runs/91",
-              "referenced_workflows": []
+              "referenced_workflows": [],
+              "event": "pull_request"
             }
           ]
         }
@@ -17342,7 +17496,8 @@
             "conclusion": "success",
             "created_at": "2026-10-03T12:00:00Z",
             "html_url": "https://github.com/example/product/actions/runs/91",
-            "referenced_workflows": []
+            "referenced_workflows": [],
+            "event": "pull_request"
           }
         }
       ],
@@ -17473,12 +17628,14 @@
           {
             "check_id": 81,
             "run_id": 91,
-            "attempt": 1
+            "attempt": 1,
+            "event": "pull_request"
           },
           {
             "check_id": 82,
             "run_id": 91,
-            "attempt": 1
+            "attempt": 1,
+            "event": "pull_request"
           }
         ]
       },
@@ -17606,7 +17763,8 @@
               "conclusion": "success",
               "created_at": "2026-10-03T12:00:00Z",
               "html_url": "https://github.com/example/product/actions/runs/91",
-              "referenced_workflows": []
+              "referenced_workflows": [],
+              "event": "pull_request"
             }
           ]
         }
@@ -17628,7 +17786,8 @@
             "conclusion": "success",
             "created_at": "2026-10-03T12:00:00Z",
             "html_url": "https://github.com/example/product/actions/runs/91",
-            "referenced_workflows": []
+            "referenced_workflows": [],
+            "event": "pull_request"
           }
         }
       ],
@@ -17759,12 +17918,14 @@
           {
             "check_id": 81,
             "run_id": 91,
-            "attempt": 1
+            "attempt": 1,
+            "event": "pull_request"
           },
           {
             "check_id": 82,
             "run_id": 91,
-            "attempt": 1
+            "attempt": 1,
+            "event": "pull_request"
           }
         ]
       }
@@ -17868,7 +18029,8 @@
               "conclusion": "success",
               "created_at": "2026-10-03T12:00:00Z",
               "html_url": "https://github.com/example/product/actions/runs/91",
-              "referenced_workflows": []
+              "referenced_workflows": [],
+              "event": "pull_request"
             }
           ]
         }
@@ -17890,7 +18052,8 @@
             "conclusion": "success",
             "created_at": "2026-10-03T12:00:00Z",
             "html_url": "https://github.com/example/product/actions/runs/91",
-            "referenced_workflows": []
+            "referenced_workflows": [],
+            "event": "pull_request"
           }
         }
       ],
@@ -18021,12 +18184,14 @@
           {
             "check_id": 81,
             "run_id": 91,
-            "attempt": 1
+            "attempt": 1,
+            "event": "pull_request"
           },
           {
             "check_id": 82,
             "run_id": 91,
-            "attempt": 1
+            "attempt": 1,
+            "event": "pull_request"
           }
         ]
       }
@@ -18130,7 +18295,8 @@
               "conclusion": "success",
               "created_at": "2026-10-03T12:00:00Z",
               "html_url": "https://github.com/example/product/actions/runs/91",
-              "referenced_workflows": []
+              "referenced_workflows": [],
+              "event": "pull_request"
             }
           ]
         }
@@ -18152,7 +18318,8 @@
             "conclusion": "success",
             "created_at": "2026-10-03T12:00:00Z",
             "html_url": "https://github.com/example/product/actions/runs/91",
-            "referenced_workflows": []
+            "referenced_workflows": [],
+            "event": "pull_request"
           }
         }
       ],
@@ -18404,7 +18571,8 @@
               "conclusion": "success",
               "created_at": "2026-10-03T12:00:00Z",
               "html_url": "https://github.com/example/product/actions/runs/91",
-              "referenced_workflows": []
+              "referenced_workflows": [],
+              "event": "pull_request"
             }
           ]
         }
@@ -18426,7 +18594,8 @@
             "conclusion": "success",
             "created_at": "2026-10-03T12:00:00Z",
             "html_url": "https://github.com/example/product/actions/runs/91",
-            "referenced_workflows": []
+            "referenced_workflows": [],
+            "event": "pull_request"
           }
         }
       ],
@@ -18694,7 +18863,8 @@
               "conclusion": null,
               "created_at": "2026-10-03T12:00:00Z",
               "html_url": "https://github.com/example/product/actions/runs/91",
-              "referenced_workflows": []
+              "referenced_workflows": [],
+              "event": "pull_request"
             }
           ]
         }
@@ -18716,7 +18886,8 @@
             "conclusion": null,
             "created_at": "2026-10-03T12:00:00Z",
             "html_url": "https://github.com/example/product/actions/runs/91",
-            "referenced_workflows": []
+            "referenced_workflows": [],
+            "event": "pull_request"
           }
         }
       ],
@@ -18984,7 +19155,8 @@
               "conclusion": "success",
               "created_at": "2026-10-03T12:00:00Z",
               "html_url": "https://github.com/example/product/actions/runs/91",
-              "referenced_workflows": []
+              "referenced_workflows": [],
+              "event": "pull_request"
             }
           ]
         }
@@ -19006,7 +19178,8 @@
             "conclusion": "success",
             "created_at": "2026-10-03T12:00:00Z",
             "html_url": "https://github.com/example/product/actions/runs/91",
-            "referenced_workflows": []
+            "referenced_workflows": [],
+            "event": "pull_request"
           }
         }
       ],
@@ -19166,12 +19339,14 @@
           {
             "check_id": 81,
             "run_id": 91,
-            "attempt": 1
+            "attempt": 1,
+            "event": "pull_request"
           },
           {
             "check_id": 82,
             "run_id": 91,
-            "attempt": 1
+            "attempt": 1,
+            "event": "pull_request"
           }
         ]
       }
@@ -19298,7 +19473,8 @@
               "conclusion": "success",
               "created_at": "2026-10-03T12:00:00Z",
               "html_url": "https://github.com/example/product/actions/runs/91",
-              "referenced_workflows": []
+              "referenced_workflows": [],
+              "event": "pull_request"
             }
           ]
         }
@@ -19320,7 +19496,8 @@
             "conclusion": "success",
             "created_at": "2026-10-03T12:00:00Z",
             "html_url": "https://github.com/example/product/actions/runs/91",
-            "referenced_workflows": []
+            "referenced_workflows": [],
+            "event": "pull_request"
           }
         }
       ],
@@ -19455,12 +19632,14 @@
           {
             "check_id": 81,
             "run_id": 91,
-            "attempt": 1
+            "attempt": 1,
+            "event": "pull_request"
           },
           {
             "check_id": 82,
             "run_id": 91,
-            "attempt": 1
+            "attempt": 1,
+            "event": "pull_request"
           }
         ]
       }
@@ -19587,7 +19766,8 @@
               "conclusion": "success",
               "created_at": "2026-10-03T12:00:00Z",
               "html_url": "https://github.com/example/product/actions/runs/91",
-              "referenced_workflows": []
+              "referenced_workflows": [],
+              "event": "pull_request"
             }
           ]
         }
@@ -19609,7 +19789,8 @@
             "conclusion": "success",
             "created_at": "2026-10-03T12:00:00Z",
             "html_url": "https://github.com/example/product/actions/runs/91",
-            "referenced_workflows": []
+            "referenced_workflows": [],
+            "event": "pull_request"
           }
         }
       ],
@@ -19858,7 +20039,8 @@
               "conclusion": "success",
               "created_at": "2026-10-03T12:00:00Z",
               "html_url": "https://github.com/example/product/actions/runs/91",
-              "referenced_workflows": []
+              "referenced_workflows": [],
+              "event": "pull_request"
             }
           ]
         }
@@ -19880,7 +20062,8 @@
             "conclusion": "success",
             "created_at": "2026-10-03T12:00:00Z",
             "html_url": "https://github.com/example/product/actions/runs/91",
-            "referenced_workflows": []
+            "referenced_workflows": [],
+            "event": "pull_request"
           }
         }
       ],
@@ -20015,12 +20198,14 @@
           {
             "check_id": 81,
             "run_id": 91,
-            "attempt": 1
+            "attempt": 1,
+            "event": "pull_request"
           },
           {
             "check_id": 82,
             "run_id": 91,
-            "attempt": 1
+            "attempt": 1,
+            "event": "pull_request"
           }
         ]
       }
@@ -20147,7 +20332,8 @@
               "conclusion": "success",
               "created_at": "2026-10-03T12:00:00Z",
               "html_url": "https://github.com/example/product/actions/runs/91",
-              "referenced_workflows": []
+              "referenced_workflows": [],
+              "event": "pull_request"
             },
             {
               "id": 99,
@@ -20155,7 +20341,8 @@
               "repository": {
                 "full_name": "example/product"
               },
-              "path": ".github/workflows/optional.yml"
+              "path": ".github/workflows/optional.yml",
+              "event": "pull_request"
             }
           ]
         }
@@ -20177,7 +20364,8 @@
             "conclusion": "success",
             "created_at": "2026-10-03T12:00:00Z",
             "html_url": "https://github.com/example/product/actions/runs/91",
-            "referenced_workflows": []
+            "referenced_workflows": [],
+            "event": "pull_request"
           }
         }
       ],
@@ -20308,12 +20496,14 @@
           {
             "check_id": 81,
             "run_id": 91,
-            "attempt": 1
+            "attempt": 1,
+            "event": "pull_request"
           },
           {
             "check_id": 82,
             "run_id": 91,
-            "attempt": 1
+            "attempt": 1,
+            "event": "pull_request"
           }
         ]
       }
@@ -20444,7 +20634,8 @@
               "conclusion": "success",
               "created_at": "2026-10-03T12:00:00Z",
               "html_url": "https://github.com/example/product/actions/runs/91",
-              "referenced_workflows": []
+              "referenced_workflows": [],
+              "event": "pull_request"
             },
             {
               "id": 92,
@@ -20460,7 +20651,8 @@
               "conclusion": "success",
               "created_at": "2026-10-03T12:00:00Z",
               "html_url": "https://github.com/example/product/actions/runs/92",
-              "referenced_workflows": []
+              "referenced_workflows": [],
+              "event": "pull_request"
             }
           ]
         }
@@ -20482,7 +20674,8 @@
             "conclusion": "success",
             "created_at": "2026-10-03T12:00:00Z",
             "html_url": "https://github.com/example/product/actions/runs/91",
-            "referenced_workflows": []
+            "referenced_workflows": [],
+            "event": "pull_request"
           }
         },
         {
@@ -20501,7 +20694,8 @@
             "conclusion": "success",
             "created_at": "2026-10-03T12:00:00Z",
             "html_url": "https://github.com/example/product/actions/runs/92",
-            "referenced_workflows": []
+            "referenced_workflows": [],
+            "event": "pull_request"
           }
         }
       ],
@@ -20680,6 +20874,3787 @@
           81,
           82,
           83
+        ],
+        "gate_pass": true,
+        "executions": null
+      }
+    },
+    {
+      "name": "repair-dynamic-workflows-are-undeclared",
+      "base_tip": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "head": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "base_policy": {
+        "content": {
+          "schema_version": 1,
+          "rules": [
+            {
+              "include": [
+                "src/**"
+              ],
+              "exclude": []
+            }
+          ],
+          "floor": {
+            "jobs": [
+              {
+                "workflow": ".github/workflows/ci.yml",
+                "job": "lint-and-test (ubuntu-latest)"
+              },
+              {
+                "workflow": ".github/workflows/ci.yml",
+                "job": "lint-and-test (windows-latest)"
+              }
+            ],
+            "stall_after_seconds": 3600
+          }
+        }
+      },
+      "head_policy": {
+        "content": {
+          "schema_version": 1,
+          "rules": [
+            {
+              "include": [
+                "src/**"
+              ],
+              "exclude": []
+            }
+          ],
+          "floor": {
+            "jobs": [
+              {
+                "workflow": ".github/workflows/ci.yml",
+                "job": "lint-and-test (ubuntu-latest)"
+              },
+              {
+                "workflow": ".github/workflows/ci.yml",
+                "job": "lint-and-test (windows-latest)"
+              }
+            ],
+            "stall_after_seconds": 3600
+          }
+        }
+      },
+      "holder_policy": {
+        "schema_version": 1,
+        "rules": [
+          {
+            "include": [
+              "src/**"
+            ],
+            "exclude": []
+          }
+        ],
+        "floor": {
+          "jobs": [
+            {
+              "workflow": ".github/workflows/ci.yml",
+              "job": "lint-and-test (ubuntu-latest)"
+            },
+            {
+              "workflow": ".github/workflows/ci.yml",
+              "job": "lint-and-test (windows-latest)"
+            }
+          ],
+          "stall_after_seconds": 3600
+        }
+      },
+      "local_override": {
+        "schema_version": 1,
+        "rules": [
+          {
+            "include": [
+              "src/**"
+            ],
+            "exclude": []
+          }
+        ],
+        "floor": {
+          "jobs": [
+            {
+              "workflow": ".github/workflows/ci.yml",
+              "job": "lint-and-test (ubuntu-latest)"
+            },
+            {
+              "workflow": ".github/workflows/ci.yml",
+              "job": "lint-and-test (windows-latest)"
+            }
+          ],
+          "stall_after_seconds": 3600
+        }
+      },
+      "workflow_runs": [
+        {
+          "total_count": 3,
+          "workflow_runs": [
+            {
+              "id": 91,
+              "path": ".github/workflows/ci.yml",
+              "repository": {
+                "full_name": "example/product"
+              },
+              "head_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "workflow_id": 71,
+              "check_suite_id": 191,
+              "run_attempt": 1,
+              "status": "completed",
+              "conclusion": "success",
+              "created_at": "2026-10-03T12:00:00Z",
+              "html_url": "https://github.com/example/product/actions/runs/91",
+              "referenced_workflows": [],
+              "event": "pull_request"
+            },
+            {
+              "id": 92,
+              "path": "dynamic/github-code-scanning/codeql",
+              "repository": {
+                "full_name": "example/product"
+              },
+              "head_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "workflow_id": 71,
+              "check_suite_id": 192,
+              "run_attempt": 1,
+              "status": "completed",
+              "conclusion": "failure",
+              "created_at": "2026-10-03T12:00:00Z",
+              "html_url": "https://github.com/example/product/actions/runs/92",
+              "referenced_workflows": [],
+              "event": "pull_request"
+            },
+            {
+              "id": 93,
+              "path": "dynamic/copilot-pull-request-reviewer/7",
+              "repository": {
+                "full_name": "example/product"
+              },
+              "head_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "workflow_id": 71,
+              "check_suite_id": 193,
+              "run_attempt": 1,
+              "status": "in_progress",
+              "conclusion": null,
+              "created_at": "2026-10-03T12:00:00Z",
+              "html_url": "https://github.com/example/product/actions/runs/93",
+              "referenced_workflows": [],
+              "event": "pull_request"
+            }
+          ]
+        }
+      ],
+      "runs": [
+        {
+          "id": 91,
+          "record": {
+            "id": 91,
+            "path": ".github/workflows/ci.yml",
+            "repository": {
+              "full_name": "example/product"
+            },
+            "head_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "workflow_id": 71,
+            "check_suite_id": 191,
+            "run_attempt": 1,
+            "status": "completed",
+            "conclusion": "success",
+            "created_at": "2026-10-03T12:00:00Z",
+            "html_url": "https://github.com/example/product/actions/runs/91",
+            "referenced_workflows": [],
+            "event": "pull_request"
+          }
+        },
+        {
+          "id": 92,
+          "error": "irrelevant dynamic run must not be read"
+        },
+        {
+          "id": 93,
+          "error": "irrelevant dynamic run must not be read"
+        }
+      ],
+      "jobs": [
+        {
+          "run_id": 91,
+          "pages": [
+            {
+              "total_count": 2,
+              "jobs": [
+                {
+                  "id": 1081,
+                  "run_id": 91,
+                  "head_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                  "run_attempt": 1,
+                  "name": "lint-and-test (ubuntu-latest)",
+                  "check_run_url": "https://api.github.com/repos/example/product/check-runs/81",
+                  "status": "completed",
+                  "conclusion": "success",
+                  "started_at": "2026-10-03T12:00:00Z",
+                  "completed_at": "2026-10-03T12:05:00Z"
+                },
+                {
+                  "id": 1082,
+                  "run_id": 91,
+                  "head_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                  "run_attempt": 1,
+                  "name": "lint-and-test (windows-latest)",
+                  "check_run_url": "https://api.github.com/repos/example/product/check-runs/82",
+                  "status": "completed",
+                  "conclusion": "success",
+                  "started_at": "2026-10-03T12:00:00Z",
+                  "completed_at": "2026-10-03T12:05:00Z"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "run_id": 92,
+          "error": "irrelevant dynamic jobs must not be read"
+        },
+        {
+          "run_id": 93,
+          "error": "irrelevant dynamic jobs must not be read"
+        }
+      ],
+      "check_runs": [
+        {
+          "total_count": 4,
+          "check_runs": [
+            {
+              "id": 81,
+              "name": "lint-and-test (ubuntu-latest)",
+              "head_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "app": {
+                "id": 15368,
+                "slug": "github-actions"
+              },
+              "check_suite": {
+                "id": 191
+              },
+              "details_url": "https://github.com/example/product/actions/runs/91/job/1081",
+              "status": "completed",
+              "conclusion": "success",
+              "started_at": "2026-10-03T12:00:00Z",
+              "completed_at": "2026-10-03T12:05:00Z"
+            },
+            {
+              "id": 82,
+              "name": "lint-and-test (windows-latest)",
+              "head_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "app": {
+                "id": 15368,
+                "slug": "github-actions"
+              },
+              "check_suite": {
+                "id": 191
+              },
+              "details_url": "https://github.com/example/product/actions/runs/91/job/1082",
+              "status": "completed",
+              "conclusion": "success",
+              "started_at": "2026-10-03T12:00:00Z",
+              "completed_at": "2026-10-03T12:05:00Z"
+            },
+            {
+              "id": 83,
+              "name": "CodeQL",
+              "head_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "app": {
+                "id": 15368,
+                "slug": "github-actions"
+              },
+              "check_suite": {
+                "id": 192
+              },
+              "details_url": "https://github.com/example/product/actions/runs/92/job/1083",
+              "status": "completed",
+              "conclusion": "failure",
+              "started_at": "2026-10-03T12:00:00Z",
+              "completed_at": "2026-10-03T12:05:00Z"
+            },
+            {
+              "id": 84,
+              "name": "Copilot reviewer",
+              "head_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "app": {
+                "id": 15368,
+                "slug": "github-actions"
+              },
+              "check_suite": {
+                "id": 193
+              },
+              "details_url": "https://github.com/example/product/actions/runs/93/job/1084",
+              "status": "in_progress",
+              "conclusion": null,
+              "started_at": "2026-10-03T12:00:00Z",
+              "completed_at": null
+            }
+          ]
+        }
+      ],
+      "observed_at": "2026-10-03T12:05:00Z",
+      "builder_source": null,
+      "document_patch": {
+        "floor": {
+          "head": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "source": null,
+          "checks": [
+            {
+              "id": 81,
+              "name": "lint-and-test (ubuntu-latest)",
+              "app_id": 15368,
+              "app_slug": "github-actions",
+              "workflow_id": 71,
+              "run_id": 91,
+              "url": "https://github.com/example/product/actions/runs/91",
+              "head": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "status": "completed",
+              "conclusion": "success",
+              "started_at": "2026-10-03T12:00:00Z",
+              "completed_at": "2026-10-03T12:05:00Z"
+            },
+            {
+              "id": 82,
+              "name": "lint-and-test (windows-latest)",
+              "app_id": 15368,
+              "app_slug": "github-actions",
+              "workflow_id": 71,
+              "run_id": 91,
+              "url": "https://github.com/example/product/actions/runs/91",
+              "head": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "status": "completed",
+              "conclusion": "success",
+              "started_at": "2026-10-03T12:00:00Z",
+              "completed_at": "2026-10-03T12:05:00Z"
+            }
+          ]
+        },
+        "declarations": []
+      },
+      "expected": {
+        "outcome": "ci-met",
+        "check_ids": [
+          81,
+          82
+        ],
+        "gate_pass": true,
+        "executions": null,
+        "excluded_check_ids": [
+          83,
+          84
+        ]
+      }
+    },
+    {
+      "name": "repair-terminal-red-run-without-declared-jobs",
+      "base_tip": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "head": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "base_policy": {
+        "content": {
+          "schema_version": 1,
+          "rules": [
+            {
+              "include": [
+                "src/**"
+              ],
+              "exclude": []
+            }
+          ],
+          "floor": {
+            "jobs": [
+              {
+                "workflow": ".github/workflows/ci.yml",
+                "job": "lint-and-test (ubuntu-latest)"
+              },
+              {
+                "workflow": ".github/workflows/ci.yml",
+                "job": "lint-and-test (windows-latest)"
+              }
+            ],
+            "stall_after_seconds": 3600
+          }
+        }
+      },
+      "head_policy": {
+        "content": {
+          "schema_version": 1,
+          "rules": [
+            {
+              "include": [
+                "src/**"
+              ],
+              "exclude": []
+            }
+          ],
+          "floor": {
+            "jobs": [
+              {
+                "workflow": ".github/workflows/ci.yml",
+                "job": "lint-and-test (ubuntu-latest)"
+              },
+              {
+                "workflow": ".github/workflows/ci.yml",
+                "job": "lint-and-test (windows-latest)"
+              }
+            ],
+            "stall_after_seconds": 3600
+          }
+        }
+      },
+      "holder_policy": {
+        "schema_version": 1,
+        "rules": [
+          {
+            "include": [
+              "src/**"
+            ],
+            "exclude": []
+          }
+        ],
+        "floor": {
+          "jobs": [
+            {
+              "workflow": ".github/workflows/ci.yml",
+              "job": "lint-and-test (ubuntu-latest)"
+            },
+            {
+              "workflow": ".github/workflows/ci.yml",
+              "job": "lint-and-test (windows-latest)"
+            }
+          ],
+          "stall_after_seconds": 3600
+        }
+      },
+      "local_override": {
+        "schema_version": 1,
+        "rules": [
+          {
+            "include": [
+              "src/**"
+            ],
+            "exclude": []
+          }
+        ],
+        "floor": {
+          "jobs": [
+            {
+              "workflow": ".github/workflows/ci.yml",
+              "job": "lint-and-test (ubuntu-latest)"
+            },
+            {
+              "workflow": ".github/workflows/ci.yml",
+              "job": "lint-and-test (windows-latest)"
+            }
+          ],
+          "stall_after_seconds": 3600
+        }
+      },
+      "workflow_runs": [
+        {
+          "total_count": 1,
+          "workflow_runs": [
+            {
+              "id": 91,
+              "path": ".github/workflows/ci.yml",
+              "repository": {
+                "full_name": "example/product"
+              },
+              "head_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "workflow_id": 71,
+              "check_suite_id": 191,
+              "run_attempt": 1,
+              "status": "completed",
+              "conclusion": "startup_failure",
+              "created_at": "2026-10-03T12:00:00Z",
+              "html_url": "https://github.com/example/product/actions/runs/91",
+              "referenced_workflows": [],
+              "event": "pull_request"
+            }
+          ]
+        }
+      ],
+      "runs": [
+        {
+          "id": 91,
+          "record": {
+            "id": 91,
+            "path": ".github/workflows/ci.yml",
+            "repository": {
+              "full_name": "example/product"
+            },
+            "head_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "workflow_id": 71,
+            "check_suite_id": 191,
+            "run_attempt": 1,
+            "status": "completed",
+            "conclusion": "startup_failure",
+            "created_at": "2026-10-03T12:00:00Z",
+            "html_url": "https://github.com/example/product/actions/runs/91",
+            "referenced_workflows": [],
+            "event": "pull_request"
+          }
+        }
+      ],
+      "jobs": [
+        {
+          "run_id": 91,
+          "pages": [
+            {
+              "total_count": 0,
+              "jobs": []
+            }
+          ]
+        }
+      ],
+      "check_runs": [
+        {
+          "total_count": 0,
+          "check_runs": []
+        }
+      ],
+      "observed_at": "2026-10-03T12:05:00Z",
+      "builder_source": {
+        "kind": "pull-request-comment",
+        "repository": "example/product",
+        "id": 31,
+        "url": "https://github.com/example/product/pull/19#issuecomment-31",
+        "author": "holder",
+        "timestamp": "2026-10-03T12:05:00Z",
+        "revision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "document_patch": {
+        "floor": {
+          "head": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "source": {
+            "kind": "pull-request-comment",
+            "repository": "example/product",
+            "id": 31,
+            "url": "https://github.com/example/product/pull/19#issuecomment-31",
+            "author": "holder",
+            "timestamp": "2026-10-03T12:05:00Z",
+            "revision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          },
+          "checks": []
+        },
+        "declarations": []
+      },
+      "expected": {
+        "outcome": "blocked",
+        "check_ids": [],
+        "gate_pass": false,
+        "executions": [
+          {
+            "event": "pull_request",
+            "run_id": 91,
+            "attempt": 1,
+            "check_id": null,
+            "state": "blocked",
+            "conclusion": "startup_failure"
+          },
+          {
+            "event": "pull_request",
+            "run_id": 91,
+            "attempt": 1,
+            "check_id": null,
+            "state": "blocked",
+            "conclusion": "startup_failure"
+          }
+        ]
+      }
+    },
+    {
+      "name": "repair-successful-run-with-omitted-jobs-keeps-fallback",
+      "base_tip": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "head": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "base_policy": {
+        "content": {
+          "schema_version": 1,
+          "rules": [
+            {
+              "include": [
+                "src/**"
+              ],
+              "exclude": []
+            }
+          ],
+          "floor": {
+            "jobs": [
+              {
+                "workflow": ".github/workflows/ci.yml",
+                "job": "lint-and-test (ubuntu-latest)"
+              },
+              {
+                "workflow": ".github/workflows/ci.yml",
+                "job": "lint-and-test (windows-latest)"
+              }
+            ],
+            "stall_after_seconds": 3600
+          }
+        }
+      },
+      "head_policy": {
+        "content": {
+          "schema_version": 1,
+          "rules": [
+            {
+              "include": [
+                "src/**"
+              ],
+              "exclude": []
+            }
+          ],
+          "floor": {
+            "jobs": [
+              {
+                "workflow": ".github/workflows/ci.yml",
+                "job": "lint-and-test (ubuntu-latest)"
+              },
+              {
+                "workflow": ".github/workflows/ci.yml",
+                "job": "lint-and-test (windows-latest)"
+              }
+            ],
+            "stall_after_seconds": 3600
+          }
+        }
+      },
+      "holder_policy": {
+        "schema_version": 1,
+        "rules": [
+          {
+            "include": [
+              "src/**"
+            ],
+            "exclude": []
+          }
+        ],
+        "floor": {
+          "jobs": [
+            {
+              "workflow": ".github/workflows/ci.yml",
+              "job": "lint-and-test (ubuntu-latest)"
+            },
+            {
+              "workflow": ".github/workflows/ci.yml",
+              "job": "lint-and-test (windows-latest)"
+            }
+          ],
+          "stall_after_seconds": 3600
+        }
+      },
+      "local_override": {
+        "schema_version": 1,
+        "rules": [
+          {
+            "include": [
+              "src/**"
+            ],
+            "exclude": []
+          }
+        ],
+        "floor": {
+          "jobs": [
+            {
+              "workflow": ".github/workflows/ci.yml",
+              "job": "lint-and-test (ubuntu-latest)"
+            },
+            {
+              "workflow": ".github/workflows/ci.yml",
+              "job": "lint-and-test (windows-latest)"
+            }
+          ],
+          "stall_after_seconds": 3600
+        }
+      },
+      "workflow_runs": [
+        {
+          "total_count": 1,
+          "workflow_runs": [
+            {
+              "id": 91,
+              "path": ".github/workflows/ci.yml",
+              "repository": {
+                "full_name": "example/product"
+              },
+              "head_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "workflow_id": 71,
+              "check_suite_id": 191,
+              "run_attempt": 1,
+              "status": "completed",
+              "conclusion": "success",
+              "created_at": "2026-10-03T12:00:00Z",
+              "html_url": "https://github.com/example/product/actions/runs/91",
+              "referenced_workflows": [],
+              "event": "pull_request"
+            }
+          ]
+        }
+      ],
+      "runs": [
+        {
+          "id": 91,
+          "record": {
+            "id": 91,
+            "path": ".github/workflows/ci.yml",
+            "repository": {
+              "full_name": "example/product"
+            },
+            "head_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "workflow_id": 71,
+            "check_suite_id": 191,
+            "run_attempt": 1,
+            "status": "completed",
+            "conclusion": "success",
+            "created_at": "2026-10-03T12:00:00Z",
+            "html_url": "https://github.com/example/product/actions/runs/91",
+            "referenced_workflows": [],
+            "event": "pull_request"
+          }
+        }
+      ],
+      "jobs": [
+        {
+          "run_id": 91,
+          "pages": [
+            {
+              "total_count": 0,
+              "jobs": []
+            }
+          ]
+        }
+      ],
+      "check_runs": [
+        {
+          "total_count": 0,
+          "check_runs": []
+        }
+      ],
+      "observed_at": "2026-10-03T12:05:00Z",
+      "builder_source": {
+        "kind": "pull-request-comment",
+        "repository": "example/product",
+        "id": 31,
+        "url": "https://github.com/example/product/pull/19#issuecomment-31",
+        "author": "holder",
+        "timestamp": "2026-10-03T12:05:00Z",
+        "revision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "document_patch": {
+        "floor": {
+          "head": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "source": {
+            "kind": "pull-request-comment",
+            "repository": "example/product",
+            "id": 31,
+            "url": "https://github.com/example/product/pull/19#issuecomment-31",
+            "author": "holder",
+            "timestamp": "2026-10-03T12:05:00Z",
+            "revision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          },
+          "checks": []
+        },
+        "declarations": []
+      },
+      "expected": {
+        "outcome": "fallback",
+        "check_ids": [],
+        "gate_pass": true,
+        "executions": [
+          {
+            "event": "pull_request",
+            "run_id": 91,
+            "attempt": 1,
+            "check_id": null,
+            "state": "fallback",
+            "conclusion": "success"
+          },
+          {
+            "event": "pull_request",
+            "run_id": 91,
+            "attempt": 1,
+            "check_id": null,
+            "state": "fallback",
+            "conclusion": "success"
+          }
+        ]
+      }
+    },
+    {
+      "name": "repair-unrelated-api-actions-check-is-excluded",
+      "base_tip": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "head": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "base_policy": {
+        "content": {
+          "schema_version": 1,
+          "rules": [
+            {
+              "include": [
+                "src/**"
+              ],
+              "exclude": []
+            }
+          ],
+          "floor": {
+            "jobs": [
+              {
+                "workflow": ".github/workflows/ci.yml",
+                "job": "lint-and-test (ubuntu-latest)"
+              },
+              {
+                "workflow": ".github/workflows/ci.yml",
+                "job": "lint-and-test (windows-latest)"
+              }
+            ],
+            "stall_after_seconds": 3600
+          }
+        }
+      },
+      "head_policy": {
+        "content": {
+          "schema_version": 1,
+          "rules": [
+            {
+              "include": [
+                "src/**"
+              ],
+              "exclude": []
+            }
+          ],
+          "floor": {
+            "jobs": [
+              {
+                "workflow": ".github/workflows/ci.yml",
+                "job": "lint-and-test (ubuntu-latest)"
+              },
+              {
+                "workflow": ".github/workflows/ci.yml",
+                "job": "lint-and-test (windows-latest)"
+              }
+            ],
+            "stall_after_seconds": 3600
+          }
+        }
+      },
+      "holder_policy": {
+        "schema_version": 1,
+        "rules": [
+          {
+            "include": [
+              "src/**"
+            ],
+            "exclude": []
+          }
+        ],
+        "floor": {
+          "jobs": [
+            {
+              "workflow": ".github/workflows/ci.yml",
+              "job": "lint-and-test (ubuntu-latest)"
+            },
+            {
+              "workflow": ".github/workflows/ci.yml",
+              "job": "lint-and-test (windows-latest)"
+            }
+          ],
+          "stall_after_seconds": 3600
+        }
+      },
+      "local_override": {
+        "schema_version": 1,
+        "rules": [
+          {
+            "include": [
+              "src/**"
+            ],
+            "exclude": []
+          }
+        ],
+        "floor": {
+          "jobs": [
+            {
+              "workflow": ".github/workflows/ci.yml",
+              "job": "lint-and-test (ubuntu-latest)"
+            },
+            {
+              "workflow": ".github/workflows/ci.yml",
+              "job": "lint-and-test (windows-latest)"
+            }
+          ],
+          "stall_after_seconds": 3600
+        }
+      },
+      "workflow_runs": [
+        {
+          "total_count": 1,
+          "workflow_runs": [
+            {
+              "id": 91,
+              "path": ".github/workflows/ci.yml",
+              "repository": {
+                "full_name": "example/product"
+              },
+              "head_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "workflow_id": 71,
+              "check_suite_id": 191,
+              "run_attempt": 1,
+              "status": "completed",
+              "conclusion": "success",
+              "created_at": "2026-10-03T12:00:00Z",
+              "html_url": "https://github.com/example/product/actions/runs/91",
+              "referenced_workflows": [],
+              "event": "pull_request"
+            }
+          ]
+        }
+      ],
+      "runs": [
+        {
+          "id": 91,
+          "record": {
+            "id": 91,
+            "path": ".github/workflows/ci.yml",
+            "repository": {
+              "full_name": "example/product"
+            },
+            "head_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "workflow_id": 71,
+            "check_suite_id": 191,
+            "run_attempt": 1,
+            "status": "completed",
+            "conclusion": "success",
+            "created_at": "2026-10-03T12:00:00Z",
+            "html_url": "https://github.com/example/product/actions/runs/91",
+            "referenced_workflows": [],
+            "event": "pull_request"
+          }
+        }
+      ],
+      "jobs": [
+        {
+          "run_id": 91,
+          "pages": [
+            {
+              "total_count": 2,
+              "jobs": [
+                {
+                  "id": 1081,
+                  "run_id": 91,
+                  "head_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                  "run_attempt": 1,
+                  "name": "lint-and-test (ubuntu-latest)",
+                  "check_run_url": "https://api.github.com/repos/example/product/check-runs/81",
+                  "status": "completed",
+                  "conclusion": "success",
+                  "started_at": "2026-10-03T12:00:00Z",
+                  "completed_at": "2026-10-03T12:05:00Z"
+                },
+                {
+                  "id": 1082,
+                  "run_id": 91,
+                  "head_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                  "run_attempt": 1,
+                  "name": "lint-and-test (windows-latest)",
+                  "check_run_url": "https://api.github.com/repos/example/product/check-runs/82",
+                  "status": "completed",
+                  "conclusion": "success",
+                  "started_at": "2026-10-03T12:00:00Z",
+                  "completed_at": "2026-10-03T12:05:00Z"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "check_runs": [
+        {
+          "total_count": 3,
+          "check_runs": [
+            {
+              "id": 81,
+              "name": "lint-and-test (ubuntu-latest)",
+              "head_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "app": {
+                "id": 15368,
+                "slug": "github-actions"
+              },
+              "check_suite": {
+                "id": 191
+              },
+              "details_url": "https://github.com/example/product/actions/runs/91/job/1081",
+              "status": "completed",
+              "conclusion": "success",
+              "started_at": "2026-10-03T12:00:00Z",
+              "completed_at": "2026-10-03T12:05:00Z"
+            },
+            {
+              "id": 82,
+              "name": "lint-and-test (windows-latest)",
+              "head_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "app": {
+                "id": 15368,
+                "slug": "github-actions"
+              },
+              "check_suite": {
+                "id": 191
+              },
+              "details_url": "https://github.com/example/product/actions/runs/91/job/1082",
+              "status": "completed",
+              "conclusion": "success",
+              "started_at": "2026-10-03T12:00:00Z",
+              "completed_at": "2026-10-03T12:05:00Z"
+            },
+            {
+              "id": 83,
+              "name": "Test report",
+              "head_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "app": {
+                "id": 15368,
+                "slug": "github-actions"
+              },
+              "check_suite": {
+                "id": 191
+              },
+              "details_url": null,
+              "status": "completed",
+              "conclusion": "success",
+              "started_at": "2026-10-03T12:00:00Z",
+              "completed_at": "2026-10-03T12:05:00Z"
+            }
+          ]
+        }
+      ],
+      "observed_at": "2026-10-03T12:05:00Z",
+      "builder_source": null,
+      "document_patch": {
+        "floor": {
+          "head": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "source": null,
+          "checks": [
+            {
+              "id": 81,
+              "name": "lint-and-test (ubuntu-latest)",
+              "app_id": 15368,
+              "app_slug": "github-actions",
+              "workflow_id": 71,
+              "run_id": 91,
+              "url": "https://github.com/example/product/actions/runs/91",
+              "head": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "status": "completed",
+              "conclusion": "success",
+              "started_at": "2026-10-03T12:00:00Z",
+              "completed_at": "2026-10-03T12:05:00Z"
+            },
+            {
+              "id": 82,
+              "name": "lint-and-test (windows-latest)",
+              "app_id": 15368,
+              "app_slug": "github-actions",
+              "workflow_id": 71,
+              "run_id": 91,
+              "url": "https://github.com/example/product/actions/runs/91",
+              "head": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "status": "completed",
+              "conclusion": "success",
+              "started_at": "2026-10-03T12:00:00Z",
+              "completed_at": "2026-10-03T12:05:00Z"
+            }
+          ]
+        },
+        "declarations": []
+      },
+      "expected": {
+        "outcome": "ci-met",
+        "check_ids": [
+          81,
+          82
+        ],
+        "gate_pass": true,
+        "executions": null,
+        "excluded_check_ids": [
+          83
+        ]
+      }
+    },
+    {
+      "name": "repair-same-name-api-actions-check-is-unverifiable",
+      "base_tip": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "head": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "base_policy": {
+        "content": {
+          "schema_version": 1,
+          "rules": [
+            {
+              "include": [
+                "src/**"
+              ],
+              "exclude": []
+            }
+          ],
+          "floor": {
+            "jobs": [
+              {
+                "workflow": ".github/workflows/ci.yml",
+                "job": "lint-and-test (ubuntu-latest)"
+              },
+              {
+                "workflow": ".github/workflows/ci.yml",
+                "job": "lint-and-test (windows-latest)"
+              }
+            ],
+            "stall_after_seconds": 3600
+          }
+        }
+      },
+      "head_policy": {
+        "content": {
+          "schema_version": 1,
+          "rules": [
+            {
+              "include": [
+                "src/**"
+              ],
+              "exclude": []
+            }
+          ],
+          "floor": {
+            "jobs": [
+              {
+                "workflow": ".github/workflows/ci.yml",
+                "job": "lint-and-test (ubuntu-latest)"
+              },
+              {
+                "workflow": ".github/workflows/ci.yml",
+                "job": "lint-and-test (windows-latest)"
+              }
+            ],
+            "stall_after_seconds": 3600
+          }
+        }
+      },
+      "holder_policy": {
+        "schema_version": 1,
+        "rules": [
+          {
+            "include": [
+              "src/**"
+            ],
+            "exclude": []
+          }
+        ],
+        "floor": {
+          "jobs": [
+            {
+              "workflow": ".github/workflows/ci.yml",
+              "job": "lint-and-test (ubuntu-latest)"
+            },
+            {
+              "workflow": ".github/workflows/ci.yml",
+              "job": "lint-and-test (windows-latest)"
+            }
+          ],
+          "stall_after_seconds": 3600
+        }
+      },
+      "local_override": {
+        "schema_version": 1,
+        "rules": [
+          {
+            "include": [
+              "src/**"
+            ],
+            "exclude": []
+          }
+        ],
+        "floor": {
+          "jobs": [
+            {
+              "workflow": ".github/workflows/ci.yml",
+              "job": "lint-and-test (ubuntu-latest)"
+            },
+            {
+              "workflow": ".github/workflows/ci.yml",
+              "job": "lint-and-test (windows-latest)"
+            }
+          ],
+          "stall_after_seconds": 3600
+        }
+      },
+      "workflow_runs": [
+        {
+          "total_count": 1,
+          "workflow_runs": [
+            {
+              "id": 91,
+              "path": ".github/workflows/ci.yml",
+              "repository": {
+                "full_name": "example/product"
+              },
+              "head_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "workflow_id": 71,
+              "check_suite_id": 191,
+              "run_attempt": 1,
+              "status": "completed",
+              "conclusion": "success",
+              "created_at": "2026-10-03T12:00:00Z",
+              "html_url": "https://github.com/example/product/actions/runs/91",
+              "referenced_workflows": [],
+              "event": "pull_request"
+            }
+          ]
+        }
+      ],
+      "runs": [
+        {
+          "id": 91,
+          "record": {
+            "id": 91,
+            "path": ".github/workflows/ci.yml",
+            "repository": {
+              "full_name": "example/product"
+            },
+            "head_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "workflow_id": 71,
+            "check_suite_id": 191,
+            "run_attempt": 1,
+            "status": "completed",
+            "conclusion": "success",
+            "created_at": "2026-10-03T12:00:00Z",
+            "html_url": "https://github.com/example/product/actions/runs/91",
+            "referenced_workflows": [],
+            "event": "pull_request"
+          }
+        }
+      ],
+      "jobs": [
+        {
+          "run_id": 91,
+          "pages": [
+            {
+              "total_count": 2,
+              "jobs": [
+                {
+                  "id": 1081,
+                  "run_id": 91,
+                  "head_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                  "run_attempt": 1,
+                  "name": "lint-and-test (ubuntu-latest)",
+                  "check_run_url": "https://api.github.com/repos/example/product/check-runs/81",
+                  "status": "completed",
+                  "conclusion": "success",
+                  "started_at": "2026-10-03T12:00:00Z",
+                  "completed_at": "2026-10-03T12:05:00Z"
+                },
+                {
+                  "id": 1082,
+                  "run_id": 91,
+                  "head_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                  "run_attempt": 1,
+                  "name": "lint-and-test (windows-latest)",
+                  "check_run_url": "https://api.github.com/repos/example/product/check-runs/82",
+                  "status": "completed",
+                  "conclusion": "success",
+                  "started_at": "2026-10-03T12:00:00Z",
+                  "completed_at": "2026-10-03T12:05:00Z"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "check_runs": [
+        {
+          "total_count": 3,
+          "check_runs": [
+            {
+              "id": 81,
+              "name": "lint-and-test (ubuntu-latest)",
+              "head_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "app": {
+                "id": 15368,
+                "slug": "github-actions"
+              },
+              "check_suite": {
+                "id": 191
+              },
+              "details_url": "https://github.com/example/product/actions/runs/91/job/1081",
+              "status": "completed",
+              "conclusion": "success",
+              "started_at": "2026-10-03T12:00:00Z",
+              "completed_at": "2026-10-03T12:05:00Z"
+            },
+            {
+              "id": 82,
+              "name": "lint-and-test (windows-latest)",
+              "head_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "app": {
+                "id": 15368,
+                "slug": "github-actions"
+              },
+              "check_suite": {
+                "id": 191
+              },
+              "details_url": "https://github.com/example/product/actions/runs/91/job/1082",
+              "status": "completed",
+              "conclusion": "success",
+              "started_at": "2026-10-03T12:00:00Z",
+              "completed_at": "2026-10-03T12:05:00Z"
+            },
+            {
+              "id": 83,
+              "name": "lint-and-test (ubuntu-latest)",
+              "head_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "app": {
+                "id": 15368,
+                "slug": "github-actions"
+              },
+              "check_suite": {
+                "id": 191
+              },
+              "details_url": null,
+              "status": "completed",
+              "conclusion": "success",
+              "started_at": "2026-10-03T12:00:00Z",
+              "completed_at": "2026-10-03T12:05:00Z"
+            }
+          ]
+        }
+      ],
+      "observed_at": "2026-10-03T12:05:00Z",
+      "builder_source": null,
+      "document_patch": {
+        "floor": {
+          "head": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "source": null,
+          "checks": [
+            {
+              "id": 81,
+              "name": "lint-and-test (ubuntu-latest)",
+              "app_id": 15368,
+              "app_slug": "github-actions",
+              "workflow_id": 71,
+              "run_id": 91,
+              "url": "https://github.com/example/product/actions/runs/91",
+              "head": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "status": "completed",
+              "conclusion": "success",
+              "started_at": "2026-10-03T12:00:00Z",
+              "completed_at": "2026-10-03T12:05:00Z"
+            },
+            {
+              "id": 82,
+              "name": "lint-and-test (windows-latest)",
+              "app_id": 15368,
+              "app_slug": "github-actions",
+              "workflow_id": 71,
+              "run_id": 91,
+              "url": "https://github.com/example/product/actions/runs/91",
+              "head": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "status": "completed",
+              "conclusion": "success",
+              "started_at": "2026-10-03T12:00:00Z",
+              "completed_at": "2026-10-03T12:05:00Z"
+            }
+          ]
+        },
+        "declarations": []
+      },
+      "expected": {
+        "outcome": "unverifiable",
+        "check_ids": [
+          81,
+          82
+        ],
+        "gate_pass": false,
+        "executions": null
+      }
+    },
+    {
+      "name": "repair-current-gate-retains-earlier-tests",
+      "base_tip": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "head": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "base_policy": {
+        "content": {
+          "schema_version": 1,
+          "rules": [
+            {
+              "include": [
+                "src/**"
+              ],
+              "exclude": []
+            }
+          ],
+          "floor": {
+            "jobs": [
+              {
+                "workflow": ".github/workflows/ci.yml",
+                "job": "lint-and-test (ubuntu-latest)"
+              },
+              {
+                "workflow": ".github/workflows/ci.yml",
+                "job": "lint-and-test (windows-latest)"
+              }
+            ],
+            "stall_after_seconds": 3600
+          }
+        }
+      },
+      "head_policy": {
+        "content": {
+          "schema_version": 1,
+          "rules": [
+            {
+              "include": [
+                "src/**"
+              ],
+              "exclude": []
+            }
+          ],
+          "floor": {
+            "jobs": [
+              {
+                "workflow": ".github/workflows/ci.yml",
+                "job": "lint-and-test (ubuntu-latest)"
+              },
+              {
+                "workflow": ".github/workflows/ci.yml",
+                "job": "lint-and-test (windows-latest)"
+              }
+            ],
+            "stall_after_seconds": 3600
+          }
+        }
+      },
+      "holder_policy": {
+        "schema_version": 1,
+        "rules": [
+          {
+            "include": [
+              "src/**"
+            ],
+            "exclude": []
+          }
+        ],
+        "floor": {
+          "jobs": [
+            {
+              "workflow": ".github/workflows/ci.yml",
+              "job": "lint-and-test (ubuntu-latest)"
+            },
+            {
+              "workflow": ".github/workflows/ci.yml",
+              "job": "lint-and-test (windows-latest)"
+            }
+          ],
+          "stall_after_seconds": 3600
+        }
+      },
+      "local_override": {
+        "schema_version": 1,
+        "rules": [
+          {
+            "include": [
+              "src/**"
+            ],
+            "exclude": []
+          }
+        ],
+        "floor": {
+          "jobs": [
+            {
+              "workflow": ".github/workflows/ci.yml",
+              "job": "lint-and-test (ubuntu-latest)"
+            },
+            {
+              "workflow": ".github/workflows/ci.yml",
+              "job": "lint-and-test (windows-latest)"
+            }
+          ],
+          "stall_after_seconds": 3600
+        }
+      },
+      "workflow_runs": [
+        {
+          "total_count": 1,
+          "workflow_runs": [
+            {
+              "id": 91,
+              "path": ".github/workflows/ci.yml",
+              "repository": {
+                "full_name": "example/product"
+              },
+              "head_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "workflow_id": 71,
+              "check_suite_id": 191,
+              "run_attempt": 2,
+              "status": "in_progress",
+              "conclusion": null,
+              "created_at": "2026-10-03T10:00:00Z",
+              "html_url": "https://github.com/example/product/actions/runs/91",
+              "referenced_workflows": [],
+              "event": "pull_request",
+              "run_started_at": "2026-10-03T12:04:00Z"
+            }
+          ]
+        }
+      ],
+      "runs": [
+        {
+          "id": 91,
+          "record": {
+            "id": 91,
+            "path": ".github/workflows/ci.yml",
+            "repository": {
+              "full_name": "example/product"
+            },
+            "head_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "workflow_id": 71,
+            "check_suite_id": 191,
+            "run_attempt": 2,
+            "status": "in_progress",
+            "conclusion": null,
+            "created_at": "2026-10-03T10:00:00Z",
+            "html_url": "https://github.com/example/product/actions/runs/91",
+            "referenced_workflows": [],
+            "event": "pull_request",
+            "run_started_at": "2026-10-03T12:04:00Z"
+          }
+        }
+      ],
+      "jobs": [
+        {
+          "run_id": 91,
+          "pages": [
+            {
+              "total_count": 4,
+              "jobs": [
+                {
+                  "id": 1081,
+                  "run_id": 91,
+                  "head_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                  "run_attempt": 1,
+                  "name": "lint-and-test (ubuntu-latest)",
+                  "check_run_url": "https://api.github.com/repos/example/product/check-runs/81",
+                  "status": "completed",
+                  "conclusion": "success",
+                  "started_at": "2026-10-03T12:00:00Z",
+                  "completed_at": "2026-10-03T12:05:00Z"
+                },
+                {
+                  "id": 1082,
+                  "run_id": 91,
+                  "head_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                  "run_attempt": 1,
+                  "name": "lint-and-test (windows-latest)",
+                  "check_run_url": "https://api.github.com/repos/example/product/check-runs/82",
+                  "status": "completed",
+                  "conclusion": "success",
+                  "started_at": "2026-10-03T12:00:00Z",
+                  "completed_at": "2026-10-03T12:05:00Z"
+                },
+                {
+                  "id": 1083,
+                  "run_id": 91,
+                  "head_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                  "run_attempt": 1,
+                  "name": "Caller / Change proof",
+                  "check_run_url": "https://api.github.com/repos/example/product/check-runs/83",
+                  "status": "completed",
+                  "conclusion": "failure",
+                  "started_at": "2026-10-03T12:00:00Z",
+                  "completed_at": "2026-10-03T12:05:00Z"
+                },
+                {
+                  "id": 1084,
+                  "run_id": 91,
+                  "head_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                  "run_attempt": 2,
+                  "name": "Caller / Change proof",
+                  "check_run_url": "https://api.github.com/repos/example/product/check-runs/84",
+                  "status": "in_progress",
+                  "conclusion": null,
+                  "started_at": "2026-10-03T12:04:00Z",
+                  "completed_at": null
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "check_runs": [
+        {
+          "total_count": 4,
+          "check_runs": [
+            {
+              "id": 81,
+              "name": "lint-and-test (ubuntu-latest)",
+              "head_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "app": {
+                "id": 15368,
+                "slug": "github-actions"
+              },
+              "check_suite": {
+                "id": 191
+              },
+              "details_url": "https://github.com/example/product/actions/runs/91/job/1081",
+              "status": "completed",
+              "conclusion": "success",
+              "started_at": "2026-10-03T12:00:00Z",
+              "completed_at": "2026-10-03T12:05:00Z"
+            },
+            {
+              "id": 82,
+              "name": "lint-and-test (windows-latest)",
+              "head_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "app": {
+                "id": 15368,
+                "slug": "github-actions"
+              },
+              "check_suite": {
+                "id": 191
+              },
+              "details_url": "https://github.com/example/product/actions/runs/91/job/1082",
+              "status": "completed",
+              "conclusion": "success",
+              "started_at": "2026-10-03T12:00:00Z",
+              "completed_at": "2026-10-03T12:05:00Z"
+            },
+            {
+              "id": 83,
+              "name": "Caller / Change proof",
+              "head_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "app": {
+                "id": 15368,
+                "slug": "github-actions"
+              },
+              "check_suite": {
+                "id": 191
+              },
+              "details_url": "https://github.com/example/product/actions/runs/91/job/1083",
+              "status": "completed",
+              "conclusion": "failure",
+              "started_at": "2026-10-03T12:00:00Z",
+              "completed_at": "2026-10-03T12:05:00Z"
+            },
+            {
+              "id": 84,
+              "name": "Caller / Change proof",
+              "head_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "app": {
+                "id": 15368,
+                "slug": "github-actions"
+              },
+              "check_suite": {
+                "id": 191
+              },
+              "details_url": "https://github.com/example/product/actions/runs/91/job/1084",
+              "status": "in_progress",
+              "conclusion": null,
+              "started_at": "2026-10-03T12:04:00Z",
+              "completed_at": null
+            }
+          ]
+        }
+      ],
+      "observed_at": "2026-10-03T12:05:00Z",
+      "builder_source": null,
+      "document_patch": {
+        "floor": {
+          "head": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "source": null,
+          "checks": [
+            {
+              "id": 81,
+              "name": "lint-and-test (ubuntu-latest)",
+              "app_id": 15368,
+              "app_slug": "github-actions",
+              "workflow_id": 71,
+              "run_id": 91,
+              "url": "https://github.com/example/product/actions/runs/91",
+              "head": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "status": "completed",
+              "conclusion": "success",
+              "started_at": "2026-10-03T12:00:00Z",
+              "completed_at": "2026-10-03T12:05:00Z"
+            },
+            {
+              "id": 82,
+              "name": "lint-and-test (windows-latest)",
+              "app_id": 15368,
+              "app_slug": "github-actions",
+              "workflow_id": 71,
+              "run_id": 91,
+              "url": "https://github.com/example/product/actions/runs/91",
+              "head": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "status": "completed",
+              "conclusion": "success",
+              "started_at": "2026-10-03T12:00:00Z",
+              "completed_at": "2026-10-03T12:05:00Z"
+            }
+          ]
+        },
+        "declarations": []
+      },
+      "expected": {
+        "outcome": "ci-met",
+        "check_ids": [
+          81,
+          82
+        ],
+        "gate_pass": true,
+        "executions": [
+          {
+            "event": "pull_request",
+            "check_id": 81,
+            "run_id": 91,
+            "attempt": 1,
+            "state": "success"
+          },
+          {
+            "event": "pull_request",
+            "check_id": 82,
+            "run_id": 91,
+            "attempt": 1,
+            "state": "success"
+          }
+        ]
+      },
+      "current_run_id": 91,
+      "current_run_attempt": 2
+    },
+    {
+      "name": "repair-current-gate-keeps-rerun-test-pending",
+      "base_tip": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "head": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "base_policy": {
+        "content": {
+          "schema_version": 1,
+          "rules": [
+            {
+              "include": [
+                "src/**"
+              ],
+              "exclude": []
+            }
+          ],
+          "floor": {
+            "jobs": [
+              {
+                "workflow": ".github/workflows/ci.yml",
+                "job": "lint-and-test (ubuntu-latest)"
+              },
+              {
+                "workflow": ".github/workflows/ci.yml",
+                "job": "lint-and-test (windows-latest)"
+              }
+            ],
+            "stall_after_seconds": 3600
+          }
+        }
+      },
+      "head_policy": {
+        "content": {
+          "schema_version": 1,
+          "rules": [
+            {
+              "include": [
+                "src/**"
+              ],
+              "exclude": []
+            }
+          ],
+          "floor": {
+            "jobs": [
+              {
+                "workflow": ".github/workflows/ci.yml",
+                "job": "lint-and-test (ubuntu-latest)"
+              },
+              {
+                "workflow": ".github/workflows/ci.yml",
+                "job": "lint-and-test (windows-latest)"
+              }
+            ],
+            "stall_after_seconds": 3600
+          }
+        }
+      },
+      "holder_policy": {
+        "schema_version": 1,
+        "rules": [
+          {
+            "include": [
+              "src/**"
+            ],
+            "exclude": []
+          }
+        ],
+        "floor": {
+          "jobs": [
+            {
+              "workflow": ".github/workflows/ci.yml",
+              "job": "lint-and-test (ubuntu-latest)"
+            },
+            {
+              "workflow": ".github/workflows/ci.yml",
+              "job": "lint-and-test (windows-latest)"
+            }
+          ],
+          "stall_after_seconds": 3600
+        }
+      },
+      "local_override": {
+        "schema_version": 1,
+        "rules": [
+          {
+            "include": [
+              "src/**"
+            ],
+            "exclude": []
+          }
+        ],
+        "floor": {
+          "jobs": [
+            {
+              "workflow": ".github/workflows/ci.yml",
+              "job": "lint-and-test (ubuntu-latest)"
+            },
+            {
+              "workflow": ".github/workflows/ci.yml",
+              "job": "lint-and-test (windows-latest)"
+            }
+          ],
+          "stall_after_seconds": 3600
+        }
+      },
+      "workflow_runs": [
+        {
+          "total_count": 1,
+          "workflow_runs": [
+            {
+              "id": 91,
+              "path": ".github/workflows/ci.yml",
+              "repository": {
+                "full_name": "example/product"
+              },
+              "head_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "workflow_id": 71,
+              "check_suite_id": 191,
+              "run_attempt": 2,
+              "status": "in_progress",
+              "conclusion": null,
+              "created_at": "2026-10-03T10:00:00Z",
+              "html_url": "https://github.com/example/product/actions/runs/91",
+              "referenced_workflows": [],
+              "event": "pull_request",
+              "run_started_at": "2026-10-03T12:04:00Z"
+            }
+          ]
+        }
+      ],
+      "runs": [
+        {
+          "id": 91,
+          "record": {
+            "id": 91,
+            "path": ".github/workflows/ci.yml",
+            "repository": {
+              "full_name": "example/product"
+            },
+            "head_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "workflow_id": 71,
+            "check_suite_id": 191,
+            "run_attempt": 2,
+            "status": "in_progress",
+            "conclusion": null,
+            "created_at": "2026-10-03T10:00:00Z",
+            "html_url": "https://github.com/example/product/actions/runs/91",
+            "referenced_workflows": [],
+            "event": "pull_request",
+            "run_started_at": "2026-10-03T12:04:00Z"
+          }
+        }
+      ],
+      "jobs": [
+        {
+          "run_id": 91,
+          "pages": [
+            {
+              "total_count": 5,
+              "jobs": [
+                {
+                  "id": 1081,
+                  "run_id": 91,
+                  "head_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                  "run_attempt": 1,
+                  "name": "lint-and-test (ubuntu-latest)",
+                  "check_run_url": "https://api.github.com/repos/example/product/check-runs/81",
+                  "status": "completed",
+                  "conclusion": "success",
+                  "started_at": "2026-10-03T12:00:00Z",
+                  "completed_at": "2026-10-03T12:05:00Z"
+                },
+                {
+                  "id": 1082,
+                  "run_id": 91,
+                  "head_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                  "run_attempt": 1,
+                  "name": "lint-and-test (windows-latest)",
+                  "check_run_url": "https://api.github.com/repos/example/product/check-runs/82",
+                  "status": "completed",
+                  "conclusion": "success",
+                  "started_at": "2026-10-03T12:00:00Z",
+                  "completed_at": "2026-10-03T12:05:00Z"
+                },
+                {
+                  "id": 1083,
+                  "run_id": 91,
+                  "head_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                  "run_attempt": 1,
+                  "name": "Caller / Change proof",
+                  "check_run_url": "https://api.github.com/repos/example/product/check-runs/83",
+                  "status": "completed",
+                  "conclusion": "failure",
+                  "started_at": "2026-10-03T12:00:00Z",
+                  "completed_at": "2026-10-03T12:05:00Z"
+                },
+                {
+                  "id": 1084,
+                  "run_id": 91,
+                  "head_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                  "run_attempt": 2,
+                  "name": "Caller / Change proof",
+                  "check_run_url": "https://api.github.com/repos/example/product/check-runs/84",
+                  "status": "in_progress",
+                  "conclusion": null,
+                  "started_at": "2026-10-03T12:04:00Z",
+                  "completed_at": null
+                },
+                {
+                  "id": 1085,
+                  "run_id": 91,
+                  "head_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                  "run_attempt": 2,
+                  "name": "lint-and-test (ubuntu-latest)",
+                  "check_run_url": "https://api.github.com/repos/example/product/check-runs/85",
+                  "status": "in_progress",
+                  "conclusion": null,
+                  "started_at": "2026-10-03T12:04:00Z",
+                  "completed_at": null
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "check_runs": [
+        {
+          "total_count": 5,
+          "check_runs": [
+            {
+              "id": 81,
+              "name": "lint-and-test (ubuntu-latest)",
+              "head_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "app": {
+                "id": 15368,
+                "slug": "github-actions"
+              },
+              "check_suite": {
+                "id": 191
+              },
+              "details_url": "https://github.com/example/product/actions/runs/91/job/1081",
+              "status": "completed",
+              "conclusion": "success",
+              "started_at": "2026-10-03T12:00:00Z",
+              "completed_at": "2026-10-03T12:05:00Z"
+            },
+            {
+              "id": 82,
+              "name": "lint-and-test (windows-latest)",
+              "head_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "app": {
+                "id": 15368,
+                "slug": "github-actions"
+              },
+              "check_suite": {
+                "id": 191
+              },
+              "details_url": "https://github.com/example/product/actions/runs/91/job/1082",
+              "status": "completed",
+              "conclusion": "success",
+              "started_at": "2026-10-03T12:00:00Z",
+              "completed_at": "2026-10-03T12:05:00Z"
+            },
+            {
+              "id": 83,
+              "name": "Caller / Change proof",
+              "head_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "app": {
+                "id": 15368,
+                "slug": "github-actions"
+              },
+              "check_suite": {
+                "id": 191
+              },
+              "details_url": "https://github.com/example/product/actions/runs/91/job/1083",
+              "status": "completed",
+              "conclusion": "failure",
+              "started_at": "2026-10-03T12:00:00Z",
+              "completed_at": "2026-10-03T12:05:00Z"
+            },
+            {
+              "id": 84,
+              "name": "Caller / Change proof",
+              "head_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "app": {
+                "id": 15368,
+                "slug": "github-actions"
+              },
+              "check_suite": {
+                "id": 191
+              },
+              "details_url": "https://github.com/example/product/actions/runs/91/job/1084",
+              "status": "in_progress",
+              "conclusion": null,
+              "started_at": "2026-10-03T12:04:00Z",
+              "completed_at": null
+            },
+            {
+              "id": 85,
+              "name": "lint-and-test (ubuntu-latest)",
+              "head_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "app": {
+                "id": 15368,
+                "slug": "github-actions"
+              },
+              "check_suite": {
+                "id": 191
+              },
+              "details_url": "https://github.com/example/product/actions/runs/91/job/1085",
+              "status": "in_progress",
+              "conclusion": null,
+              "started_at": "2026-10-03T12:04:00Z",
+              "completed_at": null
+            }
+          ]
+        }
+      ],
+      "observed_at": "2026-10-03T12:05:00Z",
+      "builder_source": null,
+      "document_patch": {
+        "floor": {
+          "head": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "source": null,
+          "checks": [
+            {
+              "id": 82,
+              "name": "lint-and-test (windows-latest)",
+              "app_id": 15368,
+              "app_slug": "github-actions",
+              "workflow_id": 71,
+              "run_id": 91,
+              "url": "https://github.com/example/product/actions/runs/91",
+              "head": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "status": "completed",
+              "conclusion": "success",
+              "started_at": "2026-10-03T12:00:00Z",
+              "completed_at": "2026-10-03T12:05:00Z"
+            },
+            {
+              "id": 85,
+              "name": "lint-and-test (ubuntu-latest)",
+              "app_id": 15368,
+              "app_slug": "github-actions",
+              "workflow_id": 71,
+              "run_id": 91,
+              "url": "https://github.com/example/product/actions/runs/91",
+              "head": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "status": "in_progress",
+              "conclusion": null,
+              "started_at": "2026-10-03T12:04:00Z",
+              "completed_at": null
+            }
+          ]
+        },
+        "declarations": []
+      },
+      "expected": {
+        "outcome": "pending",
+        "check_ids": [
+          82,
+          85
+        ],
+        "gate_pass": false,
+        "executions": [
+          {
+            "event": "pull_request",
+            "check_id": 85,
+            "run_id": 91,
+            "attempt": 2,
+            "state": "pending",
+            "age_seconds": 60.0
+          },
+          {
+            "event": "pull_request",
+            "check_id": 82,
+            "run_id": 91,
+            "attempt": 1,
+            "state": "success"
+          }
+        ]
+      },
+      "current_run_id": 91,
+      "current_run_attempt": 2
+    },
+    {
+      "name": "repair-unfinished-rerun-uses-attempt-start",
+      "base_tip": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "head": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "base_policy": {
+        "content": {
+          "schema_version": 1,
+          "rules": [
+            {
+              "include": [
+                "src/**"
+              ],
+              "exclude": []
+            }
+          ],
+          "floor": {
+            "jobs": [
+              {
+                "workflow": ".github/workflows/ci.yml",
+                "job": "lint-and-test (ubuntu-latest)"
+              },
+              {
+                "workflow": ".github/workflows/ci.yml",
+                "job": "lint-and-test (windows-latest)"
+              }
+            ],
+            "stall_after_seconds": 3600
+          }
+        }
+      },
+      "head_policy": {
+        "content": {
+          "schema_version": 1,
+          "rules": [
+            {
+              "include": [
+                "src/**"
+              ],
+              "exclude": []
+            }
+          ],
+          "floor": {
+            "jobs": [
+              {
+                "workflow": ".github/workflows/ci.yml",
+                "job": "lint-and-test (ubuntu-latest)"
+              },
+              {
+                "workflow": ".github/workflows/ci.yml",
+                "job": "lint-and-test (windows-latest)"
+              }
+            ],
+            "stall_after_seconds": 3600
+          }
+        }
+      },
+      "holder_policy": {
+        "schema_version": 1,
+        "rules": [
+          {
+            "include": [
+              "src/**"
+            ],
+            "exclude": []
+          }
+        ],
+        "floor": {
+          "jobs": [
+            {
+              "workflow": ".github/workflows/ci.yml",
+              "job": "lint-and-test (ubuntu-latest)"
+            },
+            {
+              "workflow": ".github/workflows/ci.yml",
+              "job": "lint-and-test (windows-latest)"
+            }
+          ],
+          "stall_after_seconds": 3600
+        }
+      },
+      "local_override": {
+        "schema_version": 1,
+        "rules": [
+          {
+            "include": [
+              "src/**"
+            ],
+            "exclude": []
+          }
+        ],
+        "floor": {
+          "jobs": [
+            {
+              "workflow": ".github/workflows/ci.yml",
+              "job": "lint-and-test (ubuntu-latest)"
+            },
+            {
+              "workflow": ".github/workflows/ci.yml",
+              "job": "lint-and-test (windows-latest)"
+            }
+          ],
+          "stall_after_seconds": 3600
+        }
+      },
+      "workflow_runs": [
+        {
+          "total_count": 1,
+          "workflow_runs": [
+            {
+              "id": 91,
+              "path": ".github/workflows/ci.yml",
+              "repository": {
+                "full_name": "example/product"
+              },
+              "head_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "workflow_id": 71,
+              "check_suite_id": 191,
+              "run_attempt": 2,
+              "status": "in_progress",
+              "conclusion": null,
+              "created_at": "2026-10-03T10:00:00Z",
+              "html_url": "https://github.com/example/product/actions/runs/91",
+              "referenced_workflows": [],
+              "event": "pull_request",
+              "run_started_at": "2026-10-03T12:04:00Z"
+            }
+          ]
+        }
+      ],
+      "runs": [
+        {
+          "id": 91,
+          "record": {
+            "id": 91,
+            "path": ".github/workflows/ci.yml",
+            "repository": {
+              "full_name": "example/product"
+            },
+            "head_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "workflow_id": 71,
+            "check_suite_id": 191,
+            "run_attempt": 2,
+            "status": "in_progress",
+            "conclusion": null,
+            "created_at": "2026-10-03T10:00:00Z",
+            "html_url": "https://github.com/example/product/actions/runs/91",
+            "referenced_workflows": [],
+            "event": "pull_request",
+            "run_started_at": "2026-10-03T12:04:00Z"
+          }
+        }
+      ],
+      "jobs": [
+        {
+          "run_id": 91,
+          "pages": [
+            {
+              "total_count": 4,
+              "jobs": [
+                {
+                  "id": 1081,
+                  "run_id": 91,
+                  "head_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                  "run_attempt": 1,
+                  "name": "lint-and-test (ubuntu-latest)",
+                  "check_run_url": "https://api.github.com/repos/example/product/check-runs/81",
+                  "status": "completed",
+                  "conclusion": "success",
+                  "started_at": "2026-10-03T12:00:00Z",
+                  "completed_at": "2026-10-03T12:05:00Z"
+                },
+                {
+                  "id": 1082,
+                  "run_id": 91,
+                  "head_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                  "run_attempt": 1,
+                  "name": "lint-and-test (windows-latest)",
+                  "check_run_url": "https://api.github.com/repos/example/product/check-runs/82",
+                  "status": "completed",
+                  "conclusion": "success",
+                  "started_at": "2026-10-03T12:00:00Z",
+                  "completed_at": "2026-10-03T12:05:00Z"
+                },
+                {
+                  "id": 1083,
+                  "run_id": 91,
+                  "head_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                  "run_attempt": 1,
+                  "name": "Caller / Change proof",
+                  "check_run_url": "https://api.github.com/repos/example/product/check-runs/83",
+                  "status": "completed",
+                  "conclusion": "failure",
+                  "started_at": "2026-10-03T12:00:00Z",
+                  "completed_at": "2026-10-03T12:05:00Z"
+                },
+                {
+                  "id": 1084,
+                  "run_id": 91,
+                  "head_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                  "run_attempt": 2,
+                  "name": "Caller / Change proof",
+                  "check_run_url": "https://api.github.com/repos/example/product/check-runs/84",
+                  "status": "in_progress",
+                  "conclusion": null,
+                  "started_at": "2026-10-03T12:04:00Z",
+                  "completed_at": null
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "check_runs": [
+        {
+          "total_count": 4,
+          "check_runs": [
+            {
+              "id": 81,
+              "name": "lint-and-test (ubuntu-latest)",
+              "head_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "app": {
+                "id": 15368,
+                "slug": "github-actions"
+              },
+              "check_suite": {
+                "id": 191
+              },
+              "details_url": "https://github.com/example/product/actions/runs/91/job/1081",
+              "status": "completed",
+              "conclusion": "success",
+              "started_at": "2026-10-03T12:00:00Z",
+              "completed_at": "2026-10-03T12:05:00Z"
+            },
+            {
+              "id": 82,
+              "name": "lint-and-test (windows-latest)",
+              "head_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "app": {
+                "id": 15368,
+                "slug": "github-actions"
+              },
+              "check_suite": {
+                "id": 191
+              },
+              "details_url": "https://github.com/example/product/actions/runs/91/job/1082",
+              "status": "completed",
+              "conclusion": "success",
+              "started_at": "2026-10-03T12:00:00Z",
+              "completed_at": "2026-10-03T12:05:00Z"
+            },
+            {
+              "id": 83,
+              "name": "Caller / Change proof",
+              "head_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "app": {
+                "id": 15368,
+                "slug": "github-actions"
+              },
+              "check_suite": {
+                "id": 191
+              },
+              "details_url": "https://github.com/example/product/actions/runs/91/job/1083",
+              "status": "completed",
+              "conclusion": "failure",
+              "started_at": "2026-10-03T12:00:00Z",
+              "completed_at": "2026-10-03T12:05:00Z"
+            },
+            {
+              "id": 84,
+              "name": "Caller / Change proof",
+              "head_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "app": {
+                "id": 15368,
+                "slug": "github-actions"
+              },
+              "check_suite": {
+                "id": 191
+              },
+              "details_url": "https://github.com/example/product/actions/runs/91/job/1084",
+              "status": "in_progress",
+              "conclusion": null,
+              "started_at": "2026-10-03T12:04:00Z",
+              "completed_at": null
+            }
+          ]
+        }
+      ],
+      "observed_at": "2026-10-03T12:05:00Z",
+      "builder_source": null,
+      "document_patch": {
+        "floor": {
+          "head": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "source": null,
+          "checks": []
+        },
+        "declarations": []
+      },
+      "expected": {
+        "outcome": "pending",
+        "check_ids": [],
+        "gate_pass": false,
+        "executions": [
+          {
+            "event": "pull_request",
+            "run_id": 91,
+            "attempt": 2,
+            "state": "pending",
+            "age_seconds": 60.0
+          },
+          {
+            "event": "pull_request",
+            "run_id": 91,
+            "attempt": 2,
+            "state": "pending",
+            "age_seconds": 60.0
+          }
+        ]
+      }
+    },
+    {
+      "name": "repair-red-pr-event-not-hidden-by-newer-push",
+      "base_tip": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "head": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "base_policy": {
+        "content": {
+          "schema_version": 1,
+          "rules": [
+            {
+              "include": [
+                "src/**"
+              ],
+              "exclude": []
+            }
+          ],
+          "floor": {
+            "jobs": [
+              {
+                "workflow": ".github/workflows/ci.yml",
+                "job": "lint-and-test (ubuntu-latest)"
+              },
+              {
+                "workflow": ".github/workflows/ci.yml",
+                "job": "lint-and-test (windows-latest)"
+              }
+            ],
+            "stall_after_seconds": 3600
+          }
+        }
+      },
+      "head_policy": {
+        "content": {
+          "schema_version": 1,
+          "rules": [
+            {
+              "include": [
+                "src/**"
+              ],
+              "exclude": []
+            }
+          ],
+          "floor": {
+            "jobs": [
+              {
+                "workflow": ".github/workflows/ci.yml",
+                "job": "lint-and-test (ubuntu-latest)"
+              },
+              {
+                "workflow": ".github/workflows/ci.yml",
+                "job": "lint-and-test (windows-latest)"
+              }
+            ],
+            "stall_after_seconds": 3600
+          }
+        }
+      },
+      "holder_policy": {
+        "schema_version": 1,
+        "rules": [
+          {
+            "include": [
+              "src/**"
+            ],
+            "exclude": []
+          }
+        ],
+        "floor": {
+          "jobs": [
+            {
+              "workflow": ".github/workflows/ci.yml",
+              "job": "lint-and-test (ubuntu-latest)"
+            },
+            {
+              "workflow": ".github/workflows/ci.yml",
+              "job": "lint-and-test (windows-latest)"
+            }
+          ],
+          "stall_after_seconds": 3600
+        }
+      },
+      "local_override": {
+        "schema_version": 1,
+        "rules": [
+          {
+            "include": [
+              "src/**"
+            ],
+            "exclude": []
+          }
+        ],
+        "floor": {
+          "jobs": [
+            {
+              "workflow": ".github/workflows/ci.yml",
+              "job": "lint-and-test (ubuntu-latest)"
+            },
+            {
+              "workflow": ".github/workflows/ci.yml",
+              "job": "lint-and-test (windows-latest)"
+            }
+          ],
+          "stall_after_seconds": 3600
+        }
+      },
+      "workflow_runs": [
+        {
+          "total_count": 2,
+          "workflow_runs": [
+            {
+              "id": 91,
+              "path": ".github/workflows/ci.yml",
+              "repository": {
+                "full_name": "example/product"
+              },
+              "head_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "workflow_id": 71,
+              "check_suite_id": 191,
+              "run_attempt": 1,
+              "status": "completed",
+              "conclusion": "success",
+              "created_at": "2026-10-03T12:00:00Z",
+              "html_url": "https://github.com/example/product/actions/runs/91",
+              "referenced_workflows": [],
+              "event": "pull_request"
+            },
+            {
+              "id": 92,
+              "path": ".github/workflows/ci.yml",
+              "repository": {
+                "full_name": "example/product"
+              },
+              "head_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "workflow_id": 71,
+              "check_suite_id": 192,
+              "run_attempt": 1,
+              "status": "completed",
+              "conclusion": "success",
+              "created_at": "2026-10-03T12:00:00Z",
+              "html_url": "https://github.com/example/product/actions/runs/92",
+              "referenced_workflows": [],
+              "event": "push"
+            }
+          ]
+        }
+      ],
+      "runs": [
+        {
+          "id": 91,
+          "record": {
+            "id": 91,
+            "path": ".github/workflows/ci.yml",
+            "repository": {
+              "full_name": "example/product"
+            },
+            "head_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "workflow_id": 71,
+            "check_suite_id": 191,
+            "run_attempt": 1,
+            "status": "completed",
+            "conclusion": "success",
+            "created_at": "2026-10-03T12:00:00Z",
+            "html_url": "https://github.com/example/product/actions/runs/91",
+            "referenced_workflows": [],
+            "event": "pull_request"
+          }
+        },
+        {
+          "id": 92,
+          "record": {
+            "id": 92,
+            "path": ".github/workflows/ci.yml",
+            "repository": {
+              "full_name": "example/product"
+            },
+            "head_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "workflow_id": 71,
+            "check_suite_id": 192,
+            "run_attempt": 1,
+            "status": "completed",
+            "conclusion": "success",
+            "created_at": "2026-10-03T12:00:00Z",
+            "html_url": "https://github.com/example/product/actions/runs/92",
+            "referenced_workflows": [],
+            "event": "push"
+          }
+        }
+      ],
+      "jobs": [
+        {
+          "run_id": 91,
+          "pages": [
+            {
+              "total_count": 2,
+              "jobs": [
+                {
+                  "id": 1081,
+                  "run_id": 91,
+                  "head_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                  "run_attempt": 1,
+                  "name": "lint-and-test (ubuntu-latest)",
+                  "check_run_url": "https://api.github.com/repos/example/product/check-runs/81",
+                  "status": "completed",
+                  "conclusion": "success",
+                  "started_at": "2026-10-03T12:00:00Z",
+                  "completed_at": "2026-10-03T12:05:00Z"
+                },
+                {
+                  "id": 1082,
+                  "run_id": 91,
+                  "head_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                  "run_attempt": 1,
+                  "name": "lint-and-test (windows-latest)",
+                  "check_run_url": "https://api.github.com/repos/example/product/check-runs/82",
+                  "status": "completed",
+                  "conclusion": "failure",
+                  "started_at": "2026-10-03T12:00:00Z",
+                  "completed_at": "2026-10-03T12:05:00Z"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "run_id": 92,
+          "pages": [
+            {
+              "total_count": 2,
+              "jobs": [
+                {
+                  "id": 1083,
+                  "run_id": 92,
+                  "head_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                  "run_attempt": 1,
+                  "name": "lint-and-test (ubuntu-latest)",
+                  "check_run_url": "https://api.github.com/repos/example/product/check-runs/83",
+                  "status": "completed",
+                  "conclusion": "success",
+                  "started_at": "2026-10-03T12:00:00Z",
+                  "completed_at": "2026-10-03T12:05:00Z"
+                },
+                {
+                  "id": 1084,
+                  "run_id": 92,
+                  "head_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                  "run_attempt": 1,
+                  "name": "lint-and-test (windows-latest)",
+                  "check_run_url": "https://api.github.com/repos/example/product/check-runs/84",
+                  "status": "completed",
+                  "conclusion": "success",
+                  "started_at": "2026-10-03T12:00:00Z",
+                  "completed_at": "2026-10-03T12:05:00Z"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "check_runs": [
+        {
+          "total_count": 4,
+          "check_runs": [
+            {
+              "id": 81,
+              "name": "lint-and-test (ubuntu-latest)",
+              "head_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "app": {
+                "id": 15368,
+                "slug": "github-actions"
+              },
+              "check_suite": {
+                "id": 191
+              },
+              "details_url": "https://github.com/example/product/actions/runs/91/job/1081",
+              "status": "completed",
+              "conclusion": "success",
+              "started_at": "2026-10-03T12:00:00Z",
+              "completed_at": "2026-10-03T12:05:00Z"
+            },
+            {
+              "id": 82,
+              "name": "lint-and-test (windows-latest)",
+              "head_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "app": {
+                "id": 15368,
+                "slug": "github-actions"
+              },
+              "check_suite": {
+                "id": 191
+              },
+              "details_url": "https://github.com/example/product/actions/runs/91/job/1082",
+              "status": "completed",
+              "conclusion": "failure",
+              "started_at": "2026-10-03T12:00:00Z",
+              "completed_at": "2026-10-03T12:05:00Z"
+            },
+            {
+              "id": 83,
+              "name": "lint-and-test (ubuntu-latest)",
+              "head_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "app": {
+                "id": 15368,
+                "slug": "github-actions"
+              },
+              "check_suite": {
+                "id": 192
+              },
+              "details_url": "https://github.com/example/product/actions/runs/92/job/1083",
+              "status": "completed",
+              "conclusion": "success",
+              "started_at": "2026-10-03T12:00:00Z",
+              "completed_at": "2026-10-03T12:05:00Z"
+            },
+            {
+              "id": 84,
+              "name": "lint-and-test (windows-latest)",
+              "head_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "app": {
+                "id": 15368,
+                "slug": "github-actions"
+              },
+              "check_suite": {
+                "id": 192
+              },
+              "details_url": "https://github.com/example/product/actions/runs/92/job/1084",
+              "status": "completed",
+              "conclusion": "success",
+              "started_at": "2026-10-03T12:00:00Z",
+              "completed_at": "2026-10-03T12:05:00Z"
+            }
+          ]
+        }
+      ],
+      "observed_at": "2026-10-03T12:05:00Z",
+      "builder_source": null,
+      "document_patch": {
+        "floor": {
+          "head": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "source": null,
+          "checks": [
+            {
+              "id": 83,
+              "name": "lint-and-test (ubuntu-latest)",
+              "app_id": 15368,
+              "app_slug": "github-actions",
+              "workflow_id": 71,
+              "run_id": 92,
+              "url": "https://github.com/example/product/actions/runs/92",
+              "head": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "status": "completed",
+              "conclusion": "success",
+              "started_at": "2026-10-03T12:00:00Z",
+              "completed_at": "2026-10-03T12:05:00Z"
+            },
+            {
+              "id": 84,
+              "name": "lint-and-test (windows-latest)",
+              "app_id": 15368,
+              "app_slug": "github-actions",
+              "workflow_id": 71,
+              "run_id": 92,
+              "url": "https://github.com/example/product/actions/runs/92",
+              "head": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "status": "completed",
+              "conclusion": "success",
+              "started_at": "2026-10-03T12:00:00Z",
+              "completed_at": "2026-10-03T12:05:00Z"
+            }
+          ]
+        },
+        "declarations": []
+      },
+      "expected": {
+        "outcome": "blocked",
+        "check_ids": [
+          81,
+          82,
+          83,
+          84
+        ],
+        "gate_pass": false,
+        "executions": [
+          {
+            "event": "pull_request",
+            "check_id": 81,
+            "run_id": 91,
+            "attempt": 1,
+            "state": "success"
+          },
+          {
+            "event": "push",
+            "check_id": 83,
+            "run_id": 92,
+            "attempt": 1,
+            "state": "success"
+          },
+          {
+            "event": "pull_request",
+            "check_id": 82,
+            "run_id": 91,
+            "attempt": 1,
+            "state": "blocked"
+          },
+          {
+            "event": "push",
+            "check_id": 84,
+            "run_id": 92,
+            "attempt": 1,
+            "state": "success"
+          }
+        ]
+      }
+    },
+    {
+      "name": "repair-all-selected-events-success",
+      "base_tip": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "head": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "base_policy": {
+        "content": {
+          "schema_version": 1,
+          "rules": [
+            {
+              "include": [
+                "src/**"
+              ],
+              "exclude": []
+            }
+          ],
+          "floor": {
+            "jobs": [
+              {
+                "workflow": ".github/workflows/ci.yml",
+                "job": "lint-and-test (ubuntu-latest)"
+              },
+              {
+                "workflow": ".github/workflows/ci.yml",
+                "job": "lint-and-test (windows-latest)"
+              }
+            ],
+            "stall_after_seconds": 3600
+          }
+        }
+      },
+      "head_policy": {
+        "content": {
+          "schema_version": 1,
+          "rules": [
+            {
+              "include": [
+                "src/**"
+              ],
+              "exclude": []
+            }
+          ],
+          "floor": {
+            "jobs": [
+              {
+                "workflow": ".github/workflows/ci.yml",
+                "job": "lint-and-test (ubuntu-latest)"
+              },
+              {
+                "workflow": ".github/workflows/ci.yml",
+                "job": "lint-and-test (windows-latest)"
+              }
+            ],
+            "stall_after_seconds": 3600
+          }
+        }
+      },
+      "holder_policy": {
+        "schema_version": 1,
+        "rules": [
+          {
+            "include": [
+              "src/**"
+            ],
+            "exclude": []
+          }
+        ],
+        "floor": {
+          "jobs": [
+            {
+              "workflow": ".github/workflows/ci.yml",
+              "job": "lint-and-test (ubuntu-latest)"
+            },
+            {
+              "workflow": ".github/workflows/ci.yml",
+              "job": "lint-and-test (windows-latest)"
+            }
+          ],
+          "stall_after_seconds": 3600
+        }
+      },
+      "local_override": {
+        "schema_version": 1,
+        "rules": [
+          {
+            "include": [
+              "src/**"
+            ],
+            "exclude": []
+          }
+        ],
+        "floor": {
+          "jobs": [
+            {
+              "workflow": ".github/workflows/ci.yml",
+              "job": "lint-and-test (ubuntu-latest)"
+            },
+            {
+              "workflow": ".github/workflows/ci.yml",
+              "job": "lint-and-test (windows-latest)"
+            }
+          ],
+          "stall_after_seconds": 3600
+        }
+      },
+      "workflow_runs": [
+        {
+          "total_count": 2,
+          "workflow_runs": [
+            {
+              "id": 91,
+              "path": ".github/workflows/ci.yml",
+              "repository": {
+                "full_name": "example/product"
+              },
+              "head_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "workflow_id": 71,
+              "check_suite_id": 191,
+              "run_attempt": 1,
+              "status": "completed",
+              "conclusion": "success",
+              "created_at": "2026-10-03T12:00:00Z",
+              "html_url": "https://github.com/example/product/actions/runs/91",
+              "referenced_workflows": [],
+              "event": "pull_request"
+            },
+            {
+              "id": 92,
+              "path": ".github/workflows/ci.yml",
+              "repository": {
+                "full_name": "example/product"
+              },
+              "head_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "workflow_id": 71,
+              "check_suite_id": 192,
+              "run_attempt": 1,
+              "status": "completed",
+              "conclusion": "success",
+              "created_at": "2026-10-03T12:00:00Z",
+              "html_url": "https://github.com/example/product/actions/runs/92",
+              "referenced_workflows": [],
+              "event": "push"
+            }
+          ]
+        }
+      ],
+      "runs": [
+        {
+          "id": 91,
+          "record": {
+            "id": 91,
+            "path": ".github/workflows/ci.yml",
+            "repository": {
+              "full_name": "example/product"
+            },
+            "head_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "workflow_id": 71,
+            "check_suite_id": 191,
+            "run_attempt": 1,
+            "status": "completed",
+            "conclusion": "success",
+            "created_at": "2026-10-03T12:00:00Z",
+            "html_url": "https://github.com/example/product/actions/runs/91",
+            "referenced_workflows": [],
+            "event": "pull_request"
+          }
+        },
+        {
+          "id": 92,
+          "record": {
+            "id": 92,
+            "path": ".github/workflows/ci.yml",
+            "repository": {
+              "full_name": "example/product"
+            },
+            "head_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "workflow_id": 71,
+            "check_suite_id": 192,
+            "run_attempt": 1,
+            "status": "completed",
+            "conclusion": "success",
+            "created_at": "2026-10-03T12:00:00Z",
+            "html_url": "https://github.com/example/product/actions/runs/92",
+            "referenced_workflows": [],
+            "event": "push"
+          }
+        }
+      ],
+      "jobs": [
+        {
+          "run_id": 91,
+          "pages": [
+            {
+              "total_count": 2,
+              "jobs": [
+                {
+                  "id": 1081,
+                  "run_id": 91,
+                  "head_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                  "run_attempt": 1,
+                  "name": "lint-and-test (ubuntu-latest)",
+                  "check_run_url": "https://api.github.com/repos/example/product/check-runs/81",
+                  "status": "completed",
+                  "conclusion": "success",
+                  "started_at": "2026-10-03T12:00:00Z",
+                  "completed_at": "2026-10-03T12:05:00Z"
+                },
+                {
+                  "id": 1082,
+                  "run_id": 91,
+                  "head_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                  "run_attempt": 1,
+                  "name": "lint-and-test (windows-latest)",
+                  "check_run_url": "https://api.github.com/repos/example/product/check-runs/82",
+                  "status": "completed",
+                  "conclusion": "success",
+                  "started_at": "2026-10-03T12:00:00Z",
+                  "completed_at": "2026-10-03T12:05:00Z"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "run_id": 92,
+          "pages": [
+            {
+              "total_count": 2,
+              "jobs": [
+                {
+                  "id": 1083,
+                  "run_id": 92,
+                  "head_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                  "run_attempt": 1,
+                  "name": "lint-and-test (ubuntu-latest)",
+                  "check_run_url": "https://api.github.com/repos/example/product/check-runs/83",
+                  "status": "completed",
+                  "conclusion": "success",
+                  "started_at": "2026-10-03T12:00:00Z",
+                  "completed_at": "2026-10-03T12:05:00Z"
+                },
+                {
+                  "id": 1084,
+                  "run_id": 92,
+                  "head_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                  "run_attempt": 1,
+                  "name": "lint-and-test (windows-latest)",
+                  "check_run_url": "https://api.github.com/repos/example/product/check-runs/84",
+                  "status": "completed",
+                  "conclusion": "success",
+                  "started_at": "2026-10-03T12:00:00Z",
+                  "completed_at": "2026-10-03T12:05:00Z"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "check_runs": [
+        {
+          "total_count": 4,
+          "check_runs": [
+            {
+              "id": 81,
+              "name": "lint-and-test (ubuntu-latest)",
+              "head_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "app": {
+                "id": 15368,
+                "slug": "github-actions"
+              },
+              "check_suite": {
+                "id": 191
+              },
+              "details_url": "https://github.com/example/product/actions/runs/91/job/1081",
+              "status": "completed",
+              "conclusion": "success",
+              "started_at": "2026-10-03T12:00:00Z",
+              "completed_at": "2026-10-03T12:05:00Z"
+            },
+            {
+              "id": 82,
+              "name": "lint-and-test (windows-latest)",
+              "head_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "app": {
+                "id": 15368,
+                "slug": "github-actions"
+              },
+              "check_suite": {
+                "id": 191
+              },
+              "details_url": "https://github.com/example/product/actions/runs/91/job/1082",
+              "status": "completed",
+              "conclusion": "success",
+              "started_at": "2026-10-03T12:00:00Z",
+              "completed_at": "2026-10-03T12:05:00Z"
+            },
+            {
+              "id": 83,
+              "name": "lint-and-test (ubuntu-latest)",
+              "head_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "app": {
+                "id": 15368,
+                "slug": "github-actions"
+              },
+              "check_suite": {
+                "id": 192
+              },
+              "details_url": "https://github.com/example/product/actions/runs/92/job/1083",
+              "status": "completed",
+              "conclusion": "success",
+              "started_at": "2026-10-03T12:00:00Z",
+              "completed_at": "2026-10-03T12:05:00Z"
+            },
+            {
+              "id": 84,
+              "name": "lint-and-test (windows-latest)",
+              "head_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "app": {
+                "id": 15368,
+                "slug": "github-actions"
+              },
+              "check_suite": {
+                "id": 192
+              },
+              "details_url": "https://github.com/example/product/actions/runs/92/job/1084",
+              "status": "completed",
+              "conclusion": "success",
+              "started_at": "2026-10-03T12:00:00Z",
+              "completed_at": "2026-10-03T12:05:00Z"
+            }
+          ]
+        }
+      ],
+      "observed_at": "2026-10-03T12:05:00Z",
+      "builder_source": null,
+      "document_patch": {
+        "floor": {
+          "head": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "source": null,
+          "checks": [
+            {
+              "id": 81,
+              "name": "lint-and-test (ubuntu-latest)",
+              "app_id": 15368,
+              "app_slug": "github-actions",
+              "workflow_id": 71,
+              "run_id": 91,
+              "url": "https://github.com/example/product/actions/runs/91",
+              "head": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "status": "completed",
+              "conclusion": "success",
+              "started_at": "2026-10-03T12:00:00Z",
+              "completed_at": "2026-10-03T12:05:00Z"
+            },
+            {
+              "id": 82,
+              "name": "lint-and-test (windows-latest)",
+              "app_id": 15368,
+              "app_slug": "github-actions",
+              "workflow_id": 71,
+              "run_id": 91,
+              "url": "https://github.com/example/product/actions/runs/91",
+              "head": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "status": "completed",
+              "conclusion": "success",
+              "started_at": "2026-10-03T12:00:00Z",
+              "completed_at": "2026-10-03T12:05:00Z"
+            },
+            {
+              "id": 83,
+              "name": "lint-and-test (ubuntu-latest)",
+              "app_id": 15368,
+              "app_slug": "github-actions",
+              "workflow_id": 71,
+              "run_id": 92,
+              "url": "https://github.com/example/product/actions/runs/92",
+              "head": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "status": "completed",
+              "conclusion": "success",
+              "started_at": "2026-10-03T12:00:00Z",
+              "completed_at": "2026-10-03T12:05:00Z"
+            },
+            {
+              "id": 84,
+              "name": "lint-and-test (windows-latest)",
+              "app_id": 15368,
+              "app_slug": "github-actions",
+              "workflow_id": 71,
+              "run_id": 92,
+              "url": "https://github.com/example/product/actions/runs/92",
+              "head": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "status": "completed",
+              "conclusion": "success",
+              "started_at": "2026-10-03T12:00:00Z",
+              "completed_at": "2026-10-03T12:05:00Z"
+            }
+          ]
+        },
+        "declarations": []
+      },
+      "expected": {
+        "outcome": "ci-met",
+        "check_ids": [
+          81,
+          82,
+          83,
+          84
+        ],
+        "gate_pass": true,
+        "executions": null
+      }
+    },
+    {
+      "name": "repair-newest-run-within-each-event",
+      "base_tip": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "head": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "base_policy": {
+        "content": {
+          "schema_version": 1,
+          "rules": [
+            {
+              "include": [
+                "src/**"
+              ],
+              "exclude": []
+            }
+          ],
+          "floor": {
+            "jobs": [
+              {
+                "workflow": ".github/workflows/ci.yml",
+                "job": "lint-and-test (ubuntu-latest)"
+              },
+              {
+                "workflow": ".github/workflows/ci.yml",
+                "job": "lint-and-test (windows-latest)"
+              }
+            ],
+            "stall_after_seconds": 3600
+          }
+        }
+      },
+      "head_policy": {
+        "content": {
+          "schema_version": 1,
+          "rules": [
+            {
+              "include": [
+                "src/**"
+              ],
+              "exclude": []
+            }
+          ],
+          "floor": {
+            "jobs": [
+              {
+                "workflow": ".github/workflows/ci.yml",
+                "job": "lint-and-test (ubuntu-latest)"
+              },
+              {
+                "workflow": ".github/workflows/ci.yml",
+                "job": "lint-and-test (windows-latest)"
+              }
+            ],
+            "stall_after_seconds": 3600
+          }
+        }
+      },
+      "holder_policy": {
+        "schema_version": 1,
+        "rules": [
+          {
+            "include": [
+              "src/**"
+            ],
+            "exclude": []
+          }
+        ],
+        "floor": {
+          "jobs": [
+            {
+              "workflow": ".github/workflows/ci.yml",
+              "job": "lint-and-test (ubuntu-latest)"
+            },
+            {
+              "workflow": ".github/workflows/ci.yml",
+              "job": "lint-and-test (windows-latest)"
+            }
+          ],
+          "stall_after_seconds": 3600
+        }
+      },
+      "local_override": {
+        "schema_version": 1,
+        "rules": [
+          {
+            "include": [
+              "src/**"
+            ],
+            "exclude": []
+          }
+        ],
+        "floor": {
+          "jobs": [
+            {
+              "workflow": ".github/workflows/ci.yml",
+              "job": "lint-and-test (ubuntu-latest)"
+            },
+            {
+              "workflow": ".github/workflows/ci.yml",
+              "job": "lint-and-test (windows-latest)"
+            }
+          ],
+          "stall_after_seconds": 3600
+        }
+      },
+      "workflow_runs": [
+        {
+          "total_count": 3,
+          "workflow_runs": [
+            {
+              "id": 91,
+              "path": ".github/workflows/ci.yml",
+              "repository": {
+                "full_name": "example/product"
+              },
+              "head_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "workflow_id": 71,
+              "check_suite_id": 191,
+              "run_attempt": 1,
+              "status": "completed",
+              "conclusion": "success",
+              "created_at": "2026-10-03T12:00:00Z",
+              "html_url": "https://github.com/example/product/actions/runs/91",
+              "referenced_workflows": [],
+              "event": "pull_request"
+            },
+            {
+              "id": 92,
+              "path": ".github/workflows/ci.yml",
+              "repository": {
+                "full_name": "example/product"
+              },
+              "head_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "workflow_id": 71,
+              "check_suite_id": 192,
+              "run_attempt": 1,
+              "status": "completed",
+              "conclusion": "success",
+              "created_at": "2026-10-03T12:00:00Z",
+              "html_url": "https://github.com/example/product/actions/runs/92",
+              "referenced_workflows": [],
+              "event": "push"
+            },
+            {
+              "id": 93,
+              "path": ".github/workflows/ci.yml",
+              "repository": {
+                "full_name": "example/product"
+              },
+              "head_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "workflow_id": 71,
+              "check_suite_id": 193,
+              "run_attempt": 1,
+              "status": "completed",
+              "conclusion": "success",
+              "created_at": "2026-10-03T12:00:00Z",
+              "html_url": "https://github.com/example/product/actions/runs/93",
+              "referenced_workflows": [],
+              "event": "pull_request"
+            }
+          ]
+        }
+      ],
+      "runs": [
+        {
+          "id": 91,
+          "record": {
+            "id": 91,
+            "path": ".github/workflows/ci.yml",
+            "repository": {
+              "full_name": "example/product"
+            },
+            "head_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "workflow_id": 71,
+            "check_suite_id": 191,
+            "run_attempt": 1,
+            "status": "completed",
+            "conclusion": "success",
+            "created_at": "2026-10-03T12:00:00Z",
+            "html_url": "https://github.com/example/product/actions/runs/91",
+            "referenced_workflows": [],
+            "event": "pull_request"
+          }
+        },
+        {
+          "id": 92,
+          "record": {
+            "id": 92,
+            "path": ".github/workflows/ci.yml",
+            "repository": {
+              "full_name": "example/product"
+            },
+            "head_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "workflow_id": 71,
+            "check_suite_id": 192,
+            "run_attempt": 1,
+            "status": "completed",
+            "conclusion": "success",
+            "created_at": "2026-10-03T12:00:00Z",
+            "html_url": "https://github.com/example/product/actions/runs/92",
+            "referenced_workflows": [],
+            "event": "push"
+          }
+        },
+        {
+          "id": 93,
+          "record": {
+            "id": 93,
+            "path": ".github/workflows/ci.yml",
+            "repository": {
+              "full_name": "example/product"
+            },
+            "head_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "workflow_id": 71,
+            "check_suite_id": 193,
+            "run_attempt": 1,
+            "status": "completed",
+            "conclusion": "success",
+            "created_at": "2026-10-03T12:00:00Z",
+            "html_url": "https://github.com/example/product/actions/runs/93",
+            "referenced_workflows": [],
+            "event": "pull_request"
+          }
+        }
+      ],
+      "jobs": [
+        {
+          "run_id": 91,
+          "pages": [
+            {
+              "total_count": 2,
+              "jobs": [
+                {
+                  "id": 1081,
+                  "run_id": 91,
+                  "head_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                  "run_attempt": 1,
+                  "name": "lint-and-test (ubuntu-latest)",
+                  "check_run_url": "https://api.github.com/repos/example/product/check-runs/81",
+                  "status": "completed",
+                  "conclusion": "success",
+                  "started_at": "2026-10-03T12:00:00Z",
+                  "completed_at": "2026-10-03T12:05:00Z"
+                },
+                {
+                  "id": 1082,
+                  "run_id": 91,
+                  "head_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                  "run_attempt": 1,
+                  "name": "lint-and-test (windows-latest)",
+                  "check_run_url": "https://api.github.com/repos/example/product/check-runs/82",
+                  "status": "completed",
+                  "conclusion": "failure",
+                  "started_at": "2026-10-03T12:00:00Z",
+                  "completed_at": "2026-10-03T12:05:00Z"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "run_id": 92,
+          "pages": [
+            {
+              "total_count": 2,
+              "jobs": [
+                {
+                  "id": 1083,
+                  "run_id": 92,
+                  "head_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                  "run_attempt": 1,
+                  "name": "lint-and-test (ubuntu-latest)",
+                  "check_run_url": "https://api.github.com/repos/example/product/check-runs/83",
+                  "status": "completed",
+                  "conclusion": "success",
+                  "started_at": "2026-10-03T12:00:00Z",
+                  "completed_at": "2026-10-03T12:05:00Z"
+                },
+                {
+                  "id": 1084,
+                  "run_id": 92,
+                  "head_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                  "run_attempt": 1,
+                  "name": "lint-and-test (windows-latest)",
+                  "check_run_url": "https://api.github.com/repos/example/product/check-runs/84",
+                  "status": "completed",
+                  "conclusion": "success",
+                  "started_at": "2026-10-03T12:00:00Z",
+                  "completed_at": "2026-10-03T12:05:00Z"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "run_id": 93,
+          "pages": [
+            {
+              "total_count": 2,
+              "jobs": [
+                {
+                  "id": 1085,
+                  "run_id": 93,
+                  "head_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                  "run_attempt": 1,
+                  "name": "lint-and-test (ubuntu-latest)",
+                  "check_run_url": "https://api.github.com/repos/example/product/check-runs/85",
+                  "status": "completed",
+                  "conclusion": "success",
+                  "started_at": "2026-10-03T12:00:00Z",
+                  "completed_at": "2026-10-03T12:05:00Z"
+                },
+                {
+                  "id": 1086,
+                  "run_id": 93,
+                  "head_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                  "run_attempt": 1,
+                  "name": "lint-and-test (windows-latest)",
+                  "check_run_url": "https://api.github.com/repos/example/product/check-runs/86",
+                  "status": "completed",
+                  "conclusion": "success",
+                  "started_at": "2026-10-03T12:00:00Z",
+                  "completed_at": "2026-10-03T12:05:00Z"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "check_runs": [
+        {
+          "total_count": 6,
+          "check_runs": [
+            {
+              "id": 81,
+              "name": "lint-and-test (ubuntu-latest)",
+              "head_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "app": {
+                "id": 15368,
+                "slug": "github-actions"
+              },
+              "check_suite": {
+                "id": 191
+              },
+              "details_url": "https://github.com/example/product/actions/runs/91/job/1081",
+              "status": "completed",
+              "conclusion": "success",
+              "started_at": "2026-10-03T12:00:00Z",
+              "completed_at": "2026-10-03T12:05:00Z"
+            },
+            {
+              "id": 82,
+              "name": "lint-and-test (windows-latest)",
+              "head_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "app": {
+                "id": 15368,
+                "slug": "github-actions"
+              },
+              "check_suite": {
+                "id": 191
+              },
+              "details_url": "https://github.com/example/product/actions/runs/91/job/1082",
+              "status": "completed",
+              "conclusion": "failure",
+              "started_at": "2026-10-03T12:00:00Z",
+              "completed_at": "2026-10-03T12:05:00Z"
+            },
+            {
+              "id": 83,
+              "name": "lint-and-test (ubuntu-latest)",
+              "head_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "app": {
+                "id": 15368,
+                "slug": "github-actions"
+              },
+              "check_suite": {
+                "id": 192
+              },
+              "details_url": "https://github.com/example/product/actions/runs/92/job/1083",
+              "status": "completed",
+              "conclusion": "success",
+              "started_at": "2026-10-03T12:00:00Z",
+              "completed_at": "2026-10-03T12:05:00Z"
+            },
+            {
+              "id": 84,
+              "name": "lint-and-test (windows-latest)",
+              "head_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "app": {
+                "id": 15368,
+                "slug": "github-actions"
+              },
+              "check_suite": {
+                "id": 192
+              },
+              "details_url": "https://github.com/example/product/actions/runs/92/job/1084",
+              "status": "completed",
+              "conclusion": "success",
+              "started_at": "2026-10-03T12:00:00Z",
+              "completed_at": "2026-10-03T12:05:00Z"
+            },
+            {
+              "id": 85,
+              "name": "lint-and-test (ubuntu-latest)",
+              "head_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "app": {
+                "id": 15368,
+                "slug": "github-actions"
+              },
+              "check_suite": {
+                "id": 193
+              },
+              "details_url": "https://github.com/example/product/actions/runs/93/job/1085",
+              "status": "completed",
+              "conclusion": "success",
+              "started_at": "2026-10-03T12:00:00Z",
+              "completed_at": "2026-10-03T12:05:00Z"
+            },
+            {
+              "id": 86,
+              "name": "lint-and-test (windows-latest)",
+              "head_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "app": {
+                "id": 15368,
+                "slug": "github-actions"
+              },
+              "check_suite": {
+                "id": 193
+              },
+              "details_url": "https://github.com/example/product/actions/runs/93/job/1086",
+              "status": "completed",
+              "conclusion": "success",
+              "started_at": "2026-10-03T12:00:00Z",
+              "completed_at": "2026-10-03T12:05:00Z"
+            }
+          ]
+        }
+      ],
+      "observed_at": "2026-10-03T12:05:00Z",
+      "builder_source": null,
+      "document_patch": {
+        "floor": {
+          "head": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "source": null,
+          "checks": [
+            {
+              "id": 83,
+              "name": "lint-and-test (ubuntu-latest)",
+              "app_id": 15368,
+              "app_slug": "github-actions",
+              "workflow_id": 71,
+              "run_id": 92,
+              "url": "https://github.com/example/product/actions/runs/92",
+              "head": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "status": "completed",
+              "conclusion": "success",
+              "started_at": "2026-10-03T12:00:00Z",
+              "completed_at": "2026-10-03T12:05:00Z"
+            },
+            {
+              "id": 84,
+              "name": "lint-and-test (windows-latest)",
+              "app_id": 15368,
+              "app_slug": "github-actions",
+              "workflow_id": 71,
+              "run_id": 92,
+              "url": "https://github.com/example/product/actions/runs/92",
+              "head": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "status": "completed",
+              "conclusion": "success",
+              "started_at": "2026-10-03T12:00:00Z",
+              "completed_at": "2026-10-03T12:05:00Z"
+            },
+            {
+              "id": 85,
+              "name": "lint-and-test (ubuntu-latest)",
+              "app_id": 15368,
+              "app_slug": "github-actions",
+              "workflow_id": 71,
+              "run_id": 93,
+              "url": "https://github.com/example/product/actions/runs/93",
+              "head": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "status": "completed",
+              "conclusion": "success",
+              "started_at": "2026-10-03T12:00:00Z",
+              "completed_at": "2026-10-03T12:05:00Z"
+            },
+            {
+              "id": 86,
+              "name": "lint-and-test (windows-latest)",
+              "app_id": 15368,
+              "app_slug": "github-actions",
+              "workflow_id": 71,
+              "run_id": 93,
+              "url": "https://github.com/example/product/actions/runs/93",
+              "head": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "status": "completed",
+              "conclusion": "success",
+              "started_at": "2026-10-03T12:00:00Z",
+              "completed_at": "2026-10-03T12:05:00Z"
+            }
+          ]
+        },
+        "declarations": []
+      },
+      "expected": {
+        "outcome": "ci-met",
+        "check_ids": [
+          83,
+          84,
+          85,
+          86
         ],
         "gate_pass": true,
         "executions": null
