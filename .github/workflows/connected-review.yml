@@ -11,4 +11,5 @@ jobs:
       contents: read
       pull-requests: write
     uses: Grimblaz-and-Friends/tradecraft/.github/workflows/connected-review-shared.yml@reviewer-stable
-    secrets: inherit
+    secrets:
+      CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
