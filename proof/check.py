@@ -3724,6 +3724,13 @@ def run(
                 print(f"evidence path: {evidence_path}", file=destination)
             for statement in verified:
                 print(f"verified: {statement}", file=destination)
+                if statement == "pull request body has a **Path departures:** paragraph":
+                    print(
+                        "diagnostic: the **Path departures:** check reads presence only, not content, "
+                        "and GitHub does not re-run this required gate when only the pull request body "
+                        "is edited",
+                        file=destination,
+                    )
             for statement in declared:
                 print(f"declared: {statement}", file=destination)
             for statement in producer_diagnostics:
@@ -3743,6 +3750,13 @@ def run(
             print(f"evidence path: {evidence_path}", file=destination)
         for statement in verified:
             print(f"verified: {statement}", file=destination)
+            if statement == "pull request body has a **Path departures:** paragraph":
+                print(
+                    "diagnostic: the **Path departures:** check reads presence only, not content, "
+                    "and GitHub does not re-run this required gate when only the pull request body "
+                    "is edited",
+                    file=destination,
+                )
         for statement in declared:
             print(f"declared: {statement}", file=destination)
         for statement in producer_diagnostics:
