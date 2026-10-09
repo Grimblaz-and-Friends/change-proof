@@ -28,6 +28,10 @@ OWNER = "proof-owner"
 REVIEWER = "review-bot[bot]"
 VALID_BODY = "**Path departures:** Expected path ran without a departure."
 ABSENT_BODY = object()
+PATH_DEPARTURES_DIAGNOSTIC = (
+    "diagnostic: the **Path departures:** check reads presence only, not content, "
+    "and GitHub does not re-run this required gate when only the pull request body is edited"
+)
 
 # Grimblaz-and-Friends/Organizations-of-Verra#455, issue comment 5750507875.
 CODERABBIT_RATE_LIMIT_NOTICE = """\
@@ -857,9 +861,11 @@ def test_recorded_mechanical_producer_comment_is_the_exact_prechange_falsifier()
         "changed paths would otherwise not require use"
     )
     assert actual_lines.count(lane_line) == 1
+    assert actual_lines.count(PATH_DEPARTURES_DIAGNOSTIC) == 1
 
     # This is attempt 5's output from job 108549502051, whose reusable checker
-    # was pinned to cb5b746. Compare every line unaffected by this change and
+    # was pinned to cb5b746. Compare every line unaffected by the mechanical-lane
+    # change and #52's presence-only diagnostic, and
     # assert that the old checker had exactly the generated no-use failure.
     expected_lines = (
         fixture_root / "tradecraft-767.attempt-5.output.txt"
@@ -867,7 +873,7 @@ def test_recorded_mechanical_producer_comment_is_the_exact_prechange_falsifier()
     prechange_lines = [
         "change-proof: FAIL" if index == 0 else line
         for index, line in enumerate(actual_lines)
-        if line != lane_line and not line.startswith((
+        if line not in {lane_line, PATH_DEPARTURES_DIAGNOSTIC} and not line.startswith((
             "verified: floor authority:", "verified: builder floor supplied by"
         ))
     ]
@@ -1471,6 +1477,11 @@ def test_valid_mechanical_lane_does_not_clear_a_failed_floor_check():
     assert result == 1
     assert "completed acceptable result for floor check #81" in output
     assert "verified: owner-affirmed mechanical lane" in output
+    assert output.count(
+        "verified: pull request body has a **Path departures:** paragraph\n"
+        f"{PATH_DEPARTURES_DIAGNOSTIC}\n"
+    ) == 1
+    assert output.count(PATH_DEPARTURES_DIAGNOSTIC) == 1
 
 
 def test_valid_mechanical_lane_does_not_clear_a_missing_reviewer():
@@ -3700,7 +3711,9 @@ def test_path_departures_paragraph_shapes_pass_for_all_line_endings(body, separa
     assert result == 0
     assert output.count(
         "verified: pull request body has a **Path departures:** paragraph\n"
+        f"{PATH_DEPARTURES_DIAGNOSTIC}\n"
     ) == 1
+    assert output.count(PATH_DEPARTURES_DIAGNOSTIC) == 1
     assert "missing: a pull request body paragraph" not in output
 
 
@@ -3711,6 +3724,7 @@ def test_nonparagraph_path_departures_shapes_fail_for_all_line_endings(body, sep
 
     assert result == 1
     assert "verified: pull request body has a **Path departures:** paragraph" not in output
+    assert PATH_DEPARTURES_DIAGNOSTIC not in output
     assert output.count(
         "missing: a pull request body paragraph beginning with **Path departures:**\n"
     ) == 1
@@ -3729,6 +3743,7 @@ def test_missing_path_departures_body_fails_with_exact_repair(body):
     result, output = execute(proof_with_body(body))
 
     assert result == 1
+    assert PATH_DEPARTURES_DIAGNOSTIC not in output
     assert output.count(
         "missing: a pull request body paragraph beginning with **Path departures:**\n"
     ) == 1
@@ -3736,6 +3751,13 @@ def test_missing_path_departures_body_fails_with_exact_repair(body):
         "satisfy: add the **Path departures:** paragraph to the pull request body and re-run "
         "change-proof\n"
     ) == 1
+
+
+@pytest.mark.parametrize("content", ("", " TODO", " Placeholder", " All gates passed", "\nTBD"))
+def test_path_departures_content_does_not_change_verdict_or_output(content):
+    assert execute(proof_with_body(f"**Path departures:**{content}")) == execute(
+        proof_with_body(VALID_BODY)
+    )
 
 
 def test_readme_use_rules_classify_documented_paths():

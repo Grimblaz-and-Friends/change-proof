@@ -237,3 +237,17 @@ def test_readme_boundary_covers_only_the_trusted_declared_extra_file():
     assert "trusted base-tip policy declares a version file" in boundary
     assert "commit parents, comparisons" in boundary
     assert "never checks out caller content, executes caller code, writes to the caller" in boundary
+
+
+def test_readme_limits_path_departures_green_to_presence_when_the_gate_ran():
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    paragraph = next(
+        paragraph for paragraph in readme.split("\n\n")
+        if paragraph.startswith("Every ready pull-request body must have a Markdown paragraph")
+    )
+
+    assert (
+        "A green result therefore describes the body as it stood when the gate ran, "
+        "and certifies only that the paragraph was present then; the release report "
+        "is where its content is read."
+    ) in paragraph
