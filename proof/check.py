@@ -19,10 +19,12 @@ import urllib.request
 
 
 MARKER = re.compile(r"<!--\s*+tradecraft:([a-z-]+):v1(?:\s++([^>]*))?-->", re.I)
-# The marker kinds this gate consumes, read by the practice entrance's source rules (README.md,
-# "Evidence contract"): a comment claims only the unquoted marker that is its first line.
-GATE_MARKER_KINDS = ("proof", "use", "floor", "affirmed-brief")
-# The entrance takes use and floor only from comments, never from reviews or review comments.
+# The marker kinds the gate reads from each comment surface. A comment claims only the unquoted
+# marker that is its whole first line (README.md, "Evidence contract", decisions in force).
+PULL_REQUEST_MARKER_KINDS = ("proof", "use", "floor")
+WORK_ISSUE_MARKER_KINDS = ("use", "floor", "affirmed-brief")
+# Use and floor come only from comments, the surfaces the practice entrance reads them from
+# (README.md, "Evidence contract", decisions in force).
 USE_FLOOR_SOURCE_KINDS = frozenset({"pull-request-comment", "issue-comment"})
 ATTRIBUTE = re.compile(r"([a-z_]+)=([^\s]+)", re.I)
 REVIEW_RISK_LINE = re.compile(
@@ -790,8 +792,9 @@ def _invalid_json_constant(value: str) -> object:
 def _mask_quotations(text: str) -> str:
     """Blank Markdown quotation regions while keeping offsets and line endings.
 
-    A port of tradecraft lib/source_claims.py _mask_markdown_quotations: fenced, blockquoted
-    and indented lines, then backtick code spans, are quotations and claim nothing.
+    Fenced, blockquoted and indented lines, then backtick code spans (which may cross lines),
+    are quotations and claim nothing. This is the practice entrance's marker-reading rule,
+    stated in README.md, "Evidence contract"; it is not the body-finding span rule.
     """
     masked = list(text)
     offset = 0
@@ -839,7 +842,7 @@ def _mask_quotations(text: str) -> str:
 
 
 def _opening_span(text: str) -> tuple[int, int] | None:
-    """Return the first nonblank line's span, trimmed (tradecraft _first_content_span)."""
+    """Return the trimmed span of the first nonblank line, the only line that can claim."""
     offset = 0
     for line_with_end in text.splitlines(keepends=True):
         line = line_with_end.rstrip("\r\n")
@@ -1016,7 +1019,8 @@ def markers(records: list[dict[str, object]]) -> list[MarkerRecord]:
             source_id = int(raw_source_id)
         else:
             source_id = 0
-        # A record claims only its opening marker; quoted and later markers are not evidence.
+        # Only the opening marker is a claim, so a note can quote any marker without supplying
+        # evidence (README.md, "Evidence contract").
         match = _opening_marker(body)
         if match is not None:
             attributes = {
@@ -3730,7 +3734,7 @@ def run(
                             f"older proof comment #{candidate.comment_id} is invalid: {_safe_text(candidate.error)}"
                         )
                 diagnostics.extend(_set_aside_diagnostics(
-                    comments, config.marker_producers, ("proof", "use", "floor"),
+                    comments, config.marker_producers, PULL_REQUEST_MARKER_KINDS,
                     "pull-request comment",
                 ))
                 if unscoped or current:
@@ -3833,8 +3837,12 @@ def run(
                             diagnostics.extend(_set_aside_diagnostics(
                                 work_comments,
                                 config.marker_producers,
-                                ("use", "floor", "affirmed-brief")
-                                if work_issue != number else ("affirmed-brief",),
+                                WORK_ISSUE_MARKER_KINDS
+                                if work_issue != number
+                                else tuple(
+                                    kind for kind in WORK_ISSUE_MARKER_KINDS
+                                    if kind not in PULL_REQUEST_MARKER_KINDS
+                                ),
                                 "work-issue comment",
                                 f" on {repo}#{work_issue}",
                             ))

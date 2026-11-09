@@ -1530,7 +1530,8 @@ QUOTATIONS = {
     "indented-block": lambda marker: f"    {marker}",
     "blockquote": lambda marker: f"> {marker}",
 }
-# A different valid marker opening the comment above the one under test.
+# The affirmed brief's other opener is an artifact marker because a pre-implementation artifact
+# is the comment that carries a copy of the brief below its own opening marker.
 OTHER_OPENERS = {
     "proof": GATE_MARKERS["use"],
     "use": GATE_MARKERS["floor"],
@@ -1576,8 +1577,8 @@ def marker_world(kind, surface, text, *, sole, pointer=None, author=OWNER, newli
     """Build a world whose marker comment carries ``text``.
 
     With ``sole`` the comment is the only evidence of its kind and the proof names it, or
-    names ``pointer`` for use and floor; without it, valid evidence of that kind stands
-    elsewhere.
+    names ``pointer`` for use and floor; without it, valid evidence of that kind stands in
+    another comment on the same surface, and the proof names that one.
     """
     if kind == "proof":
         transport, document = proof_scenario()
@@ -1598,14 +1599,18 @@ def marker_world(kind, surface, text, *, sole, pointer=None, author=OWNER, newli
             transport.responses[WORK_COMMENTS].append(brief)
         return transport, comment_id, document
     comment_id = 777
-    named = pointer if pointer is not None else comment_id
+    endpoint = PULL_COMMENTS if surface == "pull-request-comment" else WORK_COMMENTS
+    if not sole:
+        named = 32
+    else:
+        named = pointer if pointer is not None else comment_id
     if kind == "use":
         use = {
             "required": True,
             "classification": "required",
             "evidence_head": HEAD,
             "applicability": "current-head",
-            "source": source_pointer(surface, named) if sole else source_pointer("issue-comment", 32),
+            "source": source_pointer(surface, named),
             "intervening_commits": [],
             "reason": None,
         }
@@ -1614,14 +1619,14 @@ def marker_world(kind, surface, text, *, sole, pointer=None, author=OWNER, newli
             {"filename": "src/main.ts"}
         ]
         if not sole:
-            transport.responses[WORK_COMMENTS].append(use_note(id=32))
+            transport.responses[endpoint].append(use_note(id=named))
     else:
         transport, document = proof_scenario()
-        if sole:
-            document["floor"]["source"] = source_pointer(surface, named)
-            transport.responses[WORK_COMMENTS] = []
-            replace_proof_document(transport, document)
-    endpoint = PULL_COMMENTS if surface == "pull-request-comment" else WORK_COMMENTS
+        document["floor"]["source"] = source_pointer(surface, named)
+        transport.responses[WORK_COMMENTS] = []
+        if not sole:
+            transport.responses[endpoint].append(record(OWNER, GATE_MARKERS["floor"], id=named))
+        replace_proof_document(transport, document)
     body = marker_comment_body(kind, text, None).replace("\n", newline)
     transport.responses[endpoint].append(record(author, body, id=comment_id))
     return transport, comment_id, document
@@ -1686,7 +1691,7 @@ def assert_raises_no_failure(kind, surface, text):
 
 
 def test_use_note_quoting_a_proof_envelope_beside_a_valid_proof_passes():
-    # Tradecraft PR #885's shape: before #54 this failed with competing comments #501, #777.
+    # A use note quoting the proof envelope in inline code is not a second proof document.
     note = record(
         OWNER,
         f"{GATE_MARKERS['use']}\n\nThe holder read proof "
@@ -1716,7 +1721,6 @@ def test_quoted_marker_supplies_no_evidence_and_raises_no_failure(
     no_evidence = assert_supplies_no_evidence(kind, surface, text)
     no_failure = assert_raises_no_failure(kind, surface, text)
 
-    # Quoted markers are never listed as set aside.
     assert set_aside_lines(no_evidence) == []
     assert set_aside_lines(no_failure) == []
 
@@ -1908,6 +1912,19 @@ def test_stale_use_pointer_remedy_never_offers_a_review(stale_kind):
     assert result == 1
     assert "#42" not in output
     assert "already exists" not in output
+
+
+@pytest.mark.parametrize(("kind", "surface"), [pair for pair in KIND_SURFACES if pair[0] in {"use", "floor"}])
+def test_stale_pointer_remedy_offers_an_opening_marker_on_the_same_surface(kind, surface):
+    transport, comment_id, _document = marker_world(
+        kind, surface, GATE_MARKERS[kind], sole=True, pointer=999
+    )
+
+    result, output = execute(transport)
+
+    assert result == 1
+    assert f"document pointer is stale; matching {surface} #{comment_id} already exists" in output
+    assert f"recompose proof from {surface} #{comment_id} instead of posting a duplicate" in output
 
 
 @pytest.mark.parametrize(("kind", "surface"), [pair for pair in KIND_SURFACES if pair[0] in {"use", "floor"}])
