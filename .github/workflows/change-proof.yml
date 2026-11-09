@@ -50,6 +50,11 @@ jobs:
 
 
           MARKER = re.compile(r"<!--\s*+tradecraft:([a-z-]+):v1(?:\s++([^>]*))?-->", re.I)
+          # The marker kinds this gate consumes, read by the practice entrance's source rules (README.md,
+          # "Evidence contract"): a comment claims only the unquoted marker that is its first line.
+          GATE_MARKER_KINDS = ("proof", "use", "floor", "affirmed-brief")
+          # The entrance takes use and floor only from comments, never from reviews or review comments.
+          USE_FLOOR_SOURCE_KINDS = frozenset({"pull-request-comment", "issue-comment"})
           ATTRIBUTE = re.compile(r"([a-z_]+)=([^\s]+)", re.I)
           REVIEW_RISK_LINE = re.compile(
               r"^Review risk:\s*(ordinary|elevated|critical)\s*$", re.I | re.M
@@ -813,23 +818,132 @@ jobs:
               raise ProofError(f"proof document contains non-JSON numeric constant {value}")
 
 
-          def _proof_envelopes(body: str):
-              """Yield proof envelope ends and attributes with a linear HTML-comment scan."""
-              lowered = body.lower()
-              position = 0
-              while True:
-                  start = lowered.find("<!--", position)
-                  if start < 0:
-                      return
-                  end = lowered.find("-->", start + 4)
-                  if end < 0:
-                      return
-                  content = body[start + 4:end].strip()
-                  if content.lower().startswith(PROOF_TOKEN):
-                      remainder = content[len(PROOF_TOKEN):]
-                      if not remainder or remainder[0].isspace():
-                          yield end + 3, remainder.strip()
-                  position = end + 3
+          def _mask_quotations(text: str) -> str:
+              """Blank Markdown quotation regions while keeping offsets and line endings.
+
+              A port of tradecraft lib/source_claims.py _mask_markdown_quotations: fenced, blockquoted
+              and indented lines, then backtick code spans, are quotations and claim nothing.
+              """
+              masked = list(text)
+              offset = 0
+              fence: tuple[str, int] | None = None
+              for line_with_end in text.splitlines(keepends=True):
+                  line = line_with_end.rstrip("\r\n")
+                  quoted = False
+                  fence_match = re.match(r"^ {0,3}(`{3,}|~{3,})", line)
+                  if fence is not None:
+                      quoted = True
+                      closing = re.match(rf"^ {{0,3}}{re.escape(fence[0])}{{{fence[1]},}}\s*$", line)
+                      if closing is not None:
+                          fence = None
+                  elif fence_match is not None:
+                      token = fence_match.group(1)
+                      fence = (token[0], len(token))
+                      quoted = True
+                  elif re.match(r"^ {0,3}>", line) is not None or re.match(r"^(?: {4}|\t)", line):
+                      quoted = True
+                  if quoted:
+                      for index in range(offset, offset + len(line)):
+                          masked[index] = " "
+                  offset += len(line_with_end)
+              candidate = "".join(masked)
+              opener_pattern = re.compile(r"`+")
+              cursor = 0
+              while cursor < len(candidate):
+                  opener = opener_pattern.search(candidate, cursor)
+                  if opener is None:
+                      break
+                  start = opener.start()
+                  ticks = opener.group(0)
+                  closing = re.compile(rf"(?<!`){re.escape(ticks)}(?!`)").search(
+                      candidate, start + len(ticks)
+                  )
+                  if closing is None:
+                      cursor = start + len(ticks)
+                      continue
+                  close = closing.start()
+                  for index in range(start, close + len(ticks)):
+                      if masked[index] not in "\r\n":
+                          masked[index] = " "
+                  cursor = close + len(ticks)
+              return "".join(masked)
+
+
+          def _opening_span(text: str) -> tuple[int, int] | None:
+              """Return the first nonblank line's span, trimmed (tradecraft _first_content_span)."""
+              offset = 0
+              for line_with_end in text.splitlines(keepends=True):
+                  line = line_with_end.rstrip("\r\n")
+                  if line.strip():
+                      leading = len(line) - len(line.lstrip())
+                      return offset + leading, offset + len(line.rstrip())
+                  offset += len(line_with_end)
+              if text.strip():
+                  leading = len(text) - len(text.lstrip())
+                  return leading, len(text.rstrip())
+              return None
+
+
+          def _opening_marker(body: str, masked: str | None = None) -> re.Match[str] | None:
+              """Return the marker that is the body's whole, unquoted first nonblank line."""
+              span = _opening_span(body)
+              if span is None:
+                  return None
+              match = MARKER.fullmatch(body, *span)
+              if match is None:
+                  return None
+              if MARKER.fullmatch(_mask_quotations(body) if masked is None else masked, *span) is None:
+                  return None
+              return match
+
+
+          def _set_aside_kinds(body: str, kinds: tuple[str, ...]) -> list[str]:
+              """Name each unquoted marker kind in ``kinds`` that the opening rule set aside."""
+              if "tradecraft:" not in body.lower():
+                  return []
+              masked = _mask_quotations(body)
+              unquoted = {match.span() for match in MARKER.finditer(masked)}
+              opening = _opening_marker(body, masked)
+              opening_span = opening.span() if opening is not None else None
+              found: list[str] = []
+              for match in MARKER.finditer(body):
+                  kind = match.group(1).lower()
+                  if (
+                      kind in kinds
+                      and kind not in found
+                      and match.span() in unquoted
+                      and match.span() != opening_span
+                  ):
+                      found.append(kind)
+              return found
+
+
+          def _set_aside_diagnostics(
+              records: list[dict[str, object]],
+              authors: frozenset[str],
+              kinds: tuple[str, ...],
+              place: str,
+              suffix: str = "",
+          ) -> list[str]:
+              lines: list[str] = []
+              for item in records:
+                  if _author(item) not in authors:
+                      continue
+                  for kind in _set_aside_kinds(str(item.get("body") or ""), kinds):
+                      lines.append(
+                          f"{kind} marker in {place} #{_source_identity(item.get('id'))}{suffix} does not "
+                          "open its comment and supplies no evidence; a marker counts only as its "
+                          "comment's whole first nonblank line"
+                      )
+              return lines
+
+
+          def _opening_proof_envelope(body: str) -> tuple[int, str] | None:
+              """Return the end and raw attributes of the proof envelope that opens the body."""
+              match = _opening_marker(body)
+              if match is None or match.group(1).lower() != "proof":
+                  return None
+              return match.end(), (match.group(2) or "").strip()
 
 
           def _proof_envelope_head(raw_attributes: str) -> tuple[str | None, str | None]:
@@ -867,14 +981,17 @@ jobs:
                       # for the required diagnostic. Their framing and JSON are never parsed.
                       if PROOF_TOKEN not in body.lower():
                           continue
-                      for _envelope_end, raw_attributes in _proof_envelopes(body):
-                          envelope_head, error = _proof_envelope_head(raw_attributes)
+                      envelope = _opening_proof_envelope(body)
+                      if envelope is not None:
+                          envelope_head, error = _proof_envelope_head(envelope[1])
                           if error is None:
                               candidates.append(
                                   ProofCandidate(comment_id, author, envelope_head, None, None)
                               )
                       continue
-                  for envelope_end, raw_attributes in _proof_envelopes(body):
+                  envelope = _opening_proof_envelope(body)
+                  if envelope is not None:
+                      envelope_end, raw_attributes = envelope
                       envelope_head, error = _proof_envelope_head(raw_attributes)
                       document: dict[str, object] | None = None
                       if error is None:
@@ -930,7 +1047,9 @@ jobs:
                       source_id = int(raw_source_id)
                   else:
                       source_id = 0
-                  for match in MARKER.finditer(body):
+                  # A record claims only its opening marker; quoted and later markers are not evidence.
+                  match = _opening_marker(body)
+                  if match is not None:
                       attributes = {
                           key.lower(): value for key, value in ATTRIBUTE.findall(match.group(2) or "")
                       }
@@ -1910,10 +2029,11 @@ jobs:
 
 
           def _has_exact_affirmed_brief(body: str) -> bool:
-              return any(
-                  match.group(1).lower() == "affirmed-brief"
+              match = _opening_marker(body)
+              return (
+                  match is not None
+                  and match.group(1).lower() == "affirmed-brief"
                   and not (match.group(2) or "").strip()
-                  for match in MARKER.finditer(body)
               )
 
 
@@ -2027,7 +2147,7 @@ jobs:
                   ), None
               if not _has_exact_affirmed_brief(str(record.get("body") or "")):
                   return Finding(
-                      f"an exact attribute-free tradecraft:affirmed-brief:v1 marker in "
+                      f"an exact attribute-free tradecraft:affirmed-brief:v1 marker opening "
                       f"issue-comment #{source_id}",
                       "correct the latest authorized affirmed-brief record and recompose proof",
                   ), None
@@ -2945,6 +3065,14 @@ jobs:
                       "an authorized public floor source",
                       "post the successful current-head floor marker and recompose proof",
                   ))
+              elif str(source["kind"]).lower() not in USE_FLOOR_SOURCE_KINDS:
+                  failures.append(Finding(
+                      f"an authorized valid floor source: source kind {_safe_text(source['kind'])} is not "
+                      "an accepted floor surface; accepted surfaces are pull-request-comment and "
+                      "issue-comment",
+                      "post the floor marker as a pull-request comment or a work-issue comment and "
+                      "recompose proof from it",
+                  ))
               else:
                   record, source_error = _resolve_source(
                       source, repo, comments, work_comments, reviews, review_comments
@@ -3109,6 +3237,14 @@ jobs:
                       failures.append(Finding(
                           "a public use source and evidence head for use-bought paths",
                           "complete the use session and recompose proof",
+                      ))
+                  elif str(use_source["kind"]).lower() not in USE_FLOOR_SOURCE_KINDS:
+                      failures.append(Finding(
+                          f"an authorized valid public use source: source kind "
+                          f"{_safe_text(use_source['kind'])} is not an accepted use surface; accepted "
+                          "surfaces are pull-request-comment and issue-comment",
+                          "post the use marker as a pull-request comment or a work-issue comment and "
+                          "recompose proof from it",
                       ))
                   else:
                       record, source_error = _resolve_source(
@@ -3624,6 +3760,10 @@ jobs:
                                   diagnostics.append(
                                       f"older proof comment #{candidate.comment_id} is invalid: {_safe_text(candidate.error)}"
                                   )
+                          diagnostics.extend(_set_aside_diagnostics(
+                              comments, config.marker_producers, ("proof", "use", "floor"),
+                              "pull-request comment",
+                          ))
                           if unscoped or current:
                               evidence_path = "proof-v1"
                               if not current:
@@ -3719,6 +3859,16 @@ jobs:
                                       verified.extend(document_verified)
                                       declared.extend(document_declared)
                                       diagnostics.extend(document_diagnostics)
+                                      # The pull-request sweep above already covered use and floor when
+                                      # the work issue is the pull request itself.
+                                      diagnostics.extend(_set_aside_diagnostics(
+                                          work_comments,
+                                          config.marker_producers,
+                                          ("use", "floor", "affirmed-brief")
+                                          if work_issue != number else ("affirmed-brief",),
+                                          "work-issue comment",
+                                          f" on {repo}#{work_issue}",
+                                      ))
                                       producer_diagnostics.extend(document_producer_diagnostics)
                                       excluded.extend(document_excluded)
                                       superseded.extend(document_superseded)
