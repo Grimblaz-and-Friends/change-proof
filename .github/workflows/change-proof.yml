@@ -60,7 +60,7 @@ jobs:
               "pull-request-comment": "a pull-request comment",
               "issue-comment": "a work-issue comment",
           }
-          USE_FLOOR_SURFACES = " and ".join(USE_FLOOR_SURFACE_NAME_BY_KIND)
+          USE_FLOOR_KIND_IDS = " and ".join(USE_FLOOR_SURFACE_NAME_BY_KIND)
           USE_FLOOR_SURFACE_NAMES = " or ".join(USE_FLOOR_SURFACE_NAME_BY_KIND.values())
           ATTRIBUTE = re.compile(r"([a-z_]+)=([^\s]+)", re.I)
           REVIEW_RISK_LINE = re.compile(
@@ -194,6 +194,12 @@ jobs:
           class Finding:
               missing: str
               satisfy: str
+
+
+          @dataclass(frozen=True)
+          class ProofEnvelope:
+              end: int
+              raw_attributes: str
 
 
           @dataclass(frozen=True)
@@ -947,12 +953,11 @@ jobs:
               return lines
 
 
-          def _opening_proof_envelope(body: str) -> tuple[int, str] | None:
-              """Return the end and raw attributes of the proof envelope that opens the body."""
+          def _opening_proof_envelope(body: str) -> ProofEnvelope | None:
               match = _opening_marker(body)
               if match is None or match.group(1).lower() != "proof":
                   return None
-              return match.end(), (match.group(2) or "").strip()
+              return ProofEnvelope(match.end(), (match.group(2) or "").strip())
 
 
           def _proof_envelope_head(raw_attributes: str) -> tuple[str | None, str | None]:
@@ -992,7 +997,7 @@ jobs:
                           continue
                       envelope = _opening_proof_envelope(body)
                       if envelope is not None:
-                          envelope_head, error = _proof_envelope_head(envelope[1])
+                          envelope_head, error = _proof_envelope_head(envelope.raw_attributes)
                           if error is None:
                               candidates.append(
                                   ProofCandidate(comment_id, author, envelope_head, None, None)
@@ -1000,8 +1005,8 @@ jobs:
                       continue
                   envelope = _opening_proof_envelope(body)
                   if envelope is not None:
-                      envelope_end, raw_attributes = envelope
-                      envelope_head, error = _proof_envelope_head(raw_attributes)
+                      envelope_end = envelope.end
+                      envelope_head, error = _proof_envelope_head(envelope.raw_attributes)
                       document: dict[str, object] | None = None
                       if error is None:
                           after_envelope = body[envelope_end:]
@@ -3078,7 +3083,7 @@ jobs:
               elif str(source["kind"]).lower() not in USE_FLOOR_SURFACE_NAME_BY_KIND:
                   failures.append(Finding(
                       f"an authorized valid floor source: source kind {_safe_text(source['kind'])} is not "
-                      f"an accepted floor surface; accepted surfaces are {USE_FLOOR_SURFACES}",
+                      f"an accepted floor surface; accepted surfaces are {USE_FLOOR_KIND_IDS}",
                       f"post the floor marker as {USE_FLOOR_SURFACE_NAMES} and recompose proof from it",
                   ))
               else:
@@ -3250,7 +3255,7 @@ jobs:
                       failures.append(Finding(
                           f"an authorized valid public use source: source kind "
                           f"{_safe_text(use_source['kind'])} is not an accepted use surface; accepted "
-                          f"surfaces are {USE_FLOOR_SURFACES}",
+                          f"surfaces are {USE_FLOOR_KIND_IDS}",
                           f"post the use marker as {USE_FLOOR_SURFACE_NAMES} and recompose proof from it",
                       ))
                   else:
@@ -3866,20 +3871,16 @@ jobs:
                                       verified.extend(document_verified)
                                       declared.extend(document_declared)
                                       diagnostics.extend(document_diagnostics)
-                                      # The pull-request sweep above already covered use and floor when
-                                      # the work issue is the pull request itself.
-                                      diagnostics.extend(_set_aside_diagnostics(
-                                          work_comments,
-                                          config.marker_producers,
-                                          WORK_ISSUE_MARKER_KINDS
-                                          if work_issue != number
-                                          else tuple(
-                                              kind for kind in WORK_ISSUE_MARKER_KINDS
-                                              if kind not in PULL_REQUEST_MARKER_KINDS
-                                          ),
-                                          "work-issue comment",
-                                          f" on {repo}#{work_issue}",
-                                      ))
+                                      # A work issue that is the pull request itself supplies no affirmed
+                                      # brief, and the pull-request sweep above already read its comments.
+                                      if work_issue != number:
+                                          diagnostics.extend(_set_aside_diagnostics(
+                                              work_comments,
+                                              config.marker_producers,
+                                              WORK_ISSUE_MARKER_KINDS,
+                                              "work-issue comment",
+                                              f" on {repo}#{work_issue}",
+                                          ))
                                       producer_diagnostics.extend(document_producer_diagnostics)
                                       excluded.extend(document_excluded)
                                       superseded.extend(document_superseded)

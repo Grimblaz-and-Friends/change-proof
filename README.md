@@ -142,7 +142,7 @@ diagnostic: use marker in pull-request comment #ID does not open its comment and
 diagnostic: affirmed-brief marker in work-issue comment #ID on OWNER/REPO#N does not open its comment and supplies no evidence; a marker counts only as its comment's whole first nonblank line
 ```
 
-Quoted markers are not listed, because artifacts and notes quote markers routinely and listing them would bury the lines that name a misplaced claim. Pull-request comments are swept for set-aside `proof`, `use` and `floor` markers whenever the gate reads them; work-issue comments are swept for set-aside `use`, `floor` and `affirmed-brief` markers only when a proof document is selected, because that document names the work issue. Reviewer-thread dispositions, the `connected-review-attempt` receipt, reviewer finding identities and the `**Path departures:**` paragraph keep their own rules below.
+Quoted markers are not listed, because artifacts and notes quote markers routinely and listing them would bury the lines that name a misplaced claim. Pull-request comments are swept for set-aside `proof`, `use` and `floor` markers whenever the gate reads them; work-issue comments are swept for set-aside `use`, `floor` and `affirmed-brief` markers only when a proof document is selected, because that document names the work issue, and only when that work issue is not the pull request itself, which supplies no affirmed brief. Reviewer-thread dispositions, the `connected-review-attempt` receipt, reviewer finding identities and the `**Path departures:**` paragraph keep their own rules below.
 
 Decisions in force for marker reading:
 

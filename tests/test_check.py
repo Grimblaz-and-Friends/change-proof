@@ -1830,7 +1830,7 @@ def test_set_aside_line_is_only_for_authorized_gate_marker_kinds(author, marker,
     assert set_aside_lines(output) == []
 
 
-def test_work_issue_that_is_the_pull_request_lists_each_set_aside_marker_once():
+def test_work_issue_that_is_the_pull_request_lists_only_pull_request_kinds():
     transport, document = proof_scenario()
     document["identity"]["issue"] = 17
     document["identity"]["work"] = f"{REPO}#17"
@@ -1843,10 +1843,9 @@ def test_work_issue_that_is_the_pull_request_lists_each_set_aside_marker_once():
 
     _result, output = execute(transport)
 
+    # The pull request supplies no affirmed brief, so moving that marker up would not help.
     assert set_aside_lines(output) == [
         f"diagnostic: floor marker in pull-request comment #777 {SET_ASIDE_TAIL}",
-        f"diagnostic: affirmed-brief marker in work-issue comment #777 on {REPO}#17 "
-        f"{SET_ASIDE_TAIL}",
     ]
 
 
