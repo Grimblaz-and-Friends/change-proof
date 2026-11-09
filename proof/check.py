@@ -24,13 +24,13 @@ MARKER = re.compile(r"<!--\s*+tradecraft:([a-z-]+):v1(?:\s++([^>]*))?-->", re.I)
 PULL_REQUEST_MARKER_KINDS = ("proof", "use", "floor")
 WORK_ISSUE_MARKER_KINDS = ("use", "floor", "affirmed-brief")
 # Use and floor come only from comments, the surfaces the practice entrance reads them from
-# (README.md, "Evidence contract", decisions in force). Each kind maps to its name in remedies.
-USE_FLOOR_SOURCE_KINDS = {
+# (README.md, "Evidence contract", decisions in force).
+USE_FLOOR_SURFACE_NAME_BY_KIND = {
     "pull-request-comment": "a pull-request comment",
     "issue-comment": "a work-issue comment",
 }
-USE_FLOOR_SURFACES = " and ".join(USE_FLOOR_SOURCE_KINDS)
-USE_FLOOR_SURFACE_NAMES = " or ".join(USE_FLOOR_SOURCE_KINDS.values())
+USE_FLOOR_SURFACES = " and ".join(USE_FLOOR_SURFACE_NAME_BY_KIND)
+USE_FLOOR_SURFACE_NAMES = " or ".join(USE_FLOOR_SURFACE_NAME_BY_KIND.values())
 ATTRIBUTE = re.compile(r"([a-z_]+)=([^\s]+)", re.I)
 REVIEW_RISK_LINE = re.compile(
     r"^Review risk:\s*(ordinary|elevated|critical)\s*$", re.I | re.M
@@ -872,7 +872,11 @@ def _opening_marker(body: str, masked: str | None = None) -> re.Match[str] | Non
 
 
 def _set_aside_kinds(body: str, kinds: tuple[str, ...]) -> list[str]:
-    """Name each unquoted marker kind in ``kinds`` that the opening rule set aside."""
+    """Name each unquoted marker kind in ``kinds`` that the opening rule set aside.
+
+    Quoted markers are never named: artifacts and notes quote markers routinely, and listing
+    them would bury the lines that name a misplaced claim.
+    """
     if "tradecraft:" not in body.lower():
         return []
     masked = _mask_quotations(body)
@@ -951,8 +955,8 @@ def _proof_candidates(
         raw_id = comment.get("id")
         comment_id = raw_id if _is_integer(raw_id) else 0
         if author not in authorized_authors:
-            # Unauthorized comments need only the cheap envelope identity probe used
-            # for the required diagnostic. Their framing and JSON are never parsed.
+            # Unauthorized comments need only the opening envelope's head for the required
+            # diagnostic. Their framing and JSON are never parsed.
             if PROOF_TOKEN not in body.lower():
                 continue
             envelope = _opening_proof_envelope(body)
@@ -3040,7 +3044,7 @@ def evaluate_document(
             "an authorized public floor source",
             "post the successful current-head floor marker and recompose proof",
         ))
-    elif str(source["kind"]).lower() not in USE_FLOOR_SOURCE_KINDS:
+    elif str(source["kind"]).lower() not in USE_FLOOR_SURFACE_NAME_BY_KIND:
         failures.append(Finding(
             f"an authorized valid floor source: source kind {_safe_text(source['kind'])} is not "
             f"an accepted floor surface; accepted surfaces are {USE_FLOOR_SURFACES}",
@@ -3211,7 +3215,7 @@ def evaluate_document(
                 "a public use source and evidence head for use-bought paths",
                 "complete the use session and recompose proof",
             ))
-        elif str(use_source["kind"]).lower() not in USE_FLOOR_SOURCE_KINDS:
+        elif str(use_source["kind"]).lower() not in USE_FLOOR_SURFACE_NAME_BY_KIND:
             failures.append(Finding(
                 f"an authorized valid public use source: source kind "
                 f"{_safe_text(use_source['kind'])} is not an accepted use surface; accepted "
