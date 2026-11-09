@@ -211,6 +211,27 @@ def test_declared_fallback_keeps_lawful_builder_source_contract(surface):
     assert "authorized valid floor source" in output.getvalue()
 
 
+@pytest.mark.parametrize("kind", ("review", "review-comment", "inline-review-comment"))
+def test_declared_fallback_refuses_a_review_surface_floor_source(kind):
+    case = next(case for case in CASES if case["name"] == "skipped-with-builder")
+    transport, document = fixture_transport(case)
+    marker = record("holder", f"<!-- tradecraft:floor:v1 head={case['head']} status=pass -->",
+        id=31, commit_id=case["head"])
+    surface = "reviews" if kind == "review" else "comments"
+    transport.responses[f"repos/{REPO}/pulls/19/{surface}?per_page=100"].append(marker)
+    document["floor"]["source"]["kind"] = kind
+    comments = transport.responses[f"repos/{REPO}/issues/19/comments?per_page=100"]
+    comments[0]["body"] = f"<!-- tradecraft:proof:v1 head={case['head']} -->\n```json\n{json.dumps(document)}\n```"
+    comments.pop()
+    output = io.StringIO()
+    assert check.run({"GITHUB_TOKEN": "test", "GITHUB_REPOSITORY": REPO, "PULL_REQUEST_NUMBER": "19"},
+        transport=transport, output=output) == 1
+    assert (
+        f"missing: an authorized valid floor source: source kind {kind} is not an accepted "
+        "floor surface; accepted surfaces are pull-request-comment and issue-comment"
+    ) in output.getvalue().splitlines()
+
+
 @pytest.mark.parametrize("moved", ("base-tip", "base-ref", "head"))
 def test_declared_completion_is_invalidated_by_live_identity_movement(moved):
     case = CASES[0]

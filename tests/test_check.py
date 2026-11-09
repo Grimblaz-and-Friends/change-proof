@@ -1210,42 +1210,32 @@ def artifact_form_copy(pair="Review risk: ordinary\nReview lane: mechanical"):
     )
 
 
-def test_artifact_form_copy_supersedes_the_original_pointer():
-    transport, document = mechanical_proof_scenario()
-    work_endpoint = f"repos/{REPO}/issues/12/comments?per_page=100"
-    transport.responses[work_endpoint].append(artifact_form_copy())
-
-    result, output = execute(transport)
-
-    assert result == 1
-    assert "issue-comment #32 is superseded by issue-comment #33" in output
-
-    document["use"]["source"]["id"] = 33
-    document["use"]["source"]["url"] = (
-        f"https://github.com/{REPO}/issues/12#issuecomment-33"
-    )
-    replace_proof_document(transport, document)
-
-    result, output = execute(transport)
-
-    assert result == 0
-    assert "issue-comment #33 exempts use" in output
-
-
 @pytest.mark.parametrize(
-    ("pair", "expected"),
+    "pair",
     (
-        (
-            "Review risk: ordinary\nReview risk: ordinary\nReview lane: mechanical",
-            "recognized Review risk lines=2",
-        ),
-        ("Review risk: ordinary\nReview lane: connected", "found ordinary / connected"),
+        "Review risk: ordinary\nReview lane: mechanical",
+        "Review risk: ordinary\nReview risk: ordinary\nReview lane: mechanical",
+        "Review risk: ordinary\nReview lane: connected",
     ),
 )
-def test_artifact_form_copy_rejects_an_invalid_or_connected_pair(pair, expected):
+def test_artifact_carrying_the_brief_does_not_supersede_the_brief(pair):
+    # The artifact opens with its own marker, so the brief it carries is set aside, whatever
+    # review pair the copy shows; the gate keeps reading the brief's own comment.
     transport, document = mechanical_proof_scenario()
     work_endpoint = f"repos/{REPO}/issues/12/comments?per_page=100"
     transport.responses[work_endpoint].append(artifact_form_copy(pair))
+
+    result, output = execute(transport)
+
+    assert result == 0, output
+    assert "issue-comment #32 exempts use" in output
+    assert "superseded" not in output
+    assert (
+        f"diagnostic: affirmed-brief marker in work-issue comment #33 on {REPO}#12 does not "
+        "open its comment and supplies no evidence; a marker counts only as its comment's "
+        "whole first nonblank line"
+    ) in output.splitlines()
+
     document["use"]["source"]["id"] = 33
     document["use"]["source"]["url"] = (
         f"https://github.com/{REPO}/issues/12#issuecomment-33"
@@ -1255,7 +1245,10 @@ def test_artifact_form_copy_rejects_an_invalid_or_connected_pair(pair, expected)
     result, output = execute(transport)
 
     assert result == 1
-    assert expected in output
+    assert (
+        "missing: an exact attribute-free tradecraft:affirmed-brief:v1 marker opening "
+        "issue-comment #33"
+    ) in output.splitlines()
     assert "verified: owner-affirmed mechanical lane" not in output
 
 
@@ -1506,6 +1499,440 @@ def test_mechanical_lane_cannot_pass_when_work_comments_are_unreadable():
     assert result == 1
     assert "readable work-issue comments for issue 12: recording unavailable" in output
     assert "verified: owner-affirmed mechanical lane" not in output
+
+
+# Marker reading (README.md, "Evidence contract"): the gate reads proof, use, floor and
+# affirmed-brief markers by the entrance's source rules. Each world below puts one comment
+# carrying a marker on one surface the gate reads that kind from.
+PULL_COMMENTS = f"repos/{REPO}/issues/17/comments?per_page=100"
+WORK_COMMENTS = f"repos/{REPO}/issues/12/comments?per_page=100"
+GATE_MARKERS = {
+    "proof": f"<!-- tradecraft:proof:v1 head={HEAD} -->",
+    "use": (
+        f"<!-- tradecraft:use:v1 head={HEAD} status=pass changed=false "
+        "staffing_status=qualified -->"
+    ),
+    "floor": f"<!-- tradecraft:floor:v1 head={HEAD} status=pass -->",
+    "affirmed-brief": "<!-- tradecraft:affirmed-brief:v1 -->",
+}
+KIND_SURFACES = (
+    ("proof", "pull-request-comment"),
+    ("use", "pull-request-comment"),
+    ("use", "issue-comment"),
+    ("floor", "pull-request-comment"),
+    ("floor", "issue-comment"),
+    ("affirmed-brief", "issue-comment"),
+)
+QUOTATIONS = {
+    "inline-code": lambda marker: f"Quoting `{marker}` here.",
+    "backtick-fence": lambda marker: f"```text\n{marker}\n```",
+    "tilde-fence": lambda marker: f"~~~\n{marker}\n~~~",
+    "indented-block": lambda marker: f"    {marker}",
+    "blockquote": lambda marker: f"> {marker}",
+}
+# The affirmed brief's other opener is an artifact marker because a pre-implementation artifact
+# is the comment that carries a copy of the brief below its own opening marker.
+OTHER_OPENERS = {
+    "proof": GATE_MARKERS["use"],
+    "use": GATE_MARKERS["floor"],
+    "floor": GATE_MARKERS["use"],
+    "affirmed-brief": "<!-- tradecraft:artifact:v1 status=draft -->",
+}
+MISPLACEMENTS = {
+    "below-heading": lambda kind, marker: f"## Session note\n\n{marker}",
+    "below-prose": lambda kind, marker: f"Holder note on this change.\n{marker}",
+    "below-other-opener": lambda kind, marker: f"{OTHER_OPENERS[kind]}\n\n{marker}",
+    "after-text-on-first-line": lambda kind, marker: f"Note: {marker}",
+    "before-text-on-first-line": lambda kind, marker: f"{marker} and a trailing note",
+}
+SET_ASIDE_TAIL = (
+    "does not open its comment and supplies no evidence; a marker counts only as its "
+    "comment's whole first nonblank line"
+)
+
+
+def source_pointer(surface, source_id):
+    page = "pull/17" if surface == "pull-request-comment" else "issues/12"
+    return {
+        "kind": surface,
+        "repository": REPO,
+        "id": source_id,
+        "url": f"https://github.com/{REPO}/{page}#issuecomment-{source_id}",
+        "author": OWNER,
+        "timestamp": "2026-09-23T12:08:00Z",
+        "revision": HEAD,
+    }
+
+
+def marker_comment_body(kind, text, document):
+    """Complete ``text`` with what evidence of ``kind`` carries after its marker."""
+    if kind == "proof":
+        return f"{text}\n\n```json\n{json.dumps(document, indent=2, sort_keys=True)}\n```"
+    if kind == "affirmed-brief":
+        return f"{text}\n\nAffirmed brief body.\n\nReview risk: ordinary\nReview lane: mechanical"
+    return f"{text}\n\nSession note."
+
+
+def marker_world(kind, surface, text, *, sole, pointer=None, author=OWNER, newline="\n"):
+    """Build a world whose marker comment carries ``text``.
+
+    With ``sole`` the comment is the only evidence of its kind and the proof names it, or
+    names ``pointer`` for use and floor; without it, valid evidence of that kind stands in
+    another comment on the same surface, and the proof names that one.
+    """
+    if kind == "proof":
+        transport, document = proof_scenario()
+        comment_id = 777
+        body = marker_comment_body(kind, text, document)
+        comment = record(author, body.replace("\n", newline), id=comment_id)
+        if sole:
+            transport.responses[PULL_COMMENTS] = [comment]
+        else:
+            transport.responses[PULL_COMMENTS].append(comment)
+        return transport, comment_id, document
+    if kind == "affirmed-brief":
+        comment_id = 32 if sole else 33
+        body = marker_comment_body(kind, text, None).replace("\n", newline)
+        brief = record(author, body, id=comment_id)
+        transport, document = mechanical_proof_scenario(brief=brief if sole else None)
+        if not sole:
+            transport.responses[WORK_COMMENTS].append(brief)
+        return transport, comment_id, document
+    comment_id = 777
+    endpoint = PULL_COMMENTS if surface == "pull-request-comment" else WORK_COMMENTS
+    if not sole:
+        named = 32
+    else:
+        named = pointer if pointer is not None else comment_id
+    if kind == "use":
+        use = {
+            "required": True,
+            "classification": "required",
+            "evidence_head": HEAD,
+            "applicability": "current-head",
+            "source": source_pointer(surface, named),
+            "intervening_commits": [],
+            "reason": None,
+        }
+        transport, document = proof_scenario(document_patch={"use": use})
+        transport.responses[f"repos/{REPO}/pulls/17/files?per_page=100"] = [
+            {"filename": "src/main.ts"}
+        ]
+        if not sole:
+            transport.responses[endpoint].append(use_note(id=named))
+    else:
+        transport, document = proof_scenario()
+        document["floor"]["source"] = source_pointer(surface, named)
+        transport.responses[WORK_COMMENTS] = []
+        if not sole:
+            transport.responses[endpoint].append(record(OWNER, GATE_MARKERS["floor"], id=named))
+        replace_proof_document(transport, document)
+    body = marker_comment_body(kind, text, None).replace("\n", newline)
+    transport.responses[endpoint].append(record(author, body, id=comment_id))
+    return transport, comment_id, document
+
+
+def set_aside_line(kind, surface, comment_id):
+    place = (
+        f"pull-request comment #{comment_id}"
+        if surface == "pull-request-comment"
+        else f"work-issue comment #{comment_id} on {REPO}#12"
+    )
+    return f"diagnostic: {kind} marker in {place} {SET_ASIDE_TAIL}"
+
+
+def set_aside_lines(output):
+    return [line for line in output.splitlines() if SET_ASIDE_TAIL in line]
+
+
+def assert_supplies_no_evidence(kind, surface, text):
+    transport, comment_id, _document = marker_world(kind, surface, text, sole=True)
+    result, output = execute(transport)
+
+    assert result == 1, output
+    lines = output.splitlines()
+    if kind == "proof":
+        assert "missing: an authorized current-head proof document" in lines
+        assert "selected proof-v1 comment" not in output
+    elif kind == "affirmed-brief":
+        assert (
+            "missing: an exact attribute-free tradecraft:affirmed-brief:v1 marker opening "
+            f"issue-comment #{comment_id}"
+        ) in lines
+        assert "verified: owner-affirmed mechanical lane" not in output
+    else:
+        noun = "public use source" if kind == "use" else "floor source"
+        assert any(line.startswith(f"missing: an authorized valid {noun}: ") for line in lines)
+        if kind == "use":
+            assert "public use source is current-head" not in output
+        else:
+            assert f"floor source {surface} #{comment_id}" not in output
+        # A stale pointer's remedy never offers the comment as an existing match.
+        transport, _comment_id, _document = marker_world(
+            kind, surface, text, sole=True, pointer=999
+        )
+        stale_result, stale_output = execute(transport)
+        assert stale_result == 1
+        assert f"#{comment_id} already exists" not in stale_output
+        assert f"recompose proof from {surface} #{comment_id}" not in stale_output
+        assert "record is missing" in stale_output
+    return output
+
+
+def assert_raises_no_failure(kind, surface, text):
+    transport, comment_id, _document = marker_world(kind, surface, text, sole=False)
+    result, output = execute(transport)
+
+    assert result == 0, output
+    assert "competing comments" not in output
+    if kind == "affirmed-brief":
+        assert "issue-comment #32 exempts use" in output
+    return output
+
+
+def test_use_note_quoting_a_proof_envelope_beside_a_valid_proof_passes():
+    # A use note quoting the proof envelope in inline code is not a second proof document.
+    note = record(
+        OWNER,
+        f"{GATE_MARKERS['use']}\n\nThe holder read proof "
+        f"`<!-- tradecraft:proof:v1 head={HEAD} -->` before this session.",
+        id=777,
+    )
+    transport, _document = proof_scenario(extra_comments=(note,))
+
+    result, output = execute(transport)
+
+    assert result == 0, output
+    assert "competing comments" not in output
+    assert "verified: selected proof-v1 comment #501" in output.splitlines()
+    assert not [line for line in output.splitlines() if "#777" in line]
+
+
+@pytest.mark.parametrize("placement", ("first-content", "after-prose"))
+@pytest.mark.parametrize("quotation", tuple(QUOTATIONS))
+@pytest.mark.parametrize(("kind", "surface"), KIND_SURFACES)
+def test_quoted_marker_supplies_no_evidence_and_raises_no_failure(
+    kind, surface, quotation, placement
+):
+    text = QUOTATIONS[quotation](GATE_MARKERS[kind])
+    if placement == "after-prose":
+        text = f"Holder reading of the evidence.\n\n{text}"
+
+    no_evidence = assert_supplies_no_evidence(kind, surface, text)
+    no_failure = assert_raises_no_failure(kind, surface, text)
+
+    assert set_aside_lines(no_evidence) == []
+    assert set_aside_lines(no_failure) == []
+
+
+@pytest.mark.parametrize("misplacement", tuple(MISPLACEMENTS))
+@pytest.mark.parametrize(("kind", "surface"), KIND_SURFACES)
+def test_marker_that_does_not_open_its_comment_supplies_no_evidence(
+    kind, surface, misplacement
+):
+    text = MISPLACEMENTS[misplacement](kind, GATE_MARKERS[kind])
+
+    no_evidence = assert_supplies_no_evidence(kind, surface, text)
+    no_failure = assert_raises_no_failure(kind, surface, text)
+
+    sole_id = 32 if kind == "affirmed-brief" else 777
+    later_id = 33 if kind == "affirmed-brief" else 777
+    assert set_aside_line(kind, surface, sole_id) in no_evidence.splitlines()
+    assert set_aside_line(kind, surface, later_id) in no_failure.splitlines()
+
+
+@pytest.mark.parametrize(
+    ("prefix", "newline"),
+    (
+        ("\n\n", "\n"),
+        (" \n\t\n   \n", "\n"),
+        ("\n\n", "\r\n"),
+        (" ", "\n"),
+        ("  ", "\n"),
+        ("   ", "\r\n"),
+    ),
+    ids=("blank-lines", "whitespace-lines", "crlf-blank-lines", "indent-1", "indent-2", "indent-3-crlf"),
+)
+@pytest.mark.parametrize(("kind", "surface"), KIND_SURFACES)
+def test_marker_opening_its_comment_after_blank_lines_or_a_short_indent_counts(
+    kind, surface, prefix, newline
+):
+    transport, comment_id, _document = marker_world(
+        kind, surface, prefix + GATE_MARKERS[kind], sole=True, newline=newline
+    )
+
+    result, output = execute(transport)
+
+    assert result == 0, output
+    assert set_aside_lines(output) == []
+    if kind == "proof":
+        assert f"verified: selected proof-v1 comment #{comment_id}" in output.splitlines()
+    elif kind == "use":
+        assert "public use source is current-head" in output
+    elif kind == "floor":
+        assert f"verified: floor source {surface} #{comment_id} is authorized and current-head" in output
+    else:
+        assert f"issue-comment #{comment_id} exempts use" in output
+
+
+def test_misplaced_use_marker_is_named_without_changing_the_verdict():
+    heading = f"## Use session\n\n{GATE_MARKERS['use']}"
+    transport, _comment_id, _document = marker_world("use", "pull-request-comment", heading, sole=True)
+    result, output = execute(transport)
+    line = (
+        f"diagnostic: use marker in pull-request comment #777 {SET_ASIDE_TAIL}"
+    )
+
+    assert result == 1
+    assert line in output.splitlines()
+
+    transport, _comment_id, _document = marker_world(
+        "use", "pull-request-comment", "## Use session", sole=True
+    )
+    bare_result, bare_output = execute(transport)
+
+    assert bare_result == result
+    assert line not in bare_output.splitlines()
+
+    def verdict(text):
+        return [
+            item for item in text.splitlines()
+            if item.startswith(("missing:", "satisfy:"))
+        ]
+
+    assert verdict(bare_output) == verdict(output)
+
+    transport, _comment_id, _document = marker_world("use", "pull-request-comment", heading, sole=False)
+    passing_result, passing_output = execute(transport)
+
+    assert passing_result == 0, passing_output
+    assert line in passing_output.splitlines()
+
+
+@pytest.mark.parametrize(
+    ("author", "marker"),
+    (
+        ("stranger", GATE_MARKERS["use"]),
+        (OWNER, f"<!-- tradecraft:no-use:v1 head={HEAD} -->"),
+        (OWNER, "<!-- tradecraft:builder-session:v1 session=abc -->"),
+    ),
+    ids=("unauthorized-author", "no-use-kind", "builder-session-kind"),
+)
+@pytest.mark.parametrize("surface", ("pull-request-comment", "issue-comment"))
+def test_set_aside_line_is_only_for_authorized_gate_marker_kinds(author, marker, surface):
+    transport, _comment_id, _document = marker_world(
+        "use", surface, f"## Note\n\n{marker}", sole=False, author=author
+    )
+
+    result, output = execute(transport)
+
+    assert result == 0, output
+    assert set_aside_lines(output) == []
+
+
+def test_work_issue_that_is_the_pull_request_lists_only_pull_request_kinds():
+    transport, document = proof_scenario()
+    document["identity"]["issue"] = 17
+    document["identity"]["work"] = f"{REPO}#17"
+    replace_proof_document(transport, document)
+    transport.responses[PULL_COMMENTS].append(record(
+        OWNER,
+        f"## Note\n\n{GATE_MARKERS['floor']}\n\n{GATE_MARKERS['affirmed-brief']}",
+        id=777,
+    ))
+
+    _result, output = execute(transport)
+
+    # The pull request supplies no affirmed brief, so moving that marker up would not help.
+    assert set_aside_lines(output) == [
+        f"diagnostic: floor marker in pull-request comment #777 {SET_ASIDE_TAIL}",
+    ]
+
+
+@pytest.mark.parametrize("kind", ("review", "review-comment", "inline-review-comment"))
+def test_review_surfaces_are_not_use_sources(kind):
+    transport, _comment_id, document = marker_world(
+        "use", "issue-comment", GATE_MARKERS["use"], sole=True
+    )
+    document["use"]["source"] = {**source_pointer("issue-comment", 42), "kind": kind}
+    replace_proof_document(transport, document)
+    lawful = record(OWNER, GATE_MARKERS["use"], id=42, commit_id=HEAD)
+    if kind == "review":
+        transport.responses[f"repos/{REPO}/pulls/17/reviews?per_page=100"].append(lawful)
+    else:
+        transport.responses[f"repos/{REPO}/pulls/17/comments?per_page=100"].append(lawful)
+
+    result, output = execute(transport)
+
+    assert result == 1
+    assert (
+        f"missing: an authorized valid public use source: source kind {kind} is not an "
+        "accepted use surface; accepted surfaces are pull-request-comment and issue-comment"
+    ) in output.splitlines()
+    assert (
+        "satisfy: post the use marker as a pull-request comment or a work-issue comment and "
+        "recompose proof from it"
+    ) in output.splitlines()
+    assert "public use source is current-head" not in output
+
+
+@pytest.mark.parametrize("kind", ("review", "review-comment", "inline-review-comment"))
+def test_review_surfaces_are_not_floor_sources(kind):
+    transport, document = proof_scenario()
+    document["floor"]["source"] = {**source_pointer("issue-comment", 42), "kind": kind}
+    replace_proof_document(transport, document)
+    transport.responses[f"repos/{REPO}/pulls/17/reviews?per_page=100"].append(
+        record(OWNER, GATE_MARKERS["floor"], id=42, commit_id=HEAD)
+    )
+
+    result, output = execute(transport)
+
+    assert result == 1
+    assert (
+        f"missing: an authorized valid floor source: source kind {kind} is not an accepted "
+        "floor surface; accepted surfaces are pull-request-comment and issue-comment"
+    ) in output.splitlines()
+
+
+@pytest.mark.parametrize("stale_kind", ("review", "pull-request-comment"))
+def test_stale_use_pointer_remedy_never_offers_a_review(stale_kind):
+    transport, _comment_id, document = marker_world(
+        "use", "issue-comment", GATE_MARKERS["use"], sole=True
+    )
+    transport.responses[WORK_COMMENTS].pop()
+    document["use"]["source"] = {**source_pointer("issue-comment", 999), "kind": stale_kind}
+    replace_proof_document(transport, document)
+    transport.responses[f"repos/{REPO}/pulls/17/reviews?per_page=100"].append(
+        record(OWNER, GATE_MARKERS["use"], id=42, commit_id=HEAD)
+    )
+
+    result, output = execute(transport)
+
+    assert result == 1
+    assert "#42" not in output
+    assert "already exists" not in output
+
+
+@pytest.mark.parametrize(("kind", "surface"), [pair for pair in KIND_SURFACES if pair[0] in {"use", "floor"}])
+def test_stale_pointer_remedy_offers_an_opening_marker_on_the_same_surface(kind, surface):
+    transport, comment_id, _document = marker_world(
+        kind, surface, GATE_MARKERS[kind], sole=True, pointer=999
+    )
+
+    result, output = execute(transport)
+
+    assert result == 1
+    assert f"document pointer is stale; matching {surface} #{comment_id} already exists" in output
+    assert f"recompose proof from {surface} #{comment_id} instead of posting a duplicate" in output
+
+
+@pytest.mark.parametrize(("kind", "surface"), [pair for pair in KIND_SURFACES if pair[0] in {"use", "floor"}])
+def test_use_and_floor_markers_on_comment_surfaces_still_count(kind, surface):
+    transport, _comment_id, _document = marker_world(kind, surface, GATE_MARKERS[kind], sole=True)
+
+    result, output = execute(transport)
+
+    assert result == 0, output
 
 
 def test_complete_proof_document_passes_and_keeps_local_records_declared():
@@ -1884,8 +2311,9 @@ def test_invalid_selected_json_reports_comment_position_and_no_legacy_fallback()
     endpoint = f"repos/{REPO}/issues/17/comments?per_page=100"
     transport.responses[endpoint][0] = record(
         OWNER,
+        # A blank first line still lets the envelope open the comment.
         "\n".join((
-            "Readable prefix",
+            "",
             f"<!-- tradecraft:proof:v1 head={HEAD} -->",
             "```json",
             "{",
