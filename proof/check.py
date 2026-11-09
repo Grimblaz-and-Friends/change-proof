@@ -19,13 +19,18 @@ import urllib.request
 
 
 MARKER = re.compile(r"<!--\s*+tradecraft:([a-z-]+):v1(?:\s++([^>]*))?-->", re.I)
-# The marker kinds the gate reads from each comment surface. A comment claims only the unquoted
-# marker that is its whole first line (README.md, "Evidence contract", decisions in force).
+# The pull-request and work-issue sweeps read different surfaces, so each names the kinds the
+# gate takes from its surface (README.md, "Evidence contract").
 PULL_REQUEST_MARKER_KINDS = ("proof", "use", "floor")
 WORK_ISSUE_MARKER_KINDS = ("use", "floor", "affirmed-brief")
 # Use and floor come only from comments, the surfaces the practice entrance reads them from
-# (README.md, "Evidence contract", decisions in force).
-USE_FLOOR_SOURCE_KINDS = frozenset({"pull-request-comment", "issue-comment"})
+# (README.md, "Evidence contract", decisions in force). Each kind maps to its name in remedies.
+USE_FLOOR_SOURCE_KINDS = {
+    "pull-request-comment": "a pull-request comment",
+    "issue-comment": "a work-issue comment",
+}
+USE_FLOOR_SURFACES = " and ".join(USE_FLOOR_SOURCE_KINDS)
+USE_FLOOR_SURFACE_NAMES = " or ".join(USE_FLOOR_SOURCE_KINDS.values())
 ATTRIBUTE = re.compile(r"([a-z_]+)=([^\s]+)", re.I)
 REVIEW_RISK_LINE = re.compile(
     r"^Review risk:\s*(ordinary|elevated|critical)\s*$", re.I | re.M
@@ -850,9 +855,6 @@ def _opening_span(text: str) -> tuple[int, int] | None:
             leading = len(line) - len(line.lstrip())
             return offset + leading, offset + len(line.rstrip())
         offset += len(line_with_end)
-    if text.strip():
-        leading = len(text) - len(text.lstrip())
-        return leading, len(text.rstrip())
     return None
 
 
@@ -3041,10 +3043,8 @@ def evaluate_document(
     elif str(source["kind"]).lower() not in USE_FLOOR_SOURCE_KINDS:
         failures.append(Finding(
             f"an authorized valid floor source: source kind {_safe_text(source['kind'])} is not "
-            "an accepted floor surface; accepted surfaces are pull-request-comment and "
-            "issue-comment",
-            "post the floor marker as a pull-request comment or a work-issue comment and "
-            "recompose proof from it",
+            f"an accepted floor surface; accepted surfaces are {USE_FLOOR_SURFACES}",
+            f"post the floor marker as {USE_FLOOR_SURFACE_NAMES} and recompose proof from it",
         ))
     else:
         record, source_error = _resolve_source(
@@ -3215,9 +3215,8 @@ def evaluate_document(
             failures.append(Finding(
                 f"an authorized valid public use source: source kind "
                 f"{_safe_text(use_source['kind'])} is not an accepted use surface; accepted "
-                "surfaces are pull-request-comment and issue-comment",
-                "post the use marker as a pull-request comment or a work-issue comment and "
-                "recompose proof from it",
+                f"surfaces are {USE_FLOOR_SURFACES}",
+                f"post the use marker as {USE_FLOOR_SURFACE_NAMES} and recompose proof from it",
             ))
         else:
             record, source_error = _resolve_source(
