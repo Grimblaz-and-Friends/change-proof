@@ -1103,6 +1103,230 @@ jobs:
               return reason is None
 
 
+          @dataclass(frozen=True)
+          class UseSourceReading:
+              """What a resolved use source opens with, and every fact that keeps it from counting."""
+
+              form: str | None
+              found: str
+              facts: tuple[str, ...]
+              marker: MarkerRecord | None
+              unread_attributes: tuple[str, ...] = ()
+
+
+          def _marker_noun(name: str) -> str:
+              return f"{'an' if name[:1] in 'aeio' else 'a'} {_safe_text(name)} marker"
+
+
+          def _attribute_fact(attributes: Mapping[str, str], name: str, wanted: str) -> list[str]:
+              value = attributes.get(name)
+              if value is None:
+                  return [f"{name} is absent"]
+              if value != wanted:
+                  return [f"{name}={_safe_text(value)}, not {name}={wanted}"]
+              return []
+
+
+          def _head_fact(attributes: Mapping[str, str], evidence_head: str) -> list[str]:
+              value = attributes.get("head")
+              if value is None:
+                  return ["head is absent"]
+              if value != evidence_head:
+                  return [f"head={_safe_text(value)}, not the evidence head {_safe_text(evidence_head)}"]
+              return []
+
+
+          def _staffing_facts(attributes: Mapping[str, str]) -> list[str]:
+              status = attributes.get("staffing_status")
+              reason = attributes.get("same_vendor_reason")
+              if status is None:
+                  return ["staffing_status is absent"]
+              if status not in {"qualified", "degraded"}:
+                  return [f"staffing_status={_safe_text(status)}, not qualified or degraded"]
+              if status == "degraded" and reason is None:
+                  return ["staffing_status=degraded without a same_vendor_reason"]
+              if status == "degraded" and SLUG.fullmatch(reason) is None:
+                  return [f"same_vendor_reason={_safe_text(reason)} is not a hyphenated slug"]
+              if status == "qualified" and reason is not None:
+                  return ["staffing_status=qualified with a same_vendor_reason"]
+              return []
+
+
+          def _use_marker_facts(marker: MarkerRecord, evidence_head: str) -> list[str]:
+              attributes = marker.attributes
+              facts: list[str] = []
+              if set(attributes) not in (
+                  {"head", "status", "changed", "staffing_status"},
+                  {"head", "status", "changed", "staffing_status", "same_vendor_reason"},
+              ):
+                  facts.append(
+                      "attributes are not head, status, changed, staffing_status[, same_vendor_reason]"
+                  )
+              facts.extend(_head_fact(attributes, evidence_head))
+              facts.extend(_attribute_fact(attributes, "status", "pass"))
+              changed = attributes.get("changed")
+              if changed is None:
+                  facts.append("changed is absent")
+              elif changed not in {"true", "false"}:
+                  facts.append(f"changed={_safe_text(changed)}, not true or false")
+              facts.extend(_staffing_facts(attributes))
+              return facts
+
+
+          # The attributes the entrance writes on a check report. Any other name is ignored and named in a
+          # diagnostic, so a report the entrance extends still counts (README.md, "Evidence contract").
+          REPORT_ATTRIBUTES = frozenset({
+              "stage", "dispatch", "head", "dispatch_sha256", "tree", "staffing_status",
+              "same_vendor_reason", "criterion", "row", "builder_vendor", "outcome",
+          })
+          SHA256_HEX = re.compile(r"[0-9a-f]{64}\Z")
+
+
+          def _report_attributes(raw: str) -> dict[str, str]:
+              # Read as the entrance splits them: ``ATTRIBUTE`` drops names with digits, such as
+              # ``dispatch_sha256``, and widening it would change what a use marker carries.
+              return {
+                  name.lower(): value
+                  for name, value in (part.split("=", 1) for part in raw.split() if "=" in part)
+              }
+
+
+          def _report_facts(attributes: Mapping[str, str], evidence_head: str) -> list[str]:
+              facts = _attribute_fact(attributes, "stage", "use")
+              facts.extend(_attribute_fact(attributes, "outcome", "success"))
+              facts.extend(_attribute_fact(attributes, "tree", "held"))
+              facts.extend(_head_fact(attributes, evidence_head))
+              facts.extend(_staffing_facts(attributes))
+              if not attributes.get("dispatch"):
+                  facts.append("dispatch is absent")
+              digest = attributes.get("dispatch_sha256")
+              if digest is None:
+                  facts.append("dispatch_sha256 is absent")
+              elif SHA256_HEX.fullmatch(digest) is None:
+                  facts.append(f"dispatch_sha256={_safe_text(digest)} is not a SHA-256 digest")
+              # A use report names neither; each belongs to an acceptance-criterion or row reader's report.
+              if "criterion" in attributes:
+                  facts.append(
+                      f"criterion={_safe_text(attributes['criterion'])} belongs to a criterion reader's report"
+                  )
+              if "row" in attributes:
+                  facts.append(f"row={_safe_text(attributes['row'])} belongs to a row reader's report")
+              vendor = attributes.get("builder_vendor")
+              if vendor is not None and vendor != "declared":
+                  facts.append(f"builder_vendor={_safe_text(vendor)}, not builder_vendor=declared")
+              return facts
+
+
+          def _unopened_marker_facts(body: str) -> list[str]:
+              """Say where a check report sits when no marker opens the comment.
+
+              Only the report is named: a misplaced ``use`` marker already has its own set-aside line, and a
+              note may quote one without changing the verdict.
+              """
+              masked = _mask_quotations(body)
+              unquoted = {match.span() for match in MARKER.finditer(masked)}
+              facts: list[str] = []
+              for match in MARKER.finditer(body):
+                  if match.group(1).lower() != "check-report":
+                      continue
+                  fact = (
+                      "a check-report marker that is not its comment's whole first nonblank line "
+                      "supplies no evidence"
+                      if match.span() in unquoted
+                      else "a quoted check-report marker supplies no evidence"
+                  )
+                  if fact not in facts:
+                      facts.append(fact)
+              return facts or ["no use marker or check-report marker opens the comment"]
+
+
+          def _read_use_source(
+              record: dict[str, object],
+              kind: str,
+              work_issue: object,
+              number: int,
+              evidence_head: str,
+              producers: frozenset[str],
+          ) -> UseSourceReading:
+              """Read one resolved use source as a ``use`` marker or a builder's use report.
+
+              A ``use`` marker is judged by ``_valid_use`` exactly as before; a report by the public facts
+              the entrance counts it by. The caller still applies the history rule (README.md, "Evidence
+              contract").
+              """
+              body = str(record.get("body") or "")
+              found_markers = markers([record])
+              marker = found_markers[0] if found_markers else None
+              author = _author(record)
+              author_facts = (
+                  []
+                  if author in producers
+                  else [f"author {_safe_text(author)} is not a configured marker producer"]
+              )
+              if marker is None:
+                  return UseSourceReading(None, "no marker", tuple(_unopened_marker_facts(body)), None)
+              found = _marker_noun(marker.name)
+              if marker.name == "use":
+                  facts = (
+                      []
+                      if _valid_use(marker, evidence_head)
+                      else _use_marker_facts(marker, evidence_head) or ["the use marker is not lawful"]
+                  )
+                  return UseSourceReading("use", found, tuple(facts + author_facts), marker)
+              if marker.name == "check-report":
+                  opening = _opening_marker(body)
+                  assert opening is not None
+                  attributes = _report_attributes(opening.group(2) or "")
+                  facts = _report_facts(attributes, evidence_head)
+                  # The entrance posts and counts reports only on the change's issue, never the pull request.
+                  if kind != "issue-comment" or work_issue == number:
+                      facts.append("a use report counts only as a comment on the work issue")
+                  unread = tuple(sorted(name for name in attributes if name not in REPORT_ATTRIBUTES))
+                  return UseSourceReading(
+                      "report", found, tuple(facts + author_facts), marker, unread
+                  )
+              return UseSourceReading(None, found, (f"{found} is not use evidence",), marker)
+
+
+          def _review_kind_use_diagnostic(
+              source: dict[str, object],
+              repo: str,
+              comments: list[dict[str, object]],
+              work_comments: list[dict[str, object]],
+              reviews: list[dict[str, object]],
+              review_comments: list[dict[str, object]],
+          ) -> str:
+              """Name what a use source of a refused kind holds, from records already fetched.
+
+              The kind's refusal line stays as it was; this line beside it says what the gate found there.
+              """
+              kind = _safe_text(source["kind"])
+              identity = _safe_text(_source_identity(source["id"]) or "without an id")
+              records = (
+                  _source_records(
+                      str(source["kind"]).lower(), comments, work_comments, reviews, review_comments
+                  )
+                  if str(source["repository"]).lower() == repo.lower()
+                  else None
+              )
+              record = next(
+                  (
+                      item
+                      for item in records or []
+                      if _source_identity(item.get("id")) == _source_identity(source["id"])
+                  ),
+                  None,
+              )
+              if record is None:
+                  return (
+                      f"use source {kind} #{identity} is on no fetched {kind} record, so the gate found "
+                      "nothing there"
+                  )
+              found_markers = markers([record])
+              found = _marker_noun(found_markers[0].name) if found_markers else "no marker"
+              return f"use source {kind} #{identity} opens with {found}; {kind} is not a use surface"
+
+
           def _commit_record(transport, repo: str, revision: str) -> CommitRecord:
               endpoint = f"repos/{repo}/commits/{revision}?per_page=100"
               value = transport.get(endpoint, paginate=True)
@@ -3258,27 +3482,65 @@ jobs:
                           f"surfaces are {USE_FLOOR_KIND_IDS}",
                           f"post the use marker as {USE_FLOOR_SURFACE_NAMES} and recompose proof from it",
                       ))
+                      # The refusal line above is pinned whole, so what the gate found there goes beside it.
+                      diagnostics.append(_review_kind_use_diagnostic(
+                          use_source, repo, comments, work_comments, reviews, review_comments
+                      ))
                   else:
                       record, source_error = _resolve_source(
                           use_source, repo, comments, work_comments, reviews, review_comments
                       )
-                      source_markers = markers([record]) if record is not None else []
-                      lawful_markers = [
-                          marker
-                          for marker in source_markers
-                          if _valid_use(marker, evidence_head)
-                      ]
+                      source_kind = str(use_source["kind"]).lower()
                       requires_unchanged = evidence_head != head
-                      applicable_markers = [
-                          marker
-                          for marker in lawful_markers
-                          if not requires_unchanged or marker.attributes.get("changed") == "false"
-                      ]
+
+                      def read_source(item: dict[str, object]) -> UseSourceReading:
+                          return _read_use_source(
+                              item,
+                              source_kind,
+                              identity["issue"],
+                              number,
+                              evidence_head,
+                              config.marker_producers,
+                          )
+
+                      def applicable(reading: UseSourceReading) -> bool:
+                          # A report carries no ``changed`` flag; what its use found is answered in the
+                          # builder's readiness record, so only the history rule decides its carry.
+                          return (
+                              reading.form is not None
+                              and not reading.facts
+                              and (
+                                  reading.form == "report"
+                                  or not requires_unchanged
+                                  or reading.marker is not None
+                                  and reading.marker.attributes.get("changed") == "false"
+                              )
+                          )
+
+                      reading = read_source(record) if record is not None else None
+                      surface_number = identity["issue"] if source_kind == "issue-comment" else number
+                      report_place = (
+                          f"{source_kind} #{_safe_text(_source_identity(use_source['id']))} "
+                          f"on {repo}#{surface_number}"
+                      )
+                      if reading is not None and reading.unread_attributes:
+                          diagnostics.append(
+                              f"use report {report_place} carries attribute(s) the gate does not read: "
+                              + ", ".join(_safe_text(name) for name in reading.unread_attributes)
+                          )
+                      # A lawful `use` marker refused only because an earlier head needs changed=false.
+                      unchanged_flag_missing = (
+                          requires_unchanged
+                          and reading is not None
+                          and reading.form == "use"
+                          and reading.marker is not None
+                          and _valid_use(reading.marker, evidence_head)
+                          and reading.marker.attributes.get("changed") != "false"
+                      )
                       valid_source = (
                           source_error is None
-                          and record is not None
-                          and _author(record) in config.marker_producers
-                          and bool(applicable_markers)
+                          and reading is not None
+                          and applicable(reading)
                       )
                       if not valid_source:
                           pointer_missing, alternate = _missing_source_pointer(
@@ -3288,17 +3550,7 @@ jobs:
                               work_comments,
                               reviews,
                               review_comments,
-                              lambda item: (
-                                  _author(item) in config.marker_producers
-                                  and any(
-                                      _valid_use(marker, evidence_head)
-                                      and (
-                                          not requires_unchanged
-                                          or marker.attributes.get("changed") == "false"
-                                      )
-                                      for marker in markers([item])
-                                  )
-                              ),
+                              lambda item: applicable(read_source(item)),
                           )
                           if pointer_missing and alternate is not None:
                               alternate_id = _source_identity(alternate.get("id"))
@@ -3312,7 +3564,7 @@ jobs:
                           elif pointer_missing:
                               detail = f"use record is missing: {source_error}"
                               remedy = "post a lawful use marker on its claimed surface and recompose proof"
-                          elif requires_unchanged and lawful_markers and not applicable_markers:
+                          elif unchanged_flag_missing:
                               detail = "ancestor use evidence requires an ancestor use marker with changed=false"
                               remedy = (
                                   "post current-head use evidence, or post an ancestor marker with "
@@ -3320,6 +3572,11 @@ jobs:
                               )
                           else:
                               detail = source_error or "marker is invalid or unauthorized"
+                              if source_error is None and reading is not None:
+                                  detail += (
+                                      f": {source_kind} #{_safe_text(_source_identity(use_source['id']))} "
+                                      f"opens with {reading.found}; " + "; ".join(reading.facts)
+                                  )
                               remedy = (
                                   "correct the document's use source, or post a lawful use marker when "
                                   "the public record itself is invalid, then recompose proof"
@@ -3334,6 +3591,11 @@ jobs:
                                   "current-head use evidence with no intervening history",
                                   "recompose proof from the current-head use record",
                               ))
+                          elif reading is not None and reading.form == "report":
+                              verified.append(
+                                  f"trusted policy requires use and the builder's use report {report_place} "
+                                  "is current-head"
+                              )
                           else:
                               verified.append("trusted policy requires use and the public use source is current-head")
                       else:
@@ -3362,10 +3624,16 @@ jobs:
                                   "post current-head use evidence or recompose proof with the complete applicable history",
                               ))
                           else:
-                              verified.append(
-                                  f"trusted policy requires use and ancestor evidence at {evidence_head} "
-                                  "remains applicable"
-                              )
+                              if reading is not None and reading.form == "report":
+                                  verified.append(
+                                      f"trusted policy requires use and the builder's use report "
+                                      f"{report_place} at {evidence_head} remains applicable"
+                                  )
+                              else:
+                                  verified.append(
+                                      f"trusted policy requires use and ancestor evidence at {evidence_head} "
+                                      "remains applicable"
+                                  )
                               verified.extend(application["carry_reasons"])
               else:
                   valid_generated = (

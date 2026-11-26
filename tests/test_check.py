@@ -1,11 +1,15 @@
 from __future__ import annotations
 
+import ast
 import base64
 import copy
 import hashlib
+import inspect
 import io
 import json
 import re
+import subprocess
+import sys
 import time
 from pathlib import Path
 
@@ -4293,3 +4297,668 @@ def test_transport_preserves_paginated_object_pages_in_order():
     ]
     assert [call[0].get_method() for call in opener.calls] == ["GET", "GET"]
     assert opener.calls[1][0].full_url == next_url
+
+
+# A builder's use report: the `check-report` comment the practice entrance posts on the change's
+# issue for a successful use seat. The recorded world is tradecraft pull request #1030, whose
+# proof names report 7173191455 on work issue #1014 and which the gate before this change refused.
+TC1030_REPO = "Grimblaz-and-Friends/tradecraft"
+TC1030_HEAD = "3f8f243f5d9ad63b4d58f2fc1585cce823aa5eac"
+TC1030_PROOF_ID = 7173428037
+TC1030_REPORT_ID = 7173191455
+TC1030_PULL_COMMENTS = f"repos/{TC1030_REPO}/issues/1030/comments?per_page=100"
+TC1030_WORK_COMMENTS = f"repos/{TC1030_REPO}/issues/1014/comments?per_page=100"
+TC1030_VERIFIED = (
+    "verified: trusted policy requires use and the builder's use report issue-comment "
+    f"#{TC1030_REPORT_ID} on {TC1030_REPO}#1014 is current-head"
+)
+USE_SOURCE_PREFIX = "missing: an authorized valid public use source: "
+USE_SOURCE_REFUSAL = f"{USE_SOURCE_PREFIX}marker is invalid or unauthorized"
+REPORT_MARKER_LINE = re.compile(r"<!-- tradecraft:check-report:v1 (.*?) -->")
+RECORDED = Path(__file__).parent / "fixtures" / "proof-v1" / "recorded"
+
+
+def tc1030_scenario():
+    return recorded_scenario("world-tc1030.trimmed.json", "tradecraft-1030.comment.md")
+
+
+def run_recorded(transport, environ):
+    output = io.StringIO()
+    result = check.run(environ, transport=transport, output=output)
+    return result, output.getvalue()
+
+
+def missing_lines(output):
+    return [line for line in output.splitlines() if line.startswith("missing:")]
+
+
+def tc1030_report(transport):
+    return next(
+        item for item in transport.responses[TC1030_WORK_COMMENTS]
+        if item["id"] == TC1030_REPORT_ID
+    )
+
+
+def with_attribute(parts, name, value):
+    """Set, add (before ``outcome``) or, with ``None``, remove one report attribute."""
+    kept = [part for part in parts if part.split("=", 1)[0] != name]
+    if value is None:
+        return kept
+    position = next(
+        (index for index, part in enumerate(parts) if part.split("=", 1)[0] == name),
+        None,
+    )
+    if position is None:
+        position = next(
+            index for index, part in enumerate(kept) if part.startswith("outcome=")
+        )
+    kept.insert(position, f"{name}={value}")
+    return kept
+
+
+def alter_tc1030_report(transport, **changes):
+    report = tc1030_report(transport)
+    match = REPORT_MARKER_LINE.match(report["body"])
+    parts = match.group(1).split()
+    for name, value in changes.items():
+        parts = with_attribute(parts, name, value)
+    report["body"] = (
+        f"<!-- tradecraft:check-report:v1 {' '.join(parts)} -->" + report["body"][match.end():]
+    )
+    return report
+
+
+def rewrite_tc1030_proof(transport, mutate):
+    proof = next(
+        item for item in transport.responses[TC1030_PULL_COMMENTS]
+        if item["id"] == TC1030_PROOF_ID
+    )
+    match = re.search(r"```json\n(.*?)\n```", proof["body"], re.S)
+    document = json.loads(match.group(1))
+    mutate(document)
+    proof["body"] = (
+        proof["body"][:match.start(1)]
+        + json.dumps(document, indent=2, sort_keys=True)
+        + proof["body"][match.end(1):]
+    )
+
+
+def test_tc1030_world_keeps_the_get_record_and_the_exact_producer_comments():
+    world = json.loads((RECORDED / "world-tc1030.trimmed.json").read_text(encoding="utf-8"))
+    responses = world["responses"]
+    comment = (RECORDED / "tradecraft-1030.comment.md").read_bytes()
+
+    assert "GET only" in world["provenance"]
+    assert world["reconstructions"] == []
+    assert (world["head"], world["base_tip"]) == (
+        TC1030_HEAD, "6f19efc3ea3599d3815d5c889df3f2079b9f7ae1"
+    )
+    assert world["proof_comment"] == {
+        "id": TC1030_PROOF_ID,
+        "author": "Grimblaz",
+        "index": 3,
+        "created_at": "2026-11-25T20:16:30Z",
+        "updated_at": "2026-11-25T20:16:30Z",
+    }
+    # The 20 endpoints the gate before this change read, and no other.
+    assert len(responses) == 20
+    assert all(endpoint.startswith(f"repos/{TC1030_REPO}/") for endpoint in responses)
+    assert hashlib.sha256(comment).hexdigest() == (
+        "fa9dc08a9ffe6f00d8ae63b8ad4602956ff45d1a81b0a8736322552c04439765"
+    )
+    assert len(comment) == 18479
+    proof = next(item for item in responses[TC1030_PULL_COMMENTS] if item["id"] == TC1030_PROOF_ID)
+    assert proof["body"].encode() == comment
+    report = next(
+        item for item in responses[TC1030_WORK_COMMENTS] if item["id"] == TC1030_REPORT_ID
+    )
+    assert hashlib.sha256(report["body"].encode()).hexdigest() == (
+        "a68b7d3b233f0d381b11432f5a19513fb9849ed0a4984dfa4075988c3c904189"
+    )
+    assert len(report["body"].encode()) == 20953
+    assert (report["user"]["login"], report["created_at"], report["updated_at"]) == (
+        "Grimblaz", "2026-11-25T20:06:04Z", "2026-11-25T20:06:04Z"
+    )
+
+
+def test_tc1030_builder_use_report_replay_passes():
+    transport, environ = tc1030_scenario()
+
+    result, output = run_recorded(transport, environ)
+
+    assert result == 0, output
+    assert output.splitlines()[0] == "change-proof: PASS"
+    assert missing_lines(output) == []
+    assert TC1030_VERIFIED in output.splitlines()
+    # Reading the report adds no GET: every read is one of the base gate's 20 endpoints.
+    world = json.loads((RECORDED / "world-tc1030.trimmed.json").read_text(encoding="utf-8"))
+    assert {endpoint for endpoint, _paginate in transport.calls} == set(world["responses"])
+
+
+def assert_one_report_refusal(output, opening, fact):
+    lines = missing_lines(output)
+    assert len(lines) == 1, output
+    assert lines[0].startswith(f"{USE_SOURCE_REFUSAL}: {opening};"), lines[0]
+    assert fact in lines[0], lines[0]
+    assert TC1030_VERIFIED not in output
+
+
+@pytest.mark.parametrize(
+    ("name", "value", "fact"),
+    (
+        ("stage", "cold-reader", "stage=cold-reader, not stage=use"),
+        ("outcome", "error", "outcome=error, not outcome=success"),
+        ("tree", "changed", "tree=changed, not tree=held"),
+        (
+            "head",
+            "0700deb2898e20024f6bd5cf2825926cabc70ef4",
+            "head=0700deb2898e20024f6bd5cf2825926cabc70ef4, not the evidence head "
+            f"{TC1030_HEAD}",
+        ),
+        ("same_vendor_reason", None, "staffing_status=degraded without a same_vendor_reason"),
+    ),
+    ids=("another-stage", "errored-outcome", "changed-tree", "another-commit", "degraded-no-reason"),
+)
+def test_tc1030_altered_report_is_refused_naming_what_was_found_and_the_fact(name, value, fact):
+    transport, environ = tc1030_scenario()
+    alter_tc1030_report(transport, **{name: value})
+
+    result, output = run_recorded(transport, environ)
+
+    assert result == 1
+    assert_one_report_refusal(
+        output, f"issue-comment #{TC1030_REPORT_ID} opens with a check-report marker", fact
+    )
+    assert name in missing_lines(output)[0]
+
+
+def test_tc1030_report_from_a_non_producer_supplies_no_use():
+    transport, environ = tc1030_scenario()
+    tc1030_report(transport)["user"]["login"] = "not-a-producer"
+    # Without the matching claimed author the source's author mismatch would fire first.
+    rewrite_tc1030_proof(
+        transport, lambda document: document["use"]["source"].update(author="not-a-producer")
+    )
+
+    result, output = run_recorded(transport, environ)
+
+    assert result == 1
+    assert_one_report_refusal(
+        output,
+        f"issue-comment #{TC1030_REPORT_ID} opens with a check-report marker",
+        "author not-a-producer is not a configured marker producer",
+    )
+
+
+@pytest.mark.parametrize(
+    ("placement", "fact"),
+    (
+        (lambda marker: f"> {marker}", "a quoted check-report marker supplies no evidence"),
+        (lambda marker: f"`{marker}`", "a quoted check-report marker supplies no evidence"),
+        (
+            lambda marker: f"## Note\n\n{marker}",
+            "a check-report marker that is not its comment's whole first nonblank line "
+            "supplies no evidence",
+        ),
+    ),
+    ids=("blockquote", "inline-code", "below-heading"),
+)
+def test_tc1030_report_that_is_quoted_or_does_not_open_its_comment_supplies_no_use(
+    placement, fact
+):
+    transport, environ = tc1030_scenario()
+    report = tc1030_report(transport)
+    match = REPORT_MARKER_LINE.match(report["body"])
+    report["body"] = placement(match.group(0)) + report["body"][match.end():]
+
+    result, output = run_recorded(transport, environ)
+
+    assert result == 1
+    assert_one_report_refusal(output, f"issue-comment #{TC1030_REPORT_ID} opens with no marker", fact)
+
+
+def test_tc1030_report_on_the_pull_request_does_not_count():
+    transport, environ = tc1030_scenario()
+    report = tc1030_report(transport)
+    transport.responses[TC1030_WORK_COMMENTS].remove(report)
+    transport.responses[TC1030_PULL_COMMENTS].append(report)
+    rewrite_tc1030_proof(
+        transport,
+        lambda document: document["use"]["source"].update(kind="pull-request-comment"),
+    )
+
+    result, output = run_recorded(transport, environ)
+
+    assert result == 1
+    assert_one_report_refusal(
+        output,
+        f"pull-request-comment #{TC1030_REPORT_ID} opens with a check-report marker",
+        "a use report counts only as a comment on the work issue",
+    )
+
+
+def use_report(head=HEAD, *, id=32, author=OWNER, **changes):
+    parts = [
+        "stage=use",
+        f"dispatch={'d' * 32}",
+        f"head={head}",
+        f"dispatch_sha256={'e' * 64}",
+        "tree=held",
+        "staffing_status=degraded",
+        "same_vendor_reason=owner-selected-claude-implementer",
+        "outcome=success",
+    ]
+    for name, value in changes.items():
+        parts = with_attribute(parts, name, value)
+    body = f"<!-- tradecraft:check-report:v1 {' '.join(parts)} -->\n\nUse session return."
+    return record(author, body, id=id)
+
+
+def current_head_report_scenario(*, issue=12, source_id=32):
+    use = {
+        "required": True,
+        "classification": "required",
+        "evidence_head": HEAD,
+        "applicability": "current-head",
+        "source": source_pointer("issue-comment", source_id),
+        "intervening_commits": [],
+        "reason": None,
+    }
+    transport, document = proof_scenario(document_patch={"use": use})
+    transport.responses[f"repos/{REPO}/pulls/17/files?per_page=100"] = [
+        {"filename": "src/main.ts"}
+    ]
+    if issue != 12:
+        document["identity"]["issue"] = issue
+        document["identity"]["work"] = f"{REPO}#{issue}"
+        replace_proof_document(transport, document)
+        # The floor marker moves with the work issue, so only the use source is in question.
+        transport.responses[PULL_COMMENTS].append(record(OWNER, GATE_MARKERS["floor"], id=31))
+    return transport, document
+
+
+def test_report_is_refused_when_the_work_issue_is_the_pull_request():
+    transport, _document = current_head_report_scenario(issue=17, source_id=777)
+    transport.responses[PULL_COMMENTS].append(use_report(id=777))
+
+    result, output = execute(transport)
+
+    assert result == 1, output
+    assert missing_lines(output) == [
+        f"{USE_SOURCE_REFUSAL}: issue-comment #777 opens with a check-report marker; "
+        "a use report counts only as a comment on the work issue"
+    ]
+    # The same comment carrying a `use` marker counts, so the surface refuses only the report.
+    transport.responses[PULL_COMMENTS][-1] = use_note(id=777)
+    use_result, use_output = execute(transport)
+    assert use_result == 0, use_output
+
+
+def test_current_head_report_on_the_work_issue_passes():
+    transport, _document = current_head_report_scenario()
+    transport.responses[WORK_COMMENTS].append(use_report())
+
+    result, output = execute(transport)
+
+    assert result == 0, output
+    assert (
+        "verified: trusted policy requires use and the builder's use report issue-comment #32 "
+        f"on {REPO}#12 is current-head"
+    ) in output.splitlines()
+
+
+@pytest.mark.parametrize("kind", ("review", "review-comment", "inline-review-comment"))
+def test_tc1030_report_on_a_review_kind_keeps_the_kind_refusal_and_names_what_was_found(kind):
+    transport, environ = tc1030_scenario()
+    body = tc1030_report(transport)["body"]
+    endpoint = (
+        f"repos/{TC1030_REPO}/pulls/1030/reviews?per_page=100"
+        if kind == "review"
+        else f"repos/{TC1030_REPO}/pulls/1030/comments?per_page=100"
+    )
+    transport.responses[endpoint].append(record(
+        "Grimblaz", body, id=42, commit_id=TC1030_HEAD, state="COMMENTED",
+        submitted_at="2026-11-25T20:06:04Z",
+    ))
+    rewrite_tc1030_proof(
+        transport, lambda document: document["use"]["source"].update(kind=kind, id=42)
+    )
+
+    result, output = run_recorded(transport, environ)
+
+    lines = output.splitlines()
+    assert result == 1
+    assert lines[0] == "change-proof: FAIL"
+    assert (
+        f"missing: an authorized valid public use source: source kind {kind} is not an "
+        "accepted use surface; accepted surfaces are pull-request-comment and issue-comment"
+    ) in lines
+    assert (
+        "satisfy: post the use marker as a pull-request comment or a work-issue comment and "
+        "recompose proof from it"
+    ) in lines
+    assert (
+        f"diagnostic: use source {kind} #42 opens with a check-report marker; {kind} is not a "
+        "use surface"
+    ) in lines
+
+    rewrite_tc1030_proof(transport, lambda document: document["use"]["source"].update(id=43))
+    result, output = run_recorded(transport, environ)
+
+    assert result == 1
+    assert (
+        f"diagnostic: use source {kind} #43 is on no fetched {kind} record, so the gate found "
+        "nothing there"
+    ) in output.splitlines()
+
+
+def test_tc1030_report_with_an_attribute_the_gate_does_not_read_still_counts():
+    transport, environ = tc1030_scenario()
+    alter_tc1030_report(transport, later_attribute="x")
+
+    result, output = run_recorded(transport, environ)
+
+    assert result == 0, output
+    assert missing_lines(output) == []
+    assert TC1030_VERIFIED in output.splitlines()
+    assert (
+        f"diagnostic: use report issue-comment #{TC1030_REPORT_ID} on {TC1030_REPO}#1014 "
+        "carries attribute(s) the gate does not read: later_attribute"
+    ) in output.splitlines()
+
+
+@pytest.mark.parametrize(
+    ("changes", "fact"),
+    (
+        ({"criterion": "C1"}, "criterion=C1 belongs to a criterion reader's report"),
+        ({"row": "1"}, "row=1 belongs to a row reader's report"),
+        ({"builder_vendor": "observed"}, "builder_vendor=observed, not builder_vendor=declared"),
+        ({"dispatch": None}, "dispatch is absent"),
+        ({"dispatch_sha256": "unknown"}, "dispatch_sha256=unknown is not a SHA-256 digest"),
+        ({"tree": None}, "tree is absent"),
+        ({"outcome": None}, "outcome is absent"),
+        ({"staffing_status": "qualified"}, "staffing_status=qualified with a same_vendor_reason"),
+        ({"staffing_status": "partial"}, "staffing_status=partial, not qualified or degraded"),
+    ),
+    ids=(
+        "criterion", "row", "builder-vendor", "no-dispatch", "unknown-digest", "no-tree",
+        "no-outcome", "qualified-with-reason", "unknown-staffing",
+    ),
+)
+def test_tc1030_malformed_report_is_refused_naming_the_attribute(changes, fact):
+    transport, environ = tc1030_scenario()
+    alter_tc1030_report(transport, **changes)
+
+    result, output = run_recorded(transport, environ)
+
+    assert result == 1
+    assert_one_report_refusal(
+        output, f"issue-comment #{TC1030_REPORT_ID} opens with a check-report marker", fact
+    )
+
+
+def test_tc1030_hand_started_builders_declared_vendor_report_counts():
+    transport, environ = tc1030_scenario()
+    alter_tc1030_report(
+        transport, same_vendor_reason="declared-builder-vendor", builder_vendor="declared"
+    )
+
+    result, output = run_recorded(transport, environ)
+
+    assert result == 0, output
+    assert TC1030_VERIFIED in output.splitlines()
+    # The gate cannot read whether the builder was hand-started, so it verifies no such claim.
+    assert not [
+        line for line in output.splitlines()
+        if line.startswith("verified:") and "builder_vendor" in line
+    ]
+
+
+@pytest.mark.parametrize(
+    ("text", "opening", "fact"),
+    (
+        (
+            f"<!-- tradecraft:use:v1 head={HEAD} status=fail changed=false "
+            "staffing_status=qualified -->",
+            "a use marker",
+            "status=fail, not status=pass",
+        ),
+        (
+            f"<!-- tradecraft:use:v1 head={ANCESTOR} status=pass changed=false "
+            "staffing_status=qualified -->",
+            "a use marker",
+            f"head={ANCESTOR}, not the evidence head {HEAD}",
+        ),
+        (
+            f"<!-- tradecraft:use:v1 head={HEAD} status=pass changed=false "
+            "staffing_status=degraded -->",
+            "a use marker",
+            "staffing_status=degraded without a same_vendor_reason",
+        ),
+        (
+            f"<!-- tradecraft:use:v1 head={HEAD} status=pass changed=false "
+            "staffing_status=qualified extra=1 -->",
+            "a use marker",
+            "attributes are not head, status, changed, staffing_status[, same_vendor_reason]",
+        ),
+        (GATE_MARKERS["floor"], "a floor marker", "a floor marker is not use evidence"),
+        ("Use session note.", "no marker", "no use marker or check-report marker opens the comment"),
+    ),
+    ids=("status", "head", "degraded-no-reason", "attribute-set", "floor-marker", "no-marker"),
+)
+def test_refused_use_marker_line_names_what_was_found_and_the_fact(text, opening, fact):
+    transport, _comment_id, _document = marker_world("use", "issue-comment", text, sole=True)
+
+    result, output = execute(transport)
+
+    assert result == 1
+    assert missing_lines(output) == [
+        f"{USE_SOURCE_REFUSAL}: issue-comment #777 opens with {opening}; {fact}"
+    ]
+
+
+@pytest.mark.parametrize("head", (HEAD, ANCESTOR))
+@pytest.mark.parametrize("status", ("pass", "fail", None))
+@pytest.mark.parametrize("changed", ("true", "false", "maybe", None))
+@pytest.mark.parametrize(
+    ("staffing", "reason"),
+    (
+        ("qualified", None), ("qualified", "owner-choice"), ("degraded", None),
+        ("degraded", "owner-choice"), ("degraded", "-bad-"), ("partial", None), (None, None),
+    ),
+)
+@pytest.mark.parametrize("extra", (False, True))
+def test_use_marker_facts_are_empty_exactly_when_the_marker_is_lawful(
+    head, status, changed, staffing, reason, extra
+):
+    attributes = {
+        name: value
+        for name, value in (
+            ("head", head), ("status", status), ("changed", changed),
+            ("staffing_status", staffing), ("same_vendor_reason", reason),
+        )
+        if value is not None
+    }
+    if extra:
+        attributes["extra"] = "1"
+    marker = check.MarkerRecord("use", attributes, "", OWNER)
+
+    assert check._valid_use(marker, HEAD) == (check._use_marker_facts(marker, HEAD) == [])
+
+
+def ancestor_report_scenario():
+    transport = ancestor_proof_scenario()
+    transport.responses[WORK_COMMENTS][-1] = use_report(ANCESTOR)
+    return transport
+
+
+def test_report_at_an_earlier_commit_carries_over_a_commit_that_buys_no_use():
+    transport = ancestor_report_scenario()
+
+    result, output = execute(transport)
+
+    assert result == 0, output
+    lines = output.splitlines()
+    assert (
+        "verified: trusted policy requires use and the builder's use report issue-comment #32 "
+        f"on {REPO}#12 at {ANCESTOR} remains applicable"
+    ) in lines
+    assert (
+        f"verified: intervening commit {COMMIT_ONE} carries use: changes no use-buying path"
+    ) in lines
+
+
+def test_report_at_an_earlier_commit_is_staled_by_an_authored_use_buying_commit():
+    transport, _document = carried_case("proof-v1", kind="owned", files=[{"filename": "src/main.ts"}])
+    transport.responses[WORK_COMMENTS][-1] = use_report(ANCESTOR)
+
+    result, output = execute(transport)
+
+    assert result == 1
+    lines = missing_lines(output)
+    assert len(lines) == 1, output
+    assert lines[0].startswith("missing: applicable complete ancestor-use history: ")
+    assert ANCESTOR in lines[0] and COMMIT_ONE in lines[0] and "src/main.ts" in lines[0]
+    assert USE_SOURCE_PREFIX not in output
+
+
+@pytest.mark.parametrize("kind", ("base", "merge", "owned"))
+@pytest.mark.parametrize("path", ("src/other.ts", "src/main.ts", "docs/guide.md"))
+def test_report_and_marker_carry_alike_by_base_membership_or_merge(kind, path):
+    marker_transport, _ = carried_case("proof-v1", files=[{"filename": path}], kind=kind)
+    report_transport, _ = carried_case("proof-v1", files=[{"filename": path}], kind=kind)
+    report_transport.responses[WORK_COMMENTS][-1] = use_report(ANCESTOR)
+
+    marker_result, marker_output = execute(marker_transport)
+    report_result, report_output = execute(report_transport)
+
+    assert report_result == marker_result
+    assert missing_lines(report_output) == missing_lines(marker_output)
+    allowed = path == "docs/guide.md" or (kind != "owned" and path == "src/other.ts")
+    assert report_result == (0 if allowed else 1)
+
+
+DRIVER = """\
+import importlib.util
+import io
+import json
+import sys
+
+spec = importlib.util.spec_from_file_location("check", sys.argv[1])
+check = importlib.util.module_from_spec(spec)
+sys.modules["check"] = check
+spec.loader.exec_module(check)
+
+
+class Transport:
+    def __init__(self, responses):
+        self.responses = responses
+
+    def get(self, endpoint, *, paginate=False):
+        return self.responses[endpoint]
+
+
+with open(sys.argv[2], encoding="utf-8") as handle:
+    world = json.load(handle)
+output = io.StringIO()
+result = check.run(world["environ"], transport=Transport(world["responses"]), output=output)
+print(result)
+print(output.getvalue())
+"""
+
+
+def test_checker_runs_as_a_lone_byte_copy_in_a_fresh_interpreter(tmp_path):
+    source = Path(__file__).resolve().parents[1] / "proof" / "check.py"
+    copied = tmp_path / "check.py"
+    copied.write_bytes(source.read_bytes())
+    transport, _document = current_head_report_scenario()
+    transport.responses[WORK_COMMENTS].append(use_report())
+    world = tmp_path / "world.json"
+    world.write_text(
+        json.dumps({"environ": environment(), "responses": transport.responses}),
+        encoding="utf-8",
+    )
+    driver = tmp_path / "driver.py"
+    driver.write_text(DRIVER, encoding="utf-8")
+
+    completed = subprocess.run(
+        [sys.executable, "-I", str(driver), str(copied), str(world)],
+        cwd=tmp_path, stdin=subprocess.DEVNULL, capture_output=True, text=True,
+        encoding="utf-8", timeout=120,
+    )
+
+    assert completed.returncode == 0, completed.stderr
+    lines = completed.stdout.splitlines()
+    assert lines[:2] == ["0", "change-proof: PASS"], completed.stdout
+    parameters = [
+        (parameter.name, parameter.kind, parameter.default)
+        for parameter in inspect.signature(check.run).parameters.values()
+    ]
+    assert parameters == [
+        ("environ", inspect.Parameter.POSITIONAL_OR_KEYWORD, None),
+        ("transport", inspect.Parameter.KEYWORD_ONLY, None),
+        ("output", inspect.Parameter.KEYWORD_ONLY, None),
+        ("observed_at", inspect.Parameter.KEYWORD_ONLY, None),
+    ]
+    imported = set()
+    for node in ast.walk(ast.parse(source.read_text(encoding="utf-8"))):
+        if isinstance(node, ast.Import):
+            imported.update(alias.name.split(".")[0] for alias in node.names)
+        elif isinstance(node, ast.ImportFrom):
+            imported.add((node.module or "").split(".")[0])
+    assert imported <= set(sys.stdlib_module_names) | {"__future__"}
+
+
+README_REPORT_PLACEHOLDERS = (
+    ("FACT[; FACT…]", ".+"),
+    ("NAME[, NAME]", ".+"),
+    ("OWNER/REPO", r"[\w.-]+/[\w.-]+"),
+    ("EVIDENCE_HEAD", "[0-9a-f]{40}"),
+    ("FOUND", "(?:an? [a-z-]+ marker|no marker)"),
+    ("KIND", "[a-z-]+"),
+    ("#ID", r"#\d+"),
+    ("#N", r"#\d+"),
+)
+
+
+def readme_report_lines():
+    readme = (Path(__file__).resolve().parents[1] / "README.md").read_text(encoding="utf-8")
+    lead = "A builder's use report produces these lines:"
+    block = readme.split(lead, 1)[1].split("```text\n", 1)[1].split("\n```", 1)[0]
+    return block.splitlines()
+
+
+def readme_line_pattern(line):
+    pattern = re.escape(line)
+    for placeholder, replacement in README_REPORT_PLACEHOLDERS:
+        pattern = pattern.replace(re.escape(placeholder), replacement)
+    return re.compile(pattern)
+
+
+def test_readme_report_example_lines_are_lines_the_gate_prints():
+    outputs = []
+    transport, environ = tc1030_scenario()
+    outputs.append(run_recorded(transport, environ)[1])
+    outputs.append(execute(ancestor_report_scenario())[1])
+    transport, environ = tc1030_scenario()
+    alter_tc1030_report(transport, later_attribute="x", tree="changed")
+    outputs.append(run_recorded(transport, environ)[1])
+    for source_id in (TC1030_REPORT_ID, 43):
+        transport, environ = tc1030_scenario()
+        rewrite_tc1030_proof(
+            transport,
+            lambda document, source_id=source_id: document["use"]["source"].update(
+                kind="review", id=source_id
+            ),
+        )
+        transport.responses[f"repos/{TC1030_REPO}/pulls/1030/reviews?per_page=100"].append(
+            record("Grimblaz", tc1030_report(transport)["body"], id=TC1030_REPORT_ID)
+        )
+        outputs.append(run_recorded(transport, environ)[1])
+    printed = [line for output in outputs for line in output.splitlines()]
+
+    examples = readme_report_lines()
+    assert len(examples) == 6
+    for example in examples:
+        pattern = readme_line_pattern(example)
+        assert any(pattern.fullmatch(line) for line in printed), example
