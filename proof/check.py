@@ -1261,6 +1261,27 @@ def _read_use_source(
     return UseSourceReading(None, found, (f"{found} is not use evidence",), marker)
 
 
+def _claimed_record(
+    source: dict[str, object],
+    repo: str,
+    comments: list[dict[str, object]],
+    work_comments: list[dict[str, object]],
+    reviews: list[dict[str, object]],
+    review_comments: list[dict[str, object]],
+) -> dict[str, object] | None:
+    """Return the fetched record a source names, whoever wrote it, or None when none is held."""
+    if str(source["repository"]).lower() != repo.lower():
+        return None
+    records = _source_records(
+        str(source["kind"]).lower(), comments, work_comments, reviews, review_comments
+    )
+    identity = _source_identity(source["id"])
+    return next(
+        (item for item in records or [] if _source_identity(item.get("id")) == identity),
+        None,
+    )
+
+
 def _review_kind_use_diagnostic(
     source: dict[str, object],
     repo: str,
@@ -1276,21 +1297,7 @@ def _review_kind_use_diagnostic(
     """
     kind = _safe_text(source["kind"])
     identity = _safe_text(_source_identity(source["id"]) or "without an id")
-    records = (
-        _source_records(
-            str(source["kind"]).lower(), comments, work_comments, reviews, review_comments
-        )
-        if str(source["repository"]).lower() == repo.lower()
-        else None
-    )
-    record = next(
-        (
-            item
-            for item in records or []
-            if _source_identity(item.get("id")) == _source_identity(source["id"])
-        ),
-        None,
-    )
+    record = _claimed_record(source, repo, comments, work_comments, reviews, review_comments)
     if record is None:
         return (
             f"use source {kind} #{identity} is on no fetched {kind} record, so the gate found "
@@ -3560,11 +3567,13 @@ def evaluate_document(
                         "the public record itself is invalid, then recompose proof"
                     )
                     # The entrance composes a report's proof from a new report, never a marker.
-                    if (
-                        reading is not None
-                        and reading.marker is not None
-                        and reading.marker.name == "check-report"
-                    ):
+                    # The record is read here whoever wrote it, so a refusal for a mismatched
+                    # claimed author still names the report's remedy.
+                    claimed = record or _claimed_record(
+                        use_source, repo, comments, work_comments, reviews, review_comments
+                    )
+                    claimed_markers = markers([claimed]) if claimed is not None else []
+                    if claimed_markers and claimed_markers[0].name == "check-report":
                         remedy = (
                             "correct the document's use source, or run the builder's use check "
                             "again so a new use report is posted, then recompose proof"

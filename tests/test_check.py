@@ -5011,3 +5011,30 @@ def test_refused_report_remedy_asks_for_a_new_use_report_not_a_use_marker():
     assert marker_result == 1
     assert USE_MARKER_REMEDY in marker_output.splitlines()
     assert REPORT_REMEDY not in marker_output.splitlines()
+
+
+def test_report_refused_for_a_mismatched_claimed_author_names_the_report_remedy():
+    transport, environ = tc1030_scenario()
+    rewrite_tc1030_proof(
+        transport, lambda document: document["use"]["source"].update(author="someone-else")
+    )
+
+    result, output = run_recorded(transport, environ)
+
+    assert result == 1
+    assert missing_lines(output) == [
+        f"{USE_SOURCE_PREFIX}issue-comment source {TC1030_REPORT_ID} author differs from the "
+        "public record"
+    ]
+    assert REPORT_REMEDY in output.splitlines()
+    assert "post a lawful use marker" not in output
+
+    transport, _comment_id, document = marker_world(
+        "use", "issue-comment", GATE_MARKERS["use"], sole=True
+    )
+    document["use"]["source"]["author"] = "someone-else"
+    replace_proof_document(transport, document)
+    marker_result, marker_output = execute(transport)
+
+    assert marker_result == 1
+    assert USE_MARKER_REMEDY in marker_output.splitlines()

@@ -92,6 +92,7 @@ These tests in `tests/test_check.py`:
 - `test_tc1030_hand_started_builders_declared_vendor_report_counts`
 - `test_refused_use_marker_line_names_what_was_found_and_the_fact`
 - `test_refused_report_remedy_asks_for_a_new_use_report_not_a_use_marker`
+- `test_report_refused_for_a_mismatched_claimed_author_names_the_report_remedy`
 - `test_use_marker_facts_are_empty_exactly_when_the_marker_is_lawful`
 - `test_report_at_an_earlier_commit_carries_over_a_commit_that_buys_no_use`
 - `test_report_at_an_earlier_commit_is_staled_by_an_authored_use_buying_commit`
