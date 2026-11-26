@@ -63,6 +63,10 @@ The gate is built on reading A, the holder's recommendation. Under it, every exi
 
 **Rejected:** a new wording for the refusal line. The line's words stay, so a reader or tool matching them keeps working.
 
+**Chosen with it:** when the refused comment opens with a `check-report` marker, the remedy asks for the document's use source to be corrected or the builder's use check to be run again, so that a new use report is posted. Every other refusal keeps the remedy that offers a lawful `use` marker.
+
+**Rejected:** keeping the one remedy for every refusal. The entrance composes a builder-route proof from a use report and never from a `use` marker, so a holder told to post a marker would post evidence the proof never names.
+
 ## Shown by
 
 These tests in `tests/test_check.py`:
@@ -78,6 +82,7 @@ These tests in `tests/test_check.py`:
 - `test_tc1030_malformed_report_is_refused_naming_the_attribute`
 - `test_tc1030_hand_started_builders_declared_vendor_report_counts`
 - `test_refused_use_marker_line_names_what_was_found_and_the_fact`
+- `test_refused_report_remedy_asks_for_a_new_use_report_not_a_use_marker`
 - `test_use_marker_facts_are_empty_exactly_when_the_marker_is_lawful`
 - `test_report_at_an_earlier_commit_carries_over_a_commit_that_buys_no_use`
 - `test_report_at_an_earlier_commit_is_staled_by_an_authored_use_buying_commit`

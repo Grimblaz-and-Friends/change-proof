@@ -1084,6 +1084,7 @@ class UseSourceReading:
 
 
 def _marker_noun(name: str) -> str:
+    # "u" is left out because the marker it would start is ``use``, which reads "a use marker".
     return f"{'an' if name[:1] in 'aeio' else 'a'} {_safe_text(name)} marker"
 
 
@@ -1122,6 +1123,7 @@ def _staffing_facts(attributes: Mapping[str, str]) -> list[str]:
 
 
 def _use_marker_facts(marker: MarkerRecord, evidence_head: str) -> list[str]:
+    """Word each reason ``_valid_use`` refuses a marker; ``_valid_use`` alone decides it."""
     attributes = marker.attributes
     facts: list[str] = []
     if set(attributes) not in (
@@ -1219,8 +1221,8 @@ def _read_use_source(
 ) -> UseSourceReading:
     """Read one resolved use source as a ``use`` marker or a builder's use report.
 
-    A ``use`` marker is judged by ``_valid_use`` exactly as before; a report by the public facts
-    the entrance counts it by. The caller still applies the history rule (README.md, "Evidence
+    A ``use`` marker is judged by ``_valid_use``; a report by the public facts the entrance
+    counts it by. The caller still applies the history rule (README.md, "Evidence
     contract").
     """
     body = str(record.get("body") or "")
@@ -3451,7 +3453,8 @@ def evaluate_document(
                 f"surfaces are {USE_FLOOR_KIND_IDS}",
                 f"post the use marker as {USE_FLOOR_SURFACE_NAMES} and recompose proof from it",
             ))
-            # The refusal line above is pinned whole, so what the gate found there goes beside it.
+            # Readers and tests match the refusal line above whole, so what the gate found at the
+            # source goes on a line beside it.
             diagnostics.append(_review_kind_use_diagnostic(
                 use_source, repo, comments, work_comments, reviews, review_comments
             ))
@@ -3497,7 +3500,8 @@ def evaluate_document(
                     f"use report {report_place} carries attribute(s) the gate does not read: "
                     + ", ".join(_safe_text(name) for name in reading.unread_attributes)
                 )
-            # A lawful `use` marker refused only because an earlier head needs changed=false.
+            # A holder clears this refusal by confirming the history and posting changed=false,
+            # so it keeps its own detail and remedy rather than the generic ones.
             unchanged_flag_missing = (
                 requires_unchanged
                 and reading is not None
@@ -3550,6 +3554,16 @@ def evaluate_document(
                         "correct the document's use source, or post a lawful use marker when "
                         "the public record itself is invalid, then recompose proof"
                     )
+                    # The entrance composes a report's proof from a new report, never a marker.
+                    if (
+                        reading is not None
+                        and reading.marker is not None
+                        and reading.marker.name == "check-report"
+                    ):
+                        remedy = (
+                            "correct the document's use source, or run the builder's use check "
+                            "again so a new use report is posted, then recompose proof"
+                        )
                 failures.append(Finding(
                     f"an authorized valid public use source: {detail}",
                     remedy,

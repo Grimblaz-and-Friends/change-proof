@@ -4301,7 +4301,7 @@ def test_transport_preserves_paginated_object_pages_in_order():
 
 # A builder's use report: the `check-report` comment the practice entrance posts on the change's
 # issue for a successful use seat. The recorded world is tradecraft pull request #1030, whose
-# proof names report 7173191455 on work issue #1014 and which the gate before this change refused.
+# proof names report 7173191455 on work issue #1014.
 TC1030_REPO = "Grimblaz-and-Friends/tradecraft"
 TC1030_HEAD = "3f8f243f5d9ad63b4d58f2fc1585cce823aa5eac"
 TC1030_PROOF_ID = 7173428037
@@ -4400,7 +4400,7 @@ def test_tc1030_world_keeps_the_get_record_and_the_exact_producer_comments():
         "created_at": "2026-11-25T20:16:30Z",
         "updated_at": "2026-11-25T20:16:30Z",
     }
-    # The 20 endpoints the gate before this change read, and no other.
+    # Exactly the 20 endpoints the capture read, all in the recorded repository.
     assert len(responses) == 20
     assert all(endpoint.startswith(f"repos/{TC1030_REPO}/") for endpoint in responses)
     assert hashlib.sha256(comment).hexdigest() == (
@@ -4430,7 +4430,7 @@ def test_tc1030_builder_use_report_replay_passes():
     assert output.splitlines()[0] == "change-proof: PASS"
     assert missing_lines(output) == []
     assert TC1030_VERIFIED in output.splitlines()
-    # Reading the report adds no GET: every read is one of the base gate's 20 endpoints.
+    # Reading the report needs no GET beyond the world's records, and the replay reads them all.
     world = json.loads((RECORDED / "world-tc1030.trimmed.json").read_text(encoding="utf-8"))
     assert {endpoint for endpoint, _paginate in transport.calls} == set(world["responses"])
 
@@ -4890,6 +4890,8 @@ def test_checker_runs_as_a_lone_byte_copy_in_a_fresh_interpreter(tmp_path):
     assert completed.returncode == 0, completed.stderr
     lines = completed.stdout.splitlines()
     assert lines[:2] == ["0", "change-proof: PASS"], completed.stdout
+    # A byte copy of this script held outside this repository calls `run` with these keywords,
+    # so its signature is part of the script's calling contract.
     parameters = [
         (parameter.name, parameter.kind, parameter.default)
         for parameter in inspect.signature(check.run).parameters.values()
@@ -4958,7 +4960,41 @@ def test_readme_report_example_lines_are_lines_the_gate_prints():
     printed = [line for output in outputs for line in output.splitlines()]
 
     examples = readme_report_lines()
-    assert len(examples) == 6
+    assert len(examples) == 7
     for example in examples:
         pattern = readme_line_pattern(example)
         assert any(pattern.fullmatch(line) for line in printed), example
+
+
+REPORT_REMEDY = (
+    "satisfy: correct the document's use source, or run the builder's use check again so a new "
+    "use report is posted, then recompose proof"
+)
+USE_MARKER_REMEDY = (
+    "satisfy: correct the document's use source, or post a lawful use marker when the public "
+    "record itself is invalid, then recompose proof"
+)
+
+
+def test_refused_report_remedy_asks_for_a_new_use_report_not_a_use_marker():
+    transport, environ = tc1030_scenario()
+    alter_tc1030_report(transport, outcome="error")
+
+    result, output = run_recorded(transport, environ)
+
+    assert result == 1
+    assert REPORT_REMEDY in output.splitlines()
+    assert "post a lawful use marker" not in output
+
+    transport, _comment_id, _document = marker_world(
+        "use",
+        "issue-comment",
+        f"<!-- tradecraft:use:v1 head={HEAD} status=fail changed=false "
+        "staffing_status=qualified -->",
+        sole=True,
+    )
+    marker_result, marker_output = execute(transport)
+
+    assert marker_result == 1
+    assert USE_MARKER_REMEDY in marker_output.splitlines()
+    assert REPORT_REMEDY not in marker_output.splitlines()
