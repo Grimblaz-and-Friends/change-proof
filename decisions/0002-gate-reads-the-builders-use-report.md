@@ -5,7 +5,7 @@
 This record is frozen. What the gate does now is in [`README.md`, "Evidence contract"](../README.md#evidence-contract), whose in-force list links here.
 
 - **Decided:** 2026-11-25, when the owner affirmed the implementation brief recorded on [change-proof#58](https://github.com/Grimblaz-and-Friends/change-proof/issues/58).
-- **Built in:** the pull request from branch `tradecraft/58-cc7b9a7617d7`.
+- **Built in:** [change-proof#59](https://github.com/Grimblaz-and-Friends/change-proof/pull/59).
 - **Base the evidence was read at:** `966476916407b843e294dcb8ee2aae064c19ee73`.
 
 ## Occasion
