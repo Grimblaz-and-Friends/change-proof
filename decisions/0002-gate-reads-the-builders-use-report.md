@@ -55,11 +55,13 @@ Any other attribute name is ignored and named in a non-fatal diagnostic. Attribu
 
 A misplaced `use` marker is not named on that line. Its own set-aside diagnostic names it, and decision 0001 holds that a note may quote or misplace a marker without changing the verdict.
 
-For a source of a review kind, the owner was asked to choose between two readings, because the brief's checks could not both hold:
-- **Reading A:** the existing refusal line, which a test pins whole, stays byte for byte, and a `diagnostic:` line beside it names what the gate found at that review or review comment.
-- **Reading B:** the refusal line itself gains what was found, and the pinning test is edited in its one expected string.
+**Chosen for a source of a review kind:** reading A. The existing refusal line, which a test pins whole, stays byte for byte, and a `diagnostic:` line beside it names what the gate found at that review or review comment. The change's holder chose it inside row 1 of the affirmed brief, whose checks could not both hold for this one case: one asks the refusal to name what was found, and the other asks every existing test to pass unchanged.
+- Under A, every existing test passes unedited.
+- The pinned line already names what was found there, a source of a review kind, and the fact that failed, that the kind is not a use surface. The diagnostic adds what the record opens with.
 
-The gate is built on reading A, the holder's recommendation. Under it, every existing test passes unedited. The pinned line already names what was found there, a source of a review kind, and the fact that failed, that the kind is not a use surface. The diagnostic adds what the record opens with. The case against A is that the row asks that "its line" name what was found, and under A only the line beside it names the marker. The owner had not ruled when this was built. A ruling for B replaces this paragraph's choice.
+**Rejected:** reading B, in which the refusal line itself gains what was found and the pinning test is edited in its one expected string. The case for B is that the row asks that "its line" name what was found, and under A only the line beside it names the marker.
+
+When this record was written, the owner had been asked to choose between A and B and had not answered. A ruling for B is recorded as a later decision that supersedes this one and updates the in-force list in `README.md`, not as an edit to this record.
 
 **Rejected:** a new wording for the refusal line. The line's words stay, so a reader or tool matching them keeps working.
 
@@ -76,6 +78,7 @@ These tests in `tests/test_check.py`:
 - `test_tc1030_report_from_a_non_producer_supplies_no_use`
 - `test_tc1030_report_that_is_quoted_or_does_not_open_its_comment_supplies_no_use`
 - `test_tc1030_report_on_the_pull_request_does_not_count`
+- `test_current_head_report_on_the_work_issue_passes`
 - `test_report_is_refused_when_the_work_issue_is_the_pull_request`
 - `test_tc1030_report_on_a_review_kind_keeps_the_kind_refusal_and_names_what_was_found`
 - `test_tc1030_report_with_an_attribute_the_gate_does_not_read_still_counts`

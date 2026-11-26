@@ -1226,6 +1226,7 @@ def _read_use_source(
     contract").
     """
     body = str(record.get("body") or "")
+    opening = _opening_marker(body)
     found_markers = markers([record])
     marker = found_markers[0] if found_markers else None
     author = _author(record)
@@ -1234,7 +1235,8 @@ def _read_use_source(
         if author in producers
         else [f"author {_safe_text(author)} is not a configured marker producer"]
     )
-    if marker is None:
+    # A comment whose opening marker cannot be read is read as opening with none.
+    if marker is None or opening is None:
         return UseSourceReading(None, "no marker", tuple(_unopened_marker_facts(body)), None)
     found = _marker_noun(marker.name)
     if marker.name == "use":
@@ -1245,8 +1247,6 @@ def _read_use_source(
         )
         return UseSourceReading("use", found, tuple(facts + author_facts), marker)
     if marker.name == "check-report":
-        opening = _opening_marker(body)
-        assert opening is not None
         attributes = _report_attributes(opening.group(2) or "")
         facts = _report_facts(attributes, evidence_head)
         # The entrance posts and counts reports only on the change's issue, never the pull request.
@@ -3484,8 +3484,10 @@ def evaluate_document(
                     and (
                         reading.form == "report"
                         or not requires_unchanged
-                        or reading.marker is not None
-                        and reading.marker.attributes.get("changed") == "false"
+                        or (
+                            reading.marker is not None
+                            and reading.marker.attributes.get("changed") == "false"
+                        )
                     )
                 )
 

@@ -4400,7 +4400,6 @@ def test_tc1030_world_keeps_the_get_record_and_the_exact_producer_comments():
         "created_at": "2026-11-25T20:16:30Z",
         "updated_at": "2026-11-25T20:16:30Z",
     }
-    # Exactly the 20 endpoints the capture read, all in the recorded repository.
     assert len(responses) == 20
     assert all(endpoint.startswith(f"repos/{TC1030_REPO}/") for endpoint in responses)
     assert hashlib.sha256(comment).hexdigest() == (
@@ -4890,8 +4889,8 @@ def test_checker_runs_as_a_lone_byte_copy_in_a_fresh_interpreter(tmp_path):
     assert completed.returncode == 0, completed.stderr
     lines = completed.stdout.splitlines()
     assert lines[:2] == ["0", "change-proof: PASS"], completed.stdout
-    # A byte copy of this script held outside this repository calls `run` with these keywords,
-    # so its signature is part of the script's calling contract.
+    # `run`'s arguments are the script's calling contract for a byte copy held elsewhere
+    # (README.md, "Boundary and tests").
     parameters = [
         (parameter.name, parameter.kind, parameter.default)
         for parameter in inspect.signature(check.run).parameters.values()
