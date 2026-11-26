@@ -55,19 +55,25 @@ Any other attribute name is ignored and named in a non-fatal diagnostic. Attribu
 
 A misplaced `use` marker is not named on that line. Its own set-aside diagnostic names it, and decision 0001 holds that a note may quote or misplace a marker without changing the verdict.
 
-**Chosen for a source of a review kind:** reading A. The existing refusal line, which a test pins whole, stays byte for byte, and a `diagnostic:` line beside it names what the gate found at that review or review comment. The change's holder chose it inside row 1 of the affirmed brief, whose checks could not both hold for this one case: one asks the refusal to name what was found, and the other asks every existing test to pass unchanged.
+**Chosen for a source of a review kind:** reading A. The refusal line that names the accepted surfaces, which a test pins whole, is unchanged, and a `diagnostic:` line beside it names what the gate found at that review or review comment. Row 1 of the affirmed brief has two checks that could not both hold for this one case: one asks the refusal to name what was found, and the other asks every existing test to pass unchanged. The holder recommended A, and the owner ruled for it on 2026-11-26, answering "A: keep the line" when asked which check gives way.
 - Under A, every existing test passes unedited.
 - The pinned line already names what was found there, a source of a review kind, and the fact that failed, that the kind is not a use surface. The diagnostic adds what the record opens with.
 
 **Rejected:** reading B, in which the refusal line itself gains what was found and the pinning test is edited in its one expected string. The case for B is that the row asks that "its line" name what was found, and under A only the line beside it names the marker.
 
-When this record was written, the owner had been asked to choose between A and B and had not answered. A ruling for B is recorded as a later decision that supersedes this one and updates the in-force list in `README.md`, not as an edit to this record.
-
 **Rejected:** a new wording for the refusal line. The line's words stay, so a reader or tool matching them keeps working.
 
-**Chosen with it:** when the refused comment opens with a `check-report` marker, the remedy asks for the document's use source to be corrected or the builder's use check to be run again, so that a new use report is posted. Every other refusal keeps the remedy that offers a lawful `use` marker.
+**Chosen with it:** when the refused comment opens with a `check-report` marker, the remedy asks for the document's use source to be corrected or the builder's use check to be run again, so that a new use report is posted. The same line for any other comment carries the remedy that offers a lawful `use` marker. A source of a review kind has the remedy naming the accepted surfaces whatever its record opens with, because the entrance never posts a report on a review.
 
 **Rejected:** keeping the one remedy for every refusal. The entrance composes a builder-route proof from a use report and never from a `use` marker, so a holder told to post a marker would post evidence the proof never names.
+
+## Decision 6: one file with its calling contract
+
+**Chosen:** `proof/check.py` is one standard-library-only file, and its `run` entry takes its environment, transport, output and clock as arguments. Another repository holds a byte copy of the script and runs that copy in-process against records of its own, so the contract it calls through is what this repository keeps stable.
+
+**Rejected:**
+- **Splitting the script into modules.** A byte copy of one file would no longer be the whole gate.
+- **Adding a dependency outside the standard library.** The copy would then need an install step the other repository does not run.
 
 ## Shown by
 
@@ -92,6 +98,7 @@ These tests in `tests/test_check.py`:
 - `test_report_and_marker_carry_alike_by_base_membership_or_merge`
 - `test_misplaced_use_marker_is_named_without_changing_the_verdict`, unchanged
 - `test_review_surfaces_are_not_use_sources`, unchanged
+- `test_checker_runs_as_a_lone_byte_copy_in_a_fresh_interpreter`, for Decision 6
 
 ## Left unchanged
 

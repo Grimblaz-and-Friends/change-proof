@@ -144,6 +144,7 @@ class MarkerRecord:
     timestamp: str = ""
     source_id: int = 0
     observed_order: int = 0
+    raw_attributes: str = ""
 
 
 @dataclass(frozen=True)
@@ -1045,6 +1046,7 @@ def markers(records: list[dict[str, object]]) -> list[MarkerRecord]:
                 timestamp,
                 source_id,
                 len(found),
+                match.group(2) or "",
             ))
     return found
 
@@ -1226,7 +1228,6 @@ def _read_use_source(
     contract").
     """
     body = str(record.get("body") or "")
-    opening = _opening_marker(body)
     found_markers = markers([record])
     marker = found_markers[0] if found_markers else None
     author = _author(record)
@@ -1235,8 +1236,9 @@ def _read_use_source(
         if author in producers
         else [f"author {_safe_text(author)} is not a configured marker producer"]
     )
-    # A comment whose opening marker cannot be read is read as opening with none.
-    if marker is None or opening is None:
+    # A comment that opens with no use evidence is refused whoever wrote it, so only the two
+    # evidence forms name their author.
+    if marker is None:
         return UseSourceReading(None, "no marker", tuple(_unopened_marker_facts(body)), None)
     found = _marker_noun(marker.name)
     if marker.name == "use":
@@ -1247,7 +1249,7 @@ def _read_use_source(
         )
         return UseSourceReading("use", found, tuple(facts + author_facts), marker)
     if marker.name == "check-report":
-        attributes = _report_attributes(opening.group(2) or "")
+        attributes = _report_attributes(marker.raw_attributes)
         facts = _report_facts(attributes, evidence_head)
         # The entrance posts and counts reports only on the change's issue, never the pull request.
         if kind != "issue-comment" or work_issue == number:
@@ -1269,7 +1271,8 @@ def _review_kind_use_diagnostic(
 ) -> str:
     """Name what a use source of a refused kind holds, from records already fetched.
 
-    The kind's refusal line stays as it was; this line beside it says what the gate found there.
+    The kind's refusal line names the accepted surfaces; this line beside it says what the gate
+    found there.
     """
     kind = _safe_text(source["kind"])
     identity = _safe_text(_source_identity(source["id"]) or "without an id")
@@ -3577,6 +3580,8 @@ def evaluate_document(
                         "recompose proof from the current-head use record",
                     ))
                 elif reading is not None and reading.form == "report":
+                    # A report's line names it, so a holder can tell which report a pass rested
+                    # on; a `use` marker's line is the one readers already match.
                     verified.append(
                         f"trusted policy requires use and the builder's use report {report_place} "
                         "is current-head"

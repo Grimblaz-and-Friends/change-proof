@@ -32,7 +32,15 @@ lane replay:
   SHA-256 of the proof comment body is
   `fa9dc08a9ffe6f00d8ae63b8ad4602956ff45d1a81b0a8736322552c04439765` and of the
   report body is `a68b7d3b233f0d381b11432f5a19513fb9849ed0a4984dfa4075988c3c904189`;
-  a test pins both. No gate output is committed.
+  a test pins both. In the work issue's comment collection only, the 42 comments
+  the proof does not name keep their body's first line, followed by one line giving
+  the original body's UTF-8 length and SHA-256; the world lists them under
+  `elisions`. The use report and every pull-request comment, review and review
+  comment stay whole. The replay therefore does not exercise the gate's sweep for
+  markers set below the first line of those 42 bodies. Over the full capture and
+  over this world, the gate printed the same output line for line, both at
+  `9664769` and with the use-report change this world was added with. No gate
+  output is committed.
 
 The world files retain every record and field consumed by the gate for these
 documents. The #767 world was recaptured from the public GitHub REST record with

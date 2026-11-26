@@ -4415,6 +4415,20 @@ def test_tc1030_world_keeps_the_get_record_and_the_exact_producer_comments():
         "a68b7d3b233f0d381b11432f5a19513fb9849ed0a4984dfa4075988c3c904189"
     )
     assert len(report["body"].encode()) == 20953
+    # Only the comments the proof names keep their whole bodies; each elided one keeps its first
+    # line and a line holding the original body's length and digest.
+    elisions = world["elisions"]
+    assert elisions["collection"] == TC1030_WORK_COMMENTS
+    elided = {item["id"]: item for item in elisions["comments"]}
+    work = responses[TC1030_WORK_COMMENTS]
+    assert len(elided) == 42
+    assert {item["id"] for item in work} - set(elided) == {TC1030_REPORT_ID}
+    for item in work:
+        entry = elided.get(item["id"])
+        if entry is not None:
+            assert item["body"].split("\n")[1:] == [
+                f"[body elided in this fixture: {entry['bytes']} bytes, sha256 {entry['sha256']}]"
+            ]
     assert (report["user"]["login"], report["created_at"], report["updated_at"]) == (
         "Grimblaz", "2026-11-25T20:06:04Z", "2026-11-25T20:06:04Z"
     )
